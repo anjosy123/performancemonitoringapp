@@ -10,7 +10,8 @@
                 <!-- Hospital Branding -->
                 <div class="text-center mb-4">
                     <div class="logo-container">
-                        <img src="/static/images/hospital-logo.png" alt="Hospital Logo" class="hospital-logo">
+                        {% comment %} <img src="/static/images/hospital-logo.png" alt="Hospital Logo" class="hospital-logo"> {% endcomment %}
+                        <img src="{% static 'images/hospital-logo.png' %}" alt="Hospital Logo" class="hospital-logo">
                     </div>
                     <h2 class="hospital-name">Mariampur Hospital</h2>
                     <p class="text-muted system-name">Staff Performance Monitoring System</p>
