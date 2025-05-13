@@ -1,0 +1,285 @@
+<!-- staff_monitor/templates/staff_monitor/login.html -->
+{% extends 'staff_monitor/base.html' %}
+{% load static %}
+
+{% block content %}
+<div class="login-wrapper">
+    <div class="login-container">
+        <div class="row justify-content-center">
+            <div class="col-12 col-md-8 col-lg-6 col-xl-5">
+                <!-- Hospital Branding -->
+                <div class="text-center mb-4">
+                    <div class="logo-container">
+                        <img src="/static/images/hospital-logo.png" alt="Hospital Logo" class="hospital-logo">
+                    </div>
+                    <h2 class="hospital-name">Mariampur Hospital</h2>
+                    <p class="text-muted system-name">Staff Performance Monitoring System</p>
+                </div>
+
+                <!-- Login Card -->
+                <div class="card login-card">
+                    <div class="card-body p-4 p-sm-5">
+                        <h4 class="text-center mb-4">
+                            <i class="fas fa-user-md me-2"></i>Staff Login
+                        </h4>
+
+                        <!-- Alert Messages -->
+                        {% if messages %}
+                        <div class="messages-container">
+                            {% for message in messages %}
+                            <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+                                {{ message }}
+                                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                            </div>
+                            {% endfor %}
+                        </div>
+                        {% endif %}
+
+                        <!-- Login Form -->
+                        <form method="post" class="needs-validation" novalidate>
+                            {% csrf_token %}
+                            <div class="form-group mb-4">
+                                <div class="form-floating">
+                                    <input type="text" 
+                                           class="form-control" 
+                                           id="username" 
+                                           name="username" 
+                                           placeholder="Username" 
+                                           required
+                                           autocomplete="username">
+                                    <label for="username">
+                                        <i class="fas fa-user text-muted me-2"></i>Username
+                                    </label>
+                                    <div class="invalid-feedback">
+                                        Please enter your username
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="form-group mb-4">
+                                <div class="form-floating">
+                                    <input type="password" 
+                                           class="form-control" 
+                                           id="password" 
+                                           name="password" 
+                                           placeholder="Password" 
+                                           required
+                                           autocomplete="current-password">
+                                    <label for="password">
+                                        <i class="fas fa-lock text-muted me-2"></i>Password
+                                    </label>
+                                    <div class="invalid-feedback">
+                                        Please enter your password
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="form-group mb-4 text-center">
+                                <a href="{% url 'password_reset' %}" class="text-primary text-decoration-none">
+                                    <i class="fas fa-key me-1"></i>Forgot Password?
+                                </a>
+                            </div>
+
+                            <div class="d-grid gap-2">
+                                <button type="submit" class="btn btn-primary btn-lg">
+                                    <i class="fas fa-sign-in-alt me-2"></i>Login
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+
+                <!-- Footer Info -->
+                <div class="text-center mt-4 contact-info">
+                    <p class="text-muted mb-1">
+                        <i class="fas fa-map-marker-alt me-2"></i>Mariampur Hospital, Kanpur
+                    </p>
+                    <p class="text-muted">
+                        <i class="fas fa-phone me-2"></i>Contact Support: +91 9846423564
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    :root {
+        --primary-color: #0d6efd;
+        --hover-color: #0b5ed7;
+        --text-color: #2c3e50;
+        --muted-color: #6c757d;
+        --border-radius: 1rem;
+    }
+
+    .login-wrapper {
+        min-height: 100vh;
+        background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+        display: flex;
+        align-items: center;
+    }
+
+    .login-container {
+        width: 100%;
+        padding: 1rem;
+    }
+
+    .logo-container {
+        display: flex;
+        justify-content: center;
+        margin-bottom: 1.5rem;
+    }
+
+    .hospital-logo {
+        width: 120px;
+        height: 120px;
+        border-radius: 50%;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        object-fit: cover;
+    }
+
+    .hospital-name {
+        color: var(--text-color);
+        font-weight: 600;
+        font-size: calc(1.5rem + 0.5vw);
+        margin-bottom: 0.5rem;
+    }
+
+    .system-name {
+        font-size: calc(0.9rem + 0.1vw);
+    }
+
+    .login-card {
+        background: white;
+        border: none;
+        border-radius: var(--border-radius);
+        box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15);
+        margin-bottom: 2rem;
+    }
+
+    .form-floating > label {
+        color: var(--muted-color);
+        padding-left: 1rem;
+    }
+
+    .form-control {
+        border-radius: 0.5rem;
+        border: 2px solid #e9ecef;
+        height: 3.5rem;
+        padding: 1rem;
+        font-size: 1rem;
+    }
+
+    .form-control:focus {
+        border-color: var(--primary-color);
+        box-shadow: 0 0 0 0.2rem rgba(13, 110, 253, 0.25);
+    }
+
+    .btn-primary {
+        background-color: var(--primary-color);
+        border: none;
+        border-radius: 0.5rem;
+        padding: 1rem;
+        font-weight: 500;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        transition: all 0.3s ease;
+    }
+
+    .btn-primary:hover {
+        background-color: var(--hover-color);
+        transform: translateY(-2px);
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    }
+
+    .alert {
+        border-radius: 0.5rem;
+        margin-bottom: 1.5rem;
+    }
+
+    .contact-info {
+        font-size: 0.9rem;
+    }
+
+    /* Responsive Adjustments */
+    @media (max-width: 576px) {
+        .login-container {
+            padding: 0.5rem;
+        }
+
+        .card-body {
+            padding: 1.5rem !important;
+        }
+
+        .hospital-logo {
+            width: 100px;
+            height: 100px;
+        }
+
+        .hospital-name {
+            font-size: 1.5rem;
+        }
+
+        .form-control {
+            height: 3rem;
+        }
+
+        .btn-lg {
+            padding: 0.75rem;
+        }
+    }
+
+    @media (max-width: 320px) {
+        .hospital-logo {
+            width: 80px;
+            height: 80px;
+        }
+
+        .hospital-name {
+            font-size: 1.25rem;
+        }
+
+        .card-body {
+            padding: 1rem !important;
+        }
+    }
+
+    /* Touch Device Optimizations */
+    @media (hover: none) {
+        .btn-primary:hover {
+            transform: none;
+        }
+    }
+</style>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Enhanced form validation
+    const forms = document.querySelectorAll('.needs-validation');
+    
+    Array.from(forms).forEach(form => {
+        form.addEventListener('submit', event => {
+            if (!form.checkValidity()) {
+                event.preventDefault();
+                event.stopPropagation();
+            }
+            form.classList.add('was-validated');
+        }, false);
+
+        // Real-time validation feedback
+        const inputs = form.querySelectorAll('input');
+        inputs.forEach(input => {
+            input.addEventListener('input', () => {
+                if (input.checkValidity()) {
+                    input.classList.remove('is-invalid');
+                    input.classList.add('is-valid');
+                } else {
+                    input.classList.remove('is-valid');
+                    input.classList.add('is-invalid');
+                }
+            });
+        });
+    });
+});
+</script>
+{% endblock %}
