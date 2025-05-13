@@ -54,4 +54,8 @@ htmlcov/
 .coverage
 .coverage.*
 coverage.xml
-*.cover 
+*.cover
+
+# New additions
+staticfiles/
+*.sqlite3 

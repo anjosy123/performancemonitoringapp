@@ -136,8 +136,8 @@ class MedicalSuperintendentForm(forms.ModelForm):
             superintendent.save()
             
             try:
-                # Send email with credentials
-                from django.core.mail import send_mail
+            # Send email with credentials
+            from django.core.mail import send_mail
                 from django.conf import settings
                 
                 email_subject = 'Your Performance Monitoring System Credentials'
@@ -157,13 +157,13 @@ class MedicalSuperintendentForm(forms.ModelForm):
                 Performance Monitoring System Team
                 """
                 
-                send_mail(
+            send_mail(
                     email_subject,
                     email_message,
                     settings.EMAIL_HOST_USER,
-                    [user.email],
-                    fail_silently=False,
-                )
+                [user.email],
+                fail_silently=False,
+            )
             except Exception as e:
                 # If email fails, delete the created user and raise error
                 user.delete()
