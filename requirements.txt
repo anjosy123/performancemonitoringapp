@@ -9,3 +9,4 @@ sqlparse==0.5.3
 typing_extensions==4.13.2
 tzdata==2025.2
 whitespace==1.0.0b8
+whitenoise
