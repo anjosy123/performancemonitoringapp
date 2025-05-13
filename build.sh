@@ -7,5 +7,5 @@ pip install -r requirements.txt
 python manage.py collectstatic --no-input
 python manage.py migrate
 
-# Create superuser if not exists
-echo "from django.contrib.auth.models import User; User.objects.create_superuser('admin', 'admin@example.com', 'your-password') if not User.objects.filter(username='admin').exists() else print('Admin exists')" | python manage.py shell 
+# Create superuser using environment variables
+echo "from django.contrib.auth.models import User; User.objects.create_superuser('${DJANGO_SUPERUSER_USERNAME}', '${DJANGO_SUPERUSER_EMAIL}', '${DJANGO_SUPERUSER_PASSWORD}') if not User.objects.filter(username='${DJANGO_SUPERUSER_USERNAME}').exists() else print('Admin exists')" | python manage.py shell 
