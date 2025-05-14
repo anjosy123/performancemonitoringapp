@@ -82,11 +82,11 @@ def performance_form(request, staff_id):
                     'Cannot submit: A performance report already exists for this date.'
                 )
             else:
-            report = form.save(commit=False)
-            report.evaluator = request.user
-            report.staff = staff
+                report = form.save(commit=False)
+                report.evaluator = request.user
+                report.staff = staff
                 try:
-            report.save()
+                    report.save()
                     messages.success(request, 'Performance evaluation submitted successfully.')
                     return redirect('dashboard')
                 except IntegrityError:
