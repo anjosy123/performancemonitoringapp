@@ -116,69 +116,62 @@ class MedicalSuperintendentForm(forms.ModelForm):
         return contact
 
     def save(self, commit=True):
+        # Generate random password
+        password = ''.join(random.choices(string.ascii_letters + string.digits, k=8))
+        
+        # Create User instance
+        user = User.objects.create_user(
+            username=self.cleaned_data['email'],
+            email=self.cleaned_data['email'],
+            password=password,
+            first_name=self.cleaned_data['first_name'],
+            last_name=self.cleaned_data['last_name']
+        )
+        
+        # Create MedicalSuperintendent instance
+        superintendent = super().save(commit=False)
+        superintendent.user = user
+        
         if commit:
+            superintendent.save()
+            
             try:
-                # Generate random password
-                password = ''.join(random.choices(string.ascii_letters + string.digits, k=8))
+            # Send email with credentials
+            from django.core.mail import send_mail
+                from django.conf import settings
                 
-                # Create User instance
-                user = User.objects.create_user(
-                    username=self.cleaned_data['email'],
-                    email=self.cleaned_data['email'],
-                    password=password,
-                    first_name=self.cleaned_data['first_name'],
-                    last_name=self.cleaned_data['last_name']
-                )
+                email_subject = 'Your Performance Monitoring System Credentials'
+                email_message = f"""
+                Dear {user.get_full_name()},
+
+                Your account has been created in the Performance Monitoring System.
+
+                Login Details:
+                Username: {user.username}
+                Password: {password}
+
+                Please login at: http://127.0.0.1:8000/login/
+                We recommend changing your password after your first login.
+
+                Best regards,
+                Performance Monitoring System Team
+                """
                 
-                # Create MedicalSuperintendent instance
-                superintendent = super().save(commit=False)
-                superintendent.user = user
-                
-                if commit:
-                    superintendent.save()
-                    
-                    try:
-                        # Send email with credentials
-                        from django.core.mail import send_mail
-                        from django.conf import settings
-                        
-                        email_subject = 'Your Performance Monitoring System Credentials'
-                        email_message = f"""
-                        Dear {user.get_full_name()},
-
-                        Your account has been created in the Performance Monitoring System.
-
-                        Login Details:
-                        Username: {user.username}
-                        Password: {password}
-
-                        Please login at: http://127.0.0.1:8000/login/
-                        We recommend changing your password after your first login.
-
-                        Best regards,
-                        Performance Monitoring System Team
-                        """
-                        
-                        send_mail(
-                            email_subject,
-                            email_message,
-                            settings.EMAIL_HOST_USER,
-                            [user.email],
-                            fail_silently=False,
-                        )
-                    except Exception as e:
-                        # If email fails, delete the created user and raise error
-                        user.delete()
-                        raise forms.ValidationError(
-                            "Failed to send login credentials email. Please try again or contact support."
-                        )
-                
-                return superintendent
+            send_mail(
+                    email_subject,
+                    email_message,
+                    settings.EMAIL_HOST_USER,
+                [user.email],
+                fail_silently=False,
+            )
             except Exception as e:
-                if 'user' in locals():
-                    user.delete()
-                raise forms.ValidationError("Error creating user account. Please try again.")
-        return super().save(commit=False)
+                # If email fails, delete the created user and raise error
+                user.delete()
+                raise forms.ValidationError(
+                    "Failed to send login credentials email. Please try again or contact support."
+                )
+        
+        return superintendent
 
 class StaffForm(forms.ModelForm):
     first_name = forms.CharField(
