@@ -33,7 +33,7 @@
                                 <td>{{ superintendent.user.get_full_name }}</td>
                                 <td>{{ superintendent.department.name }}</td>
                                 <td>{{ superintendent.contact_number }}</td>
-                                <td>{{ superintendent.managed_staff.count }}</td>
+                                <td>{{ superintendent.staff_count }}</td>
                                 <td>
                                     <div class="btn-group">
                                         <a href="{% url 'edit_superintendent' superintendent.id %}" class="btn btn-warning btn-sm">
@@ -119,12 +119,12 @@
                                         <a href="{% url 'performance_form' staff.id %}" class="btn btn-primary btn-sm">
                                             <i class="fas fa-clipboard-check me-1"></i>Evaluate
                                         </a>
-                                        {% comment %} <a href="{% url 'edit_staff' staff.id %}" class="btn btn-warning btn-sm">
+                                        <a href="{% url 'edit_staff' staff.id %}" class="btn btn-warning btn-sm">
                                             <i class="fas fa-edit me-1"></i>Edit
                                         </a>
                                         <button class="btn btn-danger btn-sm" data-bs-toggle="modal" data-bs-target="#deleteStaffModal{{ staff.id }}">
                                             <i class="fas fa-trash me-1"></i>Delete
-                                        </button> {% endcomment %}
+                                        </button>
                                     </div>
                                 </td>
                             </tr>
@@ -207,6 +207,10 @@
     }
     .btn-group .btn {
         margin-right: 0.25rem;
+    }
+    .btn-sm {
+        padding: 0.25rem 0.5rem;
+        font-size: 0.875rem;
     }
     .table th {
         font-weight: 600;

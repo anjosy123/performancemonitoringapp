@@ -21,6 +21,12 @@ def dashboard(request):
         staff_list = Staff.objects.all()
         superintendents = MedicalSuperintendent.objects.all()
         departments = Department.objects.all()
+        
+        # Calculate staff count for each superintendent
+        for superintendent in superintendents:
+            # Count staff members in the superintendent's department
+            superintendent.staff_count = Staff.objects.filter(department=superintendent.department).count()
+            
     else:
         try:
             # Medical superintendent sees only staff from their department
