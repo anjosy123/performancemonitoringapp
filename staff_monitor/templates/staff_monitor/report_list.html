@@ -52,8 +52,8 @@
                         <th>Staff Name</th>
                         <th>Department</th>
                         <th>Date</th>
-                        <th>Overall Rating</th>
-                        <th>Evaluator</th>
+                        <th>Score</th>
+                        <th>Performance Status</th>
                         <th>Actions</th>
                     </tr>
                 </thead>
@@ -63,13 +63,19 @@
                         <td>{{ report.staff.user.get_full_name }}</td>
                         <td>{{ report.staff.department }}</td>
                         <td>{{ report.date }}</td>
-                        <td>{{ report.get_overall_performance_display }}</td>
-                        <td>{{ report.evaluator.get_full_name }}</td>
+                        <td>{{ report.percentage|floatformat:2 }}%</td>
+                        <td>{{ report.get_performance_status }}</td>
                         <td>
                             <div class="btn-group">
-                                <a href="#" class="btn btn-info btn-sm" data-bs-toggle="modal" data-bs-target="#viewModal{{ report.id }}">
+                                <a href="{% url 'view_report' report.id %}" class="btn btn-info btn-sm">
                                     <i class="fas fa-eye me-1"></i>View
                                 </a>
+                                <a href="{% url 'print_report' report.id %}" class="btn btn-primary btn-sm" target="_blank">
+                                    <i class="fas fa-print me-1"></i>Print
+                                </a>
+                                <button type="button" class="btn btn-success btn-sm share-report" data-report-id="{{ report.id }}">
+                                    <i class="fas fa-share-alt me-1"></i>Share
+                                </button>
                                 {% if user.is_staff %}
                                 <button type="button" class="btn btn-danger btn-sm" data-bs-toggle="modal" data-bs-target="#deleteModal{{ report.id }}">
                                     <i class="fas fa-trash me-1"></i>Delete

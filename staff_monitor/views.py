@@ -55,56 +55,103 @@ def performance_form(request, staff_id):
             messages.error(request, 'You do not have permission to evaluate staff.')
             return redirect('dashboard')
 
-    today = date.today()
-    
-    # Check if there's an existing report for selected date
-    existing_report = None
-    selected_date = request.POST.get('date', today)
-    try:
-        existing_report = PerformanceReport.objects.get(
-            staff=staff,
-            date=selected_date
-        )
-        if existing_report:
-            messages.warning(
-                request, 
-                f'A performance report already exists for {selected_date}, submitted by {existing_report.evaluator.get_full_name()}'
-            )
-    except PerformanceReport.DoesNotExist:
-        pass
-
     if request.method == 'POST':
-        form = PerformanceReportForm(request.POST, initial={'staff': staff})
-        if form.is_valid():
-            if existing_report:
-                messages.error(
-                    request, 
-                    'Cannot submit: A performance report already exists for this date.'
-                )
-            else:
-                report = form.save(commit=False)
-                report.evaluator = request.user
-                report.staff = staff
+        try:
+            # Check if report exists for the date
+            evaluation_date = request.POST.get('date')
+            if PerformanceReport.objects.filter(staff=staff, date=evaluation_date).exists():
+                messages.error(request, 'A performance report already exists for this date.')
+                return redirect('performance_form', staff_id=staff_id)
+
+            # Function to safely convert string to integer
+            def get_rating(key):
                 try:
-                    report.save()
-                    messages.success(request, 'Performance evaluation submitted successfully.')
-                    return redirect('dashboard')
-                except IntegrityError:
-                    messages.error(request, 'A report already exists for this date.')
-        else:
-            messages.error(request, 'Please complete all evaluation criteria.')
-    else:
-        form = PerformanceReportForm(initial={
-            'staff': staff,
-            'date': today
-        })
+                    return int(request.POST.get(key, 0))
+                except (ValueError, TypeError):
+                    return 0
+
+            # Create new performance report
+            report = PerformanceReport(
+                staff=staff,
+                evaluator=request.user,
+                date=evaluation_date,
+                
+                # Section A: Job Knowledge/Professionalism
+                job_responsibility=get_rating('a1'),
+                communication_skills=get_rating('a2'),
+                patient_requirements=get_rating('a3'),
+                negotiation_skills=get_rating('a4'),
+                management_relationship=get_rating('a5'),
+                policy_adherence=get_rating('a6'),
+                ethical_behavior=get_rating('a7'),
+                honesty_transparency=get_rating('a8'),
+
+                # Section B: Productivity
+                workload_management=get_rating('b1'),
+                additional_responsibilities=get_rating('b2'),
+                work_procedure=get_rating('b3'),
+
+                # Section C: Quality of Work
+                accuracy_reliability=get_rating('c1'),
+                clear_communication=get_rating('c2'),
+                attendance_punctuality=get_rating('c3'),
+                responsibility_accountability=get_rating('c4'),
+
+                # Section D: Interpersonal & Working Relationships
+                interaction_effectiveness=get_rating('d1'),
+                interpersonal_skills=get_rating('d2'),
+                team_cooperation=get_rating('d3'),
+                sensitivity=get_rating('d4'),
+                cross_functional_collaboration=get_rating('d5'),
+
+                # Section E: Leadership
+                proactive_behavior=get_rating('e1'),
+                work_ideas=get_rating('e2'),
+                resource_competence=get_rating('e3'),
+                mentoring_skills=get_rating('e4'),
+                delegation_skills=get_rating('e5'),
+                decision_making=get_rating('e6'),
+
+                # Section F: Planning & Organizing
+                work_prioritization=get_rating('f1'),
+                timely_completion=get_rating('f2'),
+                policy_compliance=get_rating('f3'),
+                behavior_consistency=get_rating('f4'),
+                pressure_handling=get_rating('f5'),
+
+                # Section G: Adaptability
+                change_adaptability=get_rating('g1'),
+                learning_attitude=get_rating('g2'),
+                emotional_intelligence=get_rating('g3'),
+
+                # Section H: Result Orientation
+                commitment_drive=get_rating('h1'),
+                timely_decisions=get_rating('h2'),
+                obstacle_handling=get_rating('h3'),
+
+                # Section I: Clarity of Vision
+                hospital_vision=get_rating('i1'),
+                department_vision=get_rating('i2'),
+
+                # Section J: Problem Solving
+                problem_identification=get_rating('j1'),
+                solution_approach=get_rating('j2'),
+                pressure_case_handling=get_rating('j3'),
+
+                # Additional fields
+                special_remarks=request.POST.get('remarks', '')
+            )
+            report.save()
+            messages.success(request, 'Performance evaluation submitted successfully.')
+            return redirect('dashboard')
+
+        except Exception as e:
+            messages.error(request, f'Error submitting evaluation: {str(e)}')
+            return redirect('performance_form', staff_id=staff_id)
 
     return render(request, 'staff_monitor/performance_form.html', {
-        'form': form,
         'staff': staff,
-        'rating_choices': PerformanceReport.RATING_CHOICES,
-        'today': today,
-        'existing_report': existing_report
+        'today': date.today(),
     })
 
 @login_required
@@ -374,3 +421,146 @@ def delete_staff(request, staff_id):
         user.delete()
         messages.success(request, 'Staff member deleted successfully.')
     return redirect('dashboard')
+
+@login_required
+def view_report(request, report_id):
+    report = get_object_or_404(PerformanceReport, id=report_id)
+    
+    # Check permissions
+    if not request.user.is_staff:
+        try:
+            superintendent = MedicalSuperintendent.objects.get(user=request.user)
+            if report.staff.department != superintendent.department:
+                messages.error(request, 'You do not have permission to view this report.')
+                return redirect('report_list')
+        except MedicalSuperintendent.DoesNotExist:
+            messages.error(request, 'You do not have permission to view reports.')
+            return redirect('dashboard')
+
+    return render(request, 'staff_monitor/print_report.html', {
+        'report': report,
+        'sections': get_report_sections(report),
+        'section_totals': get_section_totals(report)
+    })
+
+@login_required
+def print_report(request, report_id):
+    # Reuse the view_report logic but with print template
+    return view_report(request, report_id)
+
+def get_report_sections(report):
+    """Helper function to organize report data into sections"""
+    sections = {
+        'A. JOB KNOWLEDGE/PROFESSIONALISM': [
+            {'name': 'Understanding of job responsibility', 'value': report.job_responsibility},
+            {'name': 'Good communications skills', 'value': report.communication_skills},
+            {'name': 'Identifies & understand patient requirements', 'value': report.patient_requirements},
+            {'name': 'Negotiation skills & ability to address queries', 'value': report.negotiation_skills},
+            {'name': 'Effective Relationship with management', 'value': report.management_relationship},
+            {'name': 'Respect for policies, rules & hospital values', 'value': report.policy_adherence},
+            {'name': 'Has ethical behavior & positive attitude', 'value': report.ethical_behavior},
+            {'name': 'Honesty and transparency', 'value': report.honesty_transparency}
+        ],
+        'B. PRODUCTIVITY': [
+            {'name': 'Manages a fair work load', 'value': report.workload_management},
+            {'name': 'Takes additional responsibilities', 'value': report.additional_responsibilities},
+            {'name': 'Develops and follows work procedure', 'value': report.work_procedure}
+        ],
+        'C. QUALITY OF WORK': [
+            {'name': 'Demonstrates accuracy, thoroughness and reliability', 'value': report.accuracy_reliability},
+            {'name': 'Communicates views clearly & logically', 'value': report.clear_communication},
+            {'name': 'Attendance & punctuality', 'value': report.attendance_punctuality},
+            {'name': 'Has good responsibility & accountability', 'value': report.responsibility_accountability}
+        ],
+        'D. INTERPERSONAL & WORKING RELATIONSHIPS': [
+            {'name': 'Interacts effectively with patients, co-workers & public', 'value': report.interaction_effectiveness},
+            {'name': 'Has good interpersonal skills', 'value': report.interpersonal_skills},
+            {'name': 'Seeks & provides help & cooperation', 'value': report.team_cooperation},
+            {'name': 'Exhibits appropriate sensitivity to others feelings', 'value': report.sensitivity},
+            {'name': 'Collaborates effectively with cross-functional teams', 'value': report.cross_functional_collaboration}
+        ],
+        'E. LEADERSHIP, INITIATIVES & RESOURCEFULNESS': [
+            {'name': 'Displays proactive behavior', 'value': report.proactive_behavior},
+            {'name': 'Is meticulous in following through work ideas', 'value': report.work_ideas},
+            {'name': 'Displays competence of working within resources', 'value': report.resource_competence},
+            {'name': 'Displays mentoring or guiding others', 'value': report.mentoring_skills},
+            {'name': 'Has work delegation skills', 'value': report.delegation_skills},
+            {'name': 'Has good decision-making skills', 'value': report.decision_making}
+        ],
+        'F. PLANNING & ORGANIZING EFFECTIVENESS': [
+            {'name': 'Effectively prioritizes work & establishes work plans', 'value': report.work_prioritization},
+            {'name': 'Performs tasks thoroughly on time', 'value': report.timely_completion},
+            {'name': 'Works within organizational policies & guidelines', 'value': report.policy_compliance},
+            {'name': 'Consistency in behavior', 'value': report.behavior_consistency},
+            {'name': 'Displays ability to work under pressure', 'value': report.pressure_handling}
+        ],
+        'G. ADAPTABILITY': [
+            {'name': 'Displays adaptability to change', 'value': report.change_adaptability},
+            {'name': 'Willing to learn from mistakes', 'value': report.learning_attitude},
+            {'name': 'Displays good emotional intelligence', 'value': report.emotional_intelligence}
+        ],
+        'H. RESULT ORIENTATION': [
+            {'name': 'Demonstrates strong commitment & drive', 'value': report.commitment_drive},
+            {'name': 'Takes timely decisions', 'value': report.timely_decisions},
+            {'name': 'Can be relied on to deliver despite obstacles', 'value': report.obstacle_handling}
+        ],
+        'I. CLARITY OF VISION': [
+            {'name': 'Understands the philosophy of vision & mission', 'value': report.hospital_vision},
+            {'name': 'Displays clarity of vision with respect to departments', 'value': report.department_vision}
+        ],
+        'J. PROBLEM SOLVING': [
+            {'name': 'Has the ability to identify problems', 'value': report.problem_identification},
+            {'name': 'Identifies alternate approaches/solutions', 'value': report.solution_approach},
+            {'name': 'Ability to handle cases under pressure', 'value': report.pressure_case_handling}
+        ]
+    }
+    return sections
+
+def get_section_totals(report):
+    """Helper function to calculate section totals"""
+    return {
+        'A. JOB KNOWLEDGE/PROFESSIONALISM': sum([
+            report.job_responsibility, report.communication_skills,
+            report.patient_requirements, report.negotiation_skills,
+            report.management_relationship, report.policy_adherence,
+            report.ethical_behavior, report.honesty_transparency
+        ]),
+        'B. PRODUCTIVITY': sum([
+            report.workload_management, report.additional_responsibilities,
+            report.work_procedure
+        ]),
+        'C. QUALITY OF WORK': sum([
+            report.accuracy_reliability, report.clear_communication,
+            report.attendance_punctuality, report.responsibility_accountability
+        ]),
+        'D. INTERPERSONAL & WORKING RELATIONSHIPS': sum([
+            report.interaction_effectiveness, report.interpersonal_skills,
+            report.team_cooperation, report.sensitivity,
+            report.cross_functional_collaboration
+        ]),
+        'E. LEADERSHIP, INITIATIVES & RESOURCEFULNESS': sum([
+            report.proactive_behavior, report.work_ideas,
+            report.resource_competence, report.mentoring_skills,
+            report.delegation_skills, report.decision_making
+        ]),
+        'F. PLANNING & ORGANIZING EFFECTIVENESS': sum([
+            report.work_prioritization, report.timely_completion,
+            report.policy_compliance, report.behavior_consistency,
+            report.pressure_handling
+        ]),
+        'G. ADAPTABILITY': sum([
+            report.change_adaptability, report.learning_attitude,
+            report.emotional_intelligence
+        ]),
+        'H. RESULT ORIENTATION': sum([
+            report.commitment_drive, report.timely_decisions,
+            report.obstacle_handling
+        ]),
+        'I. CLARITY OF VISION': sum([
+            report.hospital_vision, report.department_vision
+        ]),
+        'J. PROBLEM SOLVING': sum([
+            report.problem_identification, report.solution_approach,
+            report.pressure_case_handling
+        ])
+    }

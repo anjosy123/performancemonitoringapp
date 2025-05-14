@@ -41,4 +41,7 @@ urlpatterns = [
     path('delete-superintendent/<int:superintendent_id>/', views.delete_superintendent, name='delete_superintendent'),
     path('edit-staff/<int:staff_id>/', views.edit_staff, name='edit_staff'),
     path('delete-staff/<int:staff_id>/', views.delete_staff, name='delete_staff'),
+    path('performance/<int:staff_id>/', views.performance_form, name='performance_form'),
+    path('report/<int:report_id>/view/', views.view_report, name='view_report'),
+    path('report/<int:report_id>/print/', views.print_report, name='print_report'),
 ]

@@ -2,313 +2,659 @@
 {% extends 'staff_monitor/base.html' %}
 
 {% block content %}
-<div class="row justify-content-center">
-    <div class="col-12 col-lg-10">
-        <div class="card evaluation-card">
-            <div class="card-header bg-primary text-white">
-                <h3 class="mb-2">
-                    <i class="fas fa-clipboard-check me-2"></i>Performance Evaluation
-                </h3>
-                <div class="staff-info">
-                    <i class="fas fa-user-md me-2"></i>
-                    <span>{{ staff.user.get_full_name }} ({{ staff.employee_id }})</span>
+<div class="container-fluid">
+    <!-- Header Section -->
+    <div class="card mb-4">
+        <div class="card-header bg-primary text-white">
+            <h2 class="text-center mb-0">MARIAMPUR HOSPITAL</h2>
+            <h4 class="text-center mb-0">PERFORMANCE APPRAISAL FORM</h4>
+        </div>
+        
+        <!-- Basic Information Section -->
+        <div class="card-body">
+            <div class="row mb-4">
+                <div class="col-md-6">
+                    <table class="table table-bordered">
+                        <tr>
+                            <th>Appraiser Name:</th>
+                            <td>
+                                {% if request.user.is_staff %}
+                                    HR Director - {{ request.user.get_full_name }}
+                                {% else %}
+                                    Medical Superintendent - {{ request.user.get_full_name }}
+                                {% endif %}
+                            </td>
+                        </tr>
+                        <tr>
+                            <th>Department:</th>
+                            <td>{{ staff.department }}</td>
+                        </tr>
+                        <tr>
+                            <th>Appraisee Name:</th>
+                            <td>{{ staff.user.get_full_name }}</td>
+                        </tr>
+                    </table>
+                </div>
+                <div class="col-md-6">
+                    <table class="table table-bordered">
+                        <tr>
+                            <th>Designation:</th>
+                            <td>{{ staff.position }}</td>
+                        </tr>
+                        <tr>
+                            <th>Employee Code:</th>
+                            <td>{{ staff.employee_id }}</td>
+                        </tr>
+                        <tr>
+                            <th>Date of Joining:</th>
+                            <td>{{ staff.joining_date }}</td>
+                        </tr>
+                    </table>
                 </div>
             </div>
-            <div class="card-body">
-                <form method="post" class="needs-validation" novalidate>
-                    {% csrf_token %}
-                    
-                    <!-- Date Selection -->
-                    <div class="form-section mb-4">
-                        <label class="form-label fw-bold">
-                            <i class="fas fa-calendar-alt me-2"></i>Evaluation Date
-                                </label>
-                        <input type="date" 
-                               name="date" 
-                               class="form-control" 
-                               required
-                               min="{{ today|date:'Y-m-d' }}"
-                               value="{{ today|date:'Y-m-d' }}"
-                               {% if existing_report %}disabled{% endif %}
-                        >
-                        {% if form.date.errors %}
-                        <div class="invalid-feedback d-block">
-                            {{ form.date.errors.0 }}
+
+            <form method="post" class="needs-validation" novalidate>
+                {% csrf_token %}
+                
+                <!-- Evaluation Date -->
+                <div class="row mb-4">
+                    <div class="col-md-4">
+                        <label class="form-label">Evaluation Date:</label>
+                        <input type="date" name="date" class="form-control" required
+                               max="{{ today|date:'Y-m-d' }}"
+                               value="{{ today|date:'Y-m-d' }}">
+                    </div>
+                </div>
+
+                <!-- Performance Parameters -->
+                <div class="evaluation-sections">
+                    <!-- Section A: Job Knowledge/Professionalism -->
+                    <div class="section-card mb-4">
+                        <h5 class="section-header bg-secondary text-white p-2">
+                            A. JOB KNOWLEDGE/ PROFESSIONALISM
+                        </h5>
+                        <div class="table-responsive">
+                            <table class="table table-bordered">
+                                <thead>
+                                    <tr>
+                                        <th width="5%">No.</th>
+                                        <th>Parameters</th>
+                                        <th width="20%">Rating (1-5)</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr>
+                                        <td>1</td>
+                                        <td>Understanding of job responsibility</td>
+                                        <td><input type="number" name="a1" class="form-control rating-input" min="1" max="5" required></td>
+                                    </tr>
+                                    <tr>
+                                        <td>2</td>
+                                        <td>Good communications skills</td>
+                                        <td><input type="number" name="a2" class="form-control rating-input" min="1" max="5" required></td>
+                                    </tr>
+                                    <tr>
+                                        <td>3</td>
+                                        <td>Identifies & understand patient requirements and balance with hospital interest</td>
+                                        <td><input type="number" name="a3" class="form-control rating-input" min="1" max="5" required></td>
+                                    </tr>
+                                    <tr>
+                                        <td>4</td>
+                                        <td>Negotiation skills & ability to address queries/ doubts</td>
+                                        <td><input type="number" name="a4" class="form-control rating-input" min="1" max="5" required></td>
+                                    </tr>
+                                    <tr>
+                                        <td>5</td>
+                                        <td>Effective Relationship with management</td>
+                                        <td><input type="number" name="a5" class="form-control rating-input" min="1" max="5" required></td>
+                                    </tr>
+                                    <tr>
+                                        <td>6</td>
+                                        <td>Respect for policies, rules & hospital values</td>
+                                        <td><input type="number" name="a6" class="form-control rating-input" min="1" max="5" required></td>
+                                    </tr>
+                                    <tr>
+                                        <td>7</td>
+                                        <td>Has ethical behavior & positive attitude</td>
+                                        <td><input type="number" name="a7" class="form-control rating-input" min="1" max="5" required></td>
+                                    </tr>
+                                    <tr>
+                                        <td>8</td>
+                                        <td>Honesty and transparency</td>
+                                        <td><input type="number" name="a8" class="form-control rating-input" min="1" max="5" required></td>
+                                    </tr>
+                                </tbody>
+                                <tfoot>
+                                    <tr class="table-secondary">
+                                        <th colspan="2">TOTAL</th>
+                                        <td><span class="section-total">0</span>/40</td>
+                                    </tr>
+                                </tfoot>
+                            </table>
                         </div>
-                        {% endif %}
                     </div>
 
-                    <!-- Evaluation Criteria -->
-                    <div class="evaluation-criteria">
-                        {% for field in form %}
-                            {% if field.name != 'date' and field.name != 'notes' %}
-                            <div class="criteria-section mb-4">
-                                <label class="form-label fw-bold">
-                                    {% if field.name == 'punctuality' %}
-                                        <i class="fas fa-clock me-2"></i>
-                                    {% elif field.name == 'appearance' %}
-                                        <i class="fas fa-user-tie me-2"></i>
-                                    {% elif field.name == 'patient_attitude' %}
-                                        <i class="fas fa-heart me-2"></i>
-                                    {% elif field.name == 'teamwork' %}
-                                        <i class="fas fa-users me-2"></i>
-                                    {% elif field.name == 'policy_adherence' %}
-                                        <i class="fas fa-book me-2"></i>
-                                    {% elif field.name == 'communication' %}
-                                        <i class="fas fa-comments me-2"></i>
-                                    {% elif field.name == 'emergency_handling' %}
-                                        <i class="fas fa-ambulance me-2"></i>
-                                    {% elif field.name == 'initiative' %}
-                                        <i class="fas fa-lightbulb me-2"></i>
-                                    {% elif field.name == 'integrity' %}
-                                        <i class="fas fa-shield-alt me-2"></i>
-                                    {% elif field.name == 'overall_performance' %}
-                                        <i class="fas fa-star me-2"></i>
-                                    {% endif %}
-                                    {{ field.label }}
-                                </label>
-                        <div class="rating-options">
-                                    {% for choice in field %}
-                                    <div class="form-check rating-option">
-                                {{ choice.tag }}
-                                <label class="form-check-label" for="{{ choice.id_for_label }}">
-                                    {{ choice.choice_label }}
-                                </label>
+                    <!-- Section B: Productivity -->
+                    <div class="section-card mb-4">
+                        <h5 class="section-header bg-secondary text-white p-2">
+                            B. PRODUCTIVITY
+                        </h5>
+                        <div class="table-responsive">
+                            <table class="table table-bordered">
+                                <thead>
+                                    <tr>
+                                        <th width="5%">No.</th>
+                                        <th>Parameters</th>
+                                        <th width="20%">Rating (1-5)</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr>
+                                        <td>1</td>
+                                        <td>Manages a fair work load</td>
+                                        <td><input type="number" name="b1" class="form-control rating-input" min="1" max="5" required></td>
+                                    </tr>
+                                    <tr>
+                                        <td>2</td>
+                                        <td>Takes additional responsibilities</td>
+                                        <td><input type="number" name="b2" class="form-control rating-input" min="1" max="5" required></td>
+                                    </tr>
+                                    <tr>
+                                        <td>3</td>
+                                        <td>Develops and follows work procedure</td>
+                                        <td><input type="number" name="b3" class="form-control rating-input" min="1" max="5" required></td>
+                                    </tr>
+                                </tbody>
+                                <tfoot>
+                                    <tr class="table-secondary">
+                                        <th colspan="2">TOTAL</th>
+                                        <td><span class="section-total">0</span>/15</td>
+                                    </tr>
+                                </tfoot>
+                            </table>
+                        </div>
+                    </div>
+
+                    <!-- Section C: Quality of Work -->
+                    <div class="section-card mb-4">
+                        <h5 class="section-header bg-secondary text-white p-2">
+                            C. QUALITY OF WORK
+                        </h5>
+                        <div class="table-responsive">
+                            <table class="table table-bordered">
+                                <thead>
+                                    <tr>
+                                        <th width="5%">No.</th>
+                                        <th>Parameters</th>
+                                        <th width="20%">Rating (1-5)</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr>
+                                        <td>1</td>
+                                        <td>Demonstrates accuracy, thoroughness and reliability</td>
+                                        <td><input type="number" name="c1" class="form-control rating-input" min="1" max="5" required></td>
+                                    </tr>
+                                    <tr>
+                                        <td>2</td>
+                                        <td>Communicates views clearly & logically both in one to one conversation & group</td>
+                                        <td><input type="number" name="c2" class="form-control rating-input" min="1" max="5" required></td>
+                                    </tr>
+                                    <tr>
+                                        <td>3</td>
+                                        <td>Attendance & punctuality</td>
+                                        <td><input type="number" name="c3" class="form-control rating-input" min="1" max="5" required></td>
+                                    </tr>
+                                    <tr>
+                                        <td>4</td>
+                                        <td>Has good responsibility & accountability</td>
+                                        <td><input type="number" name="c4" class="form-control rating-input" min="1" max="5" required></td>
+                                    </tr>
+                                </tbody>
+                                <tfoot>
+                                    <tr class="table-secondary">
+                                        <th colspan="2">TOTAL</th>
+                                        <td><span class="section-total">0</span>/20</td>
+                                    </tr>
+                                </tfoot>
+                            </table>
+                        </div>
+                    </div>
+
+                    <!-- Section D: Interpersonal & Working Relationships -->
+                    <div class="section-card mb-4">
+                        <h5 class="section-header bg-secondary text-white p-2">
+                            D. INTERPERSONAL & WORKING RELATIONSHIPS
+                        </h5>
+                        <div class="table-responsive">
+                            <table class="table table-bordered">
+                                <thead>
+                                    <tr>
+                                        <th width="5%">No.</th>
+                                        <th>Parameters</th>
+                                        <th width="20%">Rating (1-5)</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr>
+                                        <td>1</td>
+                                        <td>Interacts effectively with patients, co-workers & public</td>
+                                        <td><input type="number" name="d1" class="form-control rating-input" min="1" max="5" required></td>
+                                    </tr>
+                                    <tr>
+                                        <td>2</td>
+                                        <td>Has good interpersonal skills and gets along well with people</td>
+                                        <td><input type="number" name="d2" class="form-control rating-input" min="1" max="5" required></td>
+                                    </tr>
+                                    <tr>
+                                        <td>3</td>
+                                        <td>Seeks & provides help & cooperation from team members when required</td>
+                                        <td><input type="number" name="d3" class="form-control rating-input" min="1" max="5" required></td>
+                                    </tr>
+                                    <tr>
+                                        <td>4</td>
+                                        <td>Exhibits appropriate sensitivity to others feelings</td>
+                                        <td><input type="number" name="d4" class="form-control rating-input" min="1" max="5" required></td>
+                                    </tr>
+                                    <tr>
+                                        <td>5</td>
+                                        <td>Collaborates effectively with cross-functional teams</td>
+                                        <td><input type="number" name="d5" class="form-control rating-input" min="1" max="5" required></td>
+                                    </tr>
+                                </tbody>
+                                <tfoot>
+                                    <tr class="table-secondary">
+                                        <th colspan="2">TOTAL</th>
+                                        <td><span class="section-total">0</span>/25</td>
+                                    </tr>
+                                </tfoot>
+                            </table>
+                        </div>
+                    </div>
+
+                    <!-- Section E: Leadership, Initiatives & Resourcefulness -->
+                    <div class="section-card mb-4">
+                        <h5 class="section-header bg-secondary text-white p-2">
+                            E. LEADERSHIP, INITIATIVES & RESOURCEFULNESS
+                        </h5>
+                        <div class="table-responsive">
+                            <table class="table table-bordered">
+                                <thead>
+                                    <tr>
+                                        <th width="5%">No.</th>
+                                        <th>Parameters</th>
+                                        <th width="20%">Rating (1-5)</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr>
+                                        <td>1</td>
+                                        <td>Displays proactive behavior</td>
+                                        <td><input type="number" name="e1" class="form-control rating-input" min="1" max="5" required></td>
+                                    </tr>
+                                    <tr>
+                                        <td>2</td>
+                                        <td>Is meticulous in following through work ideas</td>
+                                        <td><input type="number" name="e2" class="form-control rating-input" min="1" max="5" required></td>
+                                    </tr>
+                                    <tr>
+                                        <td>3</td>
+                                        <td>Displays competence of working within resources</td>
+                                        <td><input type="number" name="e3" class="form-control rating-input" min="1" max="5" required></td>
+                                    </tr>
+                                    <tr>
+                                        <td>4</td>
+                                        <td>Displays mentoring or guiding others & taking charge when needed</td>
+                                        <td><input type="number" name="e4" class="form-control rating-input" min="1" max="5" required></td>
+                                    </tr>
+                                    <tr>
+                                        <td>5</td>
+                                        <td>Has work delegation skills</td>
+                                        <td><input type="number" name="e5" class="form-control rating-input" min="1" max="5" required></td>
+                                    </tr>
+                                    <tr>
+                                        <td>6</td>
+                                        <td>Has good decision-making skills</td>
+                                        <td><input type="number" name="e6" class="form-control rating-input" min="1" max="5" required></td>
+                                    </tr>
+                                </tbody>
+                                <tfoot>
+                                    <tr class="table-secondary">
+                                        <th colspan="2">TOTAL</th>
+                                        <td><span class="section-total">0</span>/30</td>
+                                    </tr>
+                                </tfoot>
+                            </table>
+                        </div>
+                    </div>
+
+                    <!-- Section F: Planning & Organizing Effectiveness -->
+                    <div class="section-card mb-4">
+                        <h5 class="section-header bg-secondary text-white p-2">
+                            F. PLANNING & ORGANIZING EFFECTIVENESS
+                        </h5>
+                        <div class="table-responsive">
+                            <table class="table table-bordered">
+                                <thead>
+                                    <tr>
+                                        <th width="5%">No.</th>
+                                        <th>Parameters</th>
+                                        <th width="20%">Rating (1-5)</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr>
+                                        <td>1</td>
+                                        <td>Effectively prioritizes work & establishes work plans</td>
+                                        <td><input type="number" name="f1" class="form-control rating-input" min="1" max="5" required></td>
+                                    </tr>
+                                    <tr>
+                                        <td>2</td>
+                                        <td>Performs tasks thoroughly on time</td>
+                                        <td><input type="number" name="f2" class="form-control rating-input" min="1" max="5" required></td>
+                                    </tr>
+                                    <tr>
+                                        <td>3</td>
+                                        <td>Works within organizational policies & guidelines</td>
+                                        <td><input type="number" name="f3" class="form-control rating-input" min="1" max="5" required></td>
+                                    </tr>
+                                    <tr>
+                                        <td>4</td>
+                                        <td>Consistency in behavior</td>
+                                        <td><input type="number" name="f4" class="form-control rating-input" min="1" max="5" required></td>
+                                    </tr>
+                                    <tr>
+                                        <td>5</td>
+                                        <td>Displays ability to work under pressure</td>
+                                        <td><input type="number" name="f5" class="form-control rating-input" min="1" max="5" required></td>
+                                    </tr>
+                                </tbody>
+                                <tfoot>
+                                    <tr class="table-secondary">
+                                        <th colspan="2">TOTAL</th>
+                                        <td><span class="section-total">0</span>/25</td>
+                                    </tr>
+                                </tfoot>
+                            </table>
+                        </div>
+                    </div>
+
+                    <!-- Section G: Adaptability -->
+                    <div class="section-card mb-4">
+                        <h5 class="section-header bg-secondary text-white p-2">
+                            G. ADAPTABILITY
+                        </h5>
+                        <div class="table-responsive">
+                            <table class="table table-bordered">
+                                <thead>
+                                    <tr>
+                                        <th width="5%">No.</th>
+                                        <th>Parameters</th>
+                                        <th width="20%">Rating (1-5)</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr>
+                                        <td>1</td>
+                                        <td>Displays adaptability to change, modifies behavior to deal effectively with change</td>
+                                        <td><input type="number" name="g1" class="form-control rating-input" min="1" max="5" required></td>
+                                    </tr>
+                                    <tr>
+                                        <td>2</td>
+                                        <td>Willing to learn from mistakes, treats change as an opportunity for learning & growth</td>
+                                        <td><input type="number" name="g2" class="form-control rating-input" min="1" max="5" required></td>
+                                    </tr>
+                                    <tr>
+                                        <td>3</td>
+                                        <td>Displays good emotional intelligence</td>
+                                        <td><input type="number" name="g3" class="form-control rating-input" min="1" max="5" required></td>
+                                    </tr>
+                                </tbody>
+                                <tfoot>
+                                    <tr class="table-secondary">
+                                        <th colspan="2">TOTAL</th>
+                                        <td><span class="section-total">0</span>/15</td>
+                                    </tr>
+                                </tfoot>
+                            </table>
+                        </div>
+                    </div>
+
+                    <!-- Section H: Result Orientation -->
+                    <div class="section-card mb-4">
+                        <h5 class="section-header bg-secondary text-white p-2">
+                            H. RESULT ORIENTATION
+                        </h5>
+                        <div class="table-responsive">
+                            <table class="table table-bordered">
+                                <thead>
+                                    <tr>
+                                        <th width="5%">No.</th>
+                                        <th>Parameters</th>
+                                        <th width="20%">Rating (1-5)</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr>
+                                        <td>1</td>
+                                        <td>Demonstrates string commitment & drive to achieve results</td>
+                                        <td><input type="number" name="h1" class="form-control rating-input" min="1" max="5" required></td>
+                                    </tr>
+                                    <tr>
+                                        <td>2</td>
+                                        <td>Takes timely decisions & ensure completion of tasks</td>
+                                        <td><input type="number" name="h2" class="form-control rating-input" min="1" max="5" required></td>
+                                    </tr>
+                                    <tr>
+                                        <td>3</td>
+                                        <td>Can be relied on to deliver despite obstacles or complex situations</td>
+                                        <td><input type="number" name="h3" class="form-control rating-input" min="1" max="5" required></td>
+                                    </tr>
+                                </tbody>
+                                <tfoot>
+                                    <tr class="table-secondary">
+                                        <th colspan="2">TOTAL</th>
+                                        <td><span class="section-total">0</span>/15</td>
+                                    </tr>
+                                </tfoot>
+                            </table>
+                        </div>
+                    </div>
+
+                    <!-- Section I: Clarity of Vision -->
+                    <div class="section-card mb-4">
+                        <h5 class="section-header bg-secondary text-white p-2">
+                            I. CLARITY OF VISION
+                        </h5>
+                        <div class="table-responsive">
+                            <table class="table table-bordered">
+                                <thead>
+                                    <tr>
+                                        <th width="5%">No.</th>
+                                        <th>Parameters</th>
+                                        <th width="20%">Rating (1-5)</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr>
+                                        <td>1</td>
+                                        <td>Understands the philosophy of vision & mission of the hospital</td>
+                                        <td><input type="number" name="i1" class="form-control rating-input" min="1" max="5" required></td>
+                                    </tr>
+                                    <tr>
+                                        <td>2</td>
+                                        <td>Displays clarity of vision with respect to departments and organization</td>
+                                        <td><input type="number" name="i2" class="form-control rating-input" min="1" max="5" required></td>
+                                    </tr>
+                                </tbody>
+                                <tfoot>
+                                    <tr class="table-secondary">
+                                        <th colspan="2">TOTAL</th>
+                                        <td><span class="section-total">0</span>/10</td>
+                                    </tr>
+                                </tfoot>
+                            </table>
+                        </div>
+                    </div>
+
+                    <!-- Section J: Problem Solving -->
+                    <div class="section-card mb-4">
+                        <h5 class="section-header bg-secondary text-white p-2">
+                            J. PROBLEM SOLVING
+                        </h5>
+                        <div class="table-responsive">
+                            <table class="table table-bordered">
+                                <thead>
+                                    <tr>
+                                        <th width="5%">No.</th>
+                                        <th>Parameters</th>
+                                        <th width="20%">Rating (1-5)</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr>
+                                        <td>1</td>
+                                        <td>Has the ability to identify problems & identifies various dimensions of problem</td>
+                                        <td><input type="number" name="j1" class="form-control rating-input" min="1" max="5" required></td>
+                                    </tr>
+                                    <tr>
+                                        <td>2</td>
+                                        <td>Identifies alternate approaches/ solutions to problems</td>
+                                        <td><input type="number" name="j2" class="form-control rating-input" min="1" max="5" required></td>
+                                    </tr>
+                                    <tr>
+                                        <td>3</td>
+                                        <td>Ability to handle cases even under pressure</td>
+                                        <td><input type="number" name="j3" class="form-control rating-input" min="1" max="5" required></td>
+                                    </tr>
+                                </tbody>
+                                <tfoot>
+                                    <tr class="table-secondary">
+                                        <th colspan="2">TOTAL</th>
+                                        <td><span class="section-total">0</span>/15</td>
+                                    </tr>
+                                </tfoot>
+                            </table>
+                        </div>
+                    </div>
+
+                    <!-- Final Score Section -->
+                    <div class="card mb-4">
+                        <div class="card-body">
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <h5>Total Marks Obtained: <span id="grand-total">0</span>/210</h5>
+                                    <h5>Percentage: <span id="percentage">0</span>%</h5>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="alert alert-info">
+                                        <strong>Rating Scale:</strong><br>
+                                        1 - Poor<br>
+                                        2 - Fair<br>
+                                        3 - Good<br>
+                                        4 - Very Good<br>
+                                        5 - Excellent
+                                    </div>
+                                </div>
                             </div>
-                            {% endfor %}
-                        </div>
-                    </div>
-                            {% endif %}
-                            {% endfor %}
-
-                        <!-- Notes Section -->
-                        <div class="form-section mb-4">
-                            <label class="form-label fw-bold">
-                                <i class="fas fa-comment-alt me-2"></i>Additional Notes
-                                </label>
-                            {{ form.notes }}
                         </div>
                     </div>
 
-                    {% if form.errors %}
-                    <div class="alert alert-danger">
-                        <i class="fas fa-exclamation-circle me-2"></i>
-                        Please complete all required fields.
+                    <!-- Remarks and Signatures -->
+                    <div class="card mb-4">
+                        <div class="card-body">
+                            <div class="mb-3">
+                                <label class="form-label">Special Remarks:</label>
+                                <textarea name="remarks" class="form-control" rows="4"></textarea>
+                            </div>
+                            
+                            <div class="alert alert-secondary">
+                                <strong>Performance Criteria:</strong><br>
+                                < 50% - Needs improvement & reassessment after 3 months<br>
+                                51% - 75% - Satisfactory performance but under observation<br>
+                                >76% - 100% - Good performance
+                            </div>
+                        </div>
                     </div>
-                    {% endif %}
 
-                    <div class="d-grid gap-2 d-md-flex justify-content-md-end mt-4">
+                    <!-- Submit Buttons -->
+                    <div class="d-flex justify-content-end gap-2">
                         <a href="{% url 'dashboard' %}" class="btn btn-secondary">
                             <i class="fas fa-times me-2"></i>Cancel
                         </a>
-                        {% if user.is_staff %}
-                        {% comment %} <button type="button" class="btn btn-danger me-2" data-bs-toggle="modal" data-bs-target="#deleteModal">
-                            <i class="fas fa-trash me-1"></i>Delete
-                        </button> {% endcomment %}
-                        {% endif %}
                         <button type="submit" class="btn btn-primary">
                             <i class="fas fa-save me-2"></i>Submit Evaluation
                         </button>
                     </div>
-                </form>
-            </div>
+                </div>
+            </form>
         </div>
     </div>
 </div>
-
-<!-- Add this modal at the end of the file, before the style tag -->
-{% if user.is_staff %}
-<div class="modal fade" id="deleteModal" tabindex="-1">
-    <div class="modal-dialog">
-        <div class="modal-content">
-            <div class="modal-header bg-danger text-white">
-                <h5 class="modal-title">Confirm Delete</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-            </div>
-            <div class="modal-body">
-                <p>Are you sure you want to delete this performance report?</p>
-                <p class="mb-0"><strong>Staff:</strong> {{ staff.user.get_full_name }}</p>
-                <p class="mb-0"><strong>Date:</strong> <span id="reportDate"></span></p>
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                <form method="post" action="{% url 'delete_report' staff.id %}">
-                    {% csrf_token %}
-                    <input type="hidden" name="report_date" id="reportDateInput">
-                    <button type="submit" class="btn btn-danger">Delete Report</button>
-                </form>
-            </div>
-        </div>
-    </div>
-</div>
-{% endif %}
 
 <style>
-    .evaluation-card {
-        border-radius: 1rem;
-        border: none;
-        box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15);
-        margin-bottom: 2rem;
-    }
+.section-card {
+    border: 1px solid #dee2e6;
+    border-radius: 0.5rem;
+    overflow: hidden;
+}
 
-    .card-header {
-        border-top-left-radius: 1rem !important;
-        border-top-right-radius: 1rem !important;
-        padding: 1.5rem;
-    }
+.section-header {
+    margin: 0;
+    padding: 1rem;
+    background-color: #f8f9fa;
+    border-bottom: 1px solid #dee2e6;
+}
 
-    .staff-info {
-        font-size: 1.1rem;
-        opacity: 0.9;
-    }
+.rating-input {
+    width: 80px;
+    margin: 0 auto;
+    display: block;
+}
 
-    .form-section {
-        background-color: #f8f9fa;
-        padding: 1.5rem;
-        border-radius: 0.5rem;
-    }
+.table th {
+    background-color: #f8f9fa;
+}
 
-    .criteria-section {
-        background-color: #f8f9fa;
-        padding: 1.5rem;
-        border-radius: 0.5rem;
-        transition: all 0.3s ease;
-    }
-
-    .criteria-section:hover {
-        background-color: #e9ecef;
-    }
-
-    .rating-options {
-        display: flex;
-        flex-wrap: wrap;
-        gap: 1rem;
-        margin-top: 0.75rem;
-    }
-
-    .rating-option {
-        flex: 1 1 200px;
-        min-width: 200px;
-        margin: 0;
-        padding: 0.5rem;
-        background-color: white;
-        border-radius: 0.375rem;
-        border: 1px solid #dee2e6;
-    }
-
-    .form-check-input {
-        margin-right: 0.5rem;
-    }
-
-    .form-control, .form-select {
-        border-radius: 0.375rem;
-    }
-
-    textarea.form-control {
-        min-height: 100px;
-    }
-
-    .btn {
-        padding: 0.5rem 1rem;
-        border-radius: 0.375rem;
-    }
-
-    /* Mobile Responsive Styles */
-    @media (max-width: 768px) {
-        .card-header {
-            padding: 1rem;
-        }
-
-        .card-header h3 {
-            font-size: 1.25rem;
-        }
-
-        .staff-info {
-            font-size: 1rem;
-        }
-
-        .form-section, 
-        .criteria-section {
-            padding: 1rem;
-        }
-
-        .rating-options {
-            flex-direction: column;
-            gap: 0.5rem;
-        }
-
-        .rating-option {
-            flex: 1 1 100%;
-            min-width: 100%;
-        }
-
-        .btn {
-            width: 100%;
-            margin: 0.25rem 0;
-        }
-
-        .d-md-flex {
-            flex-direction: column-reverse;
-        }
-    }
-
-    /* Touch Device Optimizations */
-    @media (hover: none) {
-        .criteria-section:hover {
-            background-color: #f8f9fa;
-        }
-
-        .rating-option {
-            padding: 0.75rem;
-        }
-
-        .form-check-input {
-            min-width: 1.25rem;
-            min-height: 1.25rem;
-        }
-    }
+.evaluation-sections {
+    max-width: 1200px;
+    margin: 0 auto;
+}
 </style>
 
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-    const dateInput = document.querySelector('input[type="date"]');
-    const today = new Date().toISOString().split('T')[0];
-    
-    // Set min date to today
-    dateInput.min = today;
-    
-    // Check for existing report when date changes
-    dateInput.addEventListener('change', async function() {
-        const selectedDate = this.value;
-        const staffId = '{{ staff.id }}';
+    // Calculate section totals and grand total
+    function calculateTotals() {
+        const sections = document.querySelectorAll('.section-card');
+        let grandTotal = 0;
         
-        try {
-            const response = await fetch(`/api/check-report/${staffId}/${selectedDate}/`);
-            const data = await response.json();
-            if (data.exists) {
-                alert('A performance report already exists for this date.');
-                this.value = today; // Reset to today's date
-            }
-        } catch (error) {
-            console.error('Error checking report existence:', error);
-        }
-    });
-
-    // Form validation
-    const form = document.querySelector('.needs-validation');
-    form.addEventListener('submit', function(event) {
-        if (!form.checkValidity()) {
-            event.preventDefault();
-            event.stopPropagation();
-        }
-        form.classList.add('was-validated');
-    });
-
-    // Smooth scrolling for mobile
-    const criteriaSection = document.querySelector('.evaluation-criteria');
-    if (window.innerWidth <= 768) {
-        criteriaSection.style.scrollBehavior = 'smooth';
+        sections.forEach(section => {
+            const inputs = section.querySelectorAll('.rating-input');
+            let sectionTotal = 0;
+            
+            inputs.forEach(input => {
+                sectionTotal += Number(input.value) || 0;
+            });
+            
+            section.querySelector('.section-total').textContent = sectionTotal;
+            grandTotal += sectionTotal;
+        });
+        
+        document.getElementById('grand-total').textContent = grandTotal;
+        const percentage = ((grandTotal / 210) * 100).toFixed(2);
+        document.getElementById('percentage').textContent = percentage;
     }
+
+    // Add event listeners to all rating inputs
+    document.querySelectorAll('.rating-input').forEach(input => {
+        input.addEventListener('input', function() {
+            // Ensure value is between 1 and 5
+            if (this.value > 5) this.value = 5;
+            if (this.value < 1) this.value = 1;
+            calculateTotals();
+        });
+    });
 });
 </script>
 {% endblock %}

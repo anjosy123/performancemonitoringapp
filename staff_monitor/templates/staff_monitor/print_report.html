@@ -1,0 +1,198 @@
+{% extends 'staff_monitor/base_print.html' %}
+{% load custom_filters %}
+
+{% block content %}
+<div class="container print-container">
+    <!-- Header -->
+    <div class="text-center mb-4">
+        <h2 class="hospital-name">MARIAMPUR HOSPITAL</h2>
+        <h3 class="report-title">PERFORMANCE APPRAISAL REPORT</h3>
+    </div>
+
+    <!-- Basic Information -->
+    <div class="row mb-4">
+        <div class="col-6">
+            <table class="table table-bordered">
+                <tr>
+                    <th width="40%">Staff Name:</th>
+                    <td>{{ report.staff.user.get_full_name }}</td>
+                </tr>
+                <tr>
+                    <th>Employee Code:</th>
+                    <td>{{ report.staff.employee_id }}</td>
+                </tr>
+                <tr>
+                    <th>Department:</th>
+                    <td>{{ report.staff.department }}</td>
+                </tr>
+            </table>
+        </div>
+        <div class="col-6">
+            <table class="table table-bordered">
+                <tr>
+                    <th width="40%">Evaluation Date:</th>
+                    <td>{{ report.date }}</td>
+                </tr>
+                <tr>
+                    <th>Evaluator:</th>
+                    <td>
+                        {% if report.evaluator.is_staff %}
+                            HR Director - {{ report.evaluator.get_full_name }}
+                        {% else %}
+                            Medical Superintendent - {{ report.evaluator.get_full_name }}
+                        {% endif %}
+                    </td>
+                </tr>
+                <tr>
+                    <th>Staff Position:</th>
+                    <td>{{ report.staff.position }}</td>
+                </tr>
+            </table>
+        </div>
+    </div>
+
+    <!-- Rating Scale Information -->
+    <div class="alert alert-info mb-4">
+        <strong>Rating Scale:</strong> 1 - Poor, 2 - Fair, 3 - Good, 4 - Very Good, 5 - Excellent
+    </div>
+
+    <!-- Performance Sections -->
+    {% for section, params in sections.items %}
+    <div class="section-card mb-4">
+        <h5 class="section-header bg-secondary text-white p-2">{{ section }}</h5>
+        <table class="table table-bordered">
+            <thead>
+                <tr>
+                    <th width="5%">No.</th>
+                    <th>Parameters</th>
+                    <th width="15%">Rating</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for param in params %}
+                <tr>
+                    <td>{{ forloop.counter }}</td>
+                    <td>{{ param.name }}</td>
+                    <td class="text-center">{{ param.value }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+            <tfoot>
+                <tr class="table-secondary">
+                    <th colspan="2">Section Total</th>
+                    <td class="text-center">{{ section_totals|get_item:section }}/{{ params|length|multiply:5 }}</td>
+                </tr>
+            </tfoot>
+        </table>
+    </div>
+    {% endfor %}
+
+    <!-- Overall Performance -->
+    <div class="row mt-4">
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-body">
+                    <h5>Performance Summary</h5>
+                    <table class="table table-bordered">
+                        <tr>
+                            <th>Total Score:</th>
+                            <td>{{ report.total_score }}/210</td>
+                        </tr>
+                        <tr>
+                            <th>Percentage:</th>
+                            <td>{{ report.percentage|floatformat:2 }}%</td>
+                        </tr>
+                        <tr>
+                            <th>Status:</th>
+                            <td>{{ report.get_performance_status }}</td>
+                        </tr>
+                    </table>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-body">
+                    <h5>Special Remarks</h5>
+                    <p>{{ report.special_remarks|default:"No remarks provided." }}</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Signatures -->
+    <div class="row mt-5">
+        <div class="col-md-4 text-center">
+            <div class="signature-line"></div>
+            <p>Evaluator's Signature</p>
+        </div>
+        <div class="col-md-4 text-center">
+            <div class="signature-line"></div>
+            <p>Staff Member's Signature</p>
+        </div>
+        <div class="col-md-4 text-center">
+            <div class="signature-line"></div>
+            <p>HR Director's Signature</p>
+        </div>
+    </div>
+</div>
+
+<style>
+@media print {
+    .no-print {
+        display: none !important;
+    }
+    .print-container {
+        margin: 0;
+        padding: 20px;
+    }
+    .signature-line {
+        border-top: 1px solid #000;
+        width: 80%;
+        margin: 50px auto 10px;
+    }
+    .hospital-name {
+        color: #000 !important;
+        font-size: 24px;
+    }
+    .report-title {
+        color: #000 !important;
+        font-size: 20px;
+    }
+    .section-header {
+        background-color: #f8f9fa !important;
+        color: #000 !important;
+        -webkit-print-color-adjust: exact;
+    }
+}
+</style>
+
+<div class="no-print text-center my-4">
+    <button onclick="window.print()" class="btn btn-primary">
+        <i class="fas fa-print me-2"></i>Print Report
+    </button>
+    <button onclick="shareReport()" class="btn btn-success ms-2">
+        <i class="fas fa-share-alt me-2"></i>Share Report
+    </button>
+</div>
+
+<script>
+function shareReport() {
+    // Create shareable link
+    const reportUrl = window.location.href;
+    
+    // Create a temporary input element
+    const tempInput = document.createElement('input');
+    tempInput.value = reportUrl;
+    document.body.appendChild(tempInput);
+    
+    // Copy the link
+    tempInput.select();
+    document.execCommand('copy');
+    document.body.removeChild(tempInput);
+    
+    // Show success message
+    alert('Report link copied to clipboard!');
+}
+</script>
+{% endblock %} 
