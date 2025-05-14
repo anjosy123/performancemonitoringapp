@@ -162,23 +162,27 @@ def performance_form(request, staff_id):
 
 @login_required
 def report_list(request):
-    if request.user.is_staff:
-        # Admin sees all reports
-        reports = PerformanceReport.objects.all().order_by('-date')
-    else:
-        try:
-            # Superintendent sees only reports from their department
-            superintendent = MedicalSuperintendent.objects.get(user=request.user)
-            reports = PerformanceReport.objects.filter(
-                staff__department=superintendent.department
-            ).order_by('-date')
-        except MedicalSuperintendent.DoesNotExist:
-            reports = PerformanceReport.objects.none()
-    
-    return render(request, 'staff_monitor/report_list.html', {
-        'reports': reports,
-        'rating_choices': PerformanceReport.RATING_CHOICES
-    })
+    try:
+        if request.user.is_staff:
+            # Admin sees all reports
+            reports = PerformanceReport.objects.all().order_by('-date')
+        else:
+            try:
+                # Superintendent sees only reports from their department
+                superintendent = MedicalSuperintendent.objects.get(user=request.user)
+                reports = PerformanceReport.objects.filter(
+                    staff__department=superintendent.department
+                ).order_by('-date')
+            except MedicalSuperintendent.DoesNotExist:
+                reports = PerformanceReport.objects.none()
+        
+        return render(request, 'staff_monitor/report_list.html', {
+            'reports': reports,
+            'rating_choices': PerformanceReport.RATING_CHOICES
+        })
+    except Exception as e:
+        messages.error(request, f"Error loading reports: {str(e)}")
+        return redirect('dashboard')
 
 def is_admin(user):
     return user.is_staff

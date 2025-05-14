@@ -24,7 +24,9 @@
                 <select id="departmentFilter" class="form-select">
                     <option value="">All Departments</option>
                     {% for report in reports %}
-                        <option value="{{ report.staff.department }}">{{ report.staff.department }}</option>
+                        {% if report.staff.department %}
+                            <option value="{{ report.staff.department }}">{{ report.staff.department }}</option>
+                        {% endif %}
                     {% endfor %}
                 </select>
             </div>
