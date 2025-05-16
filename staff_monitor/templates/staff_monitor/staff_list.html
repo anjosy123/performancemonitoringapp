@@ -1,0 +1,263 @@
+{% extends 'staff_monitor/base.html' %}
+
+{% block content %}
+<div class="card">
+    <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+        <h3 class="mb-0">
+            <i class="fas fa-users me-2"></i>Staff Members
+        </h3>
+        <a href="{% url 'add_staff' %}" class="btn btn-light">
+            <i class="fas fa-plus me-1"></i>Add Staff
+        </a>
+    </div>
+    <div class="card-body">
+        <!-- Search and Filter Section -->
+        <div class="row mb-4">
+            <div class="col-md-6">
+                <div class="input-group">
+                    <span class="input-group-text bg-light">
+                        <i class="fas fa-search"></i>
+                    </span>
+                    <input type="text" id="staffSearch" class="form-control" placeholder="Search staff members...">
+                </div>
+            </div>
+            <div class="col-md-6">
+                <select id="departmentFilter" class="form-select">
+                    <option value="">All Departments</option>
+                    {% for department in departments %}
+                    <option value="{{ department.name }}">{{ department.name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+        </div>
+
+        <div class="table-responsive">
+            <table class="table table-hover">
+                <thead class="table-light">
+                    <tr>
+                        <th>Name</th>
+                        <th>Department</th>
+                        <th>Superintendent</th>
+                        {% comment %} <th>Contact</th> {% endcomment %}
+                        <th>Performance Status</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for staff in staff_members %}
+                    <tr>
+                        <td>{{ staff.user.get_full_name }}</td>
+                        <td>{{ staff.department.name }}</td>
+                        <td>
+                            {% if staff.supervisors.all %}
+                                {% for superintendent in staff.supervisors.all %}
+                                    {{ superintendent.user.get_full_name }}{% if not forloop.last %}, {% endif %}
+                                {% endfor %}
+                            {% else %}
+                                <span class="text-muted">Not Assigned</span>
+                            {% endif %}
+                        </td>
+                        {% comment %} <td>
+                            {% if staff.contact_number %}
+                                {{ staff.contact_number }}
+                            {% else %}
+                                <span class="text-muted">Not Available</span>
+                            {% endif %}
+                        </td> {% endcomment %}
+                        <td>
+                            {% with latest_report=staff.performancereport_set.first %}
+                                {% if latest_report %}
+                                    {% if latest_report.percentage >= 76 %}
+                                        <span class="badge bg-success">Excellent</span>
+                                    {% elif latest_report.percentage >= 51 %}
+                                        <span class="badge bg-warning">Good</span>
+                                    {% else %}
+                                        <span class="badge bg-danger">Needs Improvement</span>
+                                    {% endif %}
+                                {% else %}
+                                    <span class="badge bg-secondary">No Rating</span>
+                                {% endif %}
+                            {% endwith %}
+                        </td>
+                        <td>
+                            <div class="btn-group">
+                                <a href="{% url 'edit_staff' staff.id %}" class="btn btn-warning btn-sm">
+                                    <i class="fas fa-edit me-1"></i>Edit
+                                </a>
+                                <a href="{% url 'performance_form' staff.id %}" class="btn btn-info btn-sm">
+                                    <i class="fas fa-chart-line me-1"></i>Evaluate
+                                </a>
+                                <button class="btn btn-danger btn-sm delete-staff" 
+                                        data-staff-id="{{ staff.id }}"
+                                        data-staff-name="{{ staff.user.get_full_name }}">
+                                    <i class="fas fa-trash me-1"></i>Delete
+                                </button>
+                            </div>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="6" class="text-center py-4">
+                            <i class="fas fa-users text-muted me-2"></i>No staff members found
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<style>
+.card {
+    border: none;
+    border-radius: 1rem;
+    box-shadow: 0 0.5rem 1rem rgba(0,0,0,0.1);
+    background-color: #fff;
+    margin-bottom: 1.5rem;
+}
+
+.card-header {
+    background: linear-gradient(135deg, #1a237e 0%, #0d47a1 100%);
+    color: white;
+    border-top-left-radius: 1rem !important;
+    border-top-right-radius: 1rem !important;
+    padding: 1.5rem;
+}
+
+.table {
+    margin-bottom: 0;
+    background-color: #fff;
+}
+
+.table thead th {
+    background-color: #f8f9fa;
+    border-bottom: 2px solid #dee2e6;
+    font-weight: 600;
+    color: #212529;
+}
+
+.table tbody td {
+    vertical-align: middle;
+    color: #212529;
+}
+
+.table-hover tbody tr:hover {
+    background-color: rgba(13, 110, 253, 0.05);
+}
+
+.btn-group {
+    display: flex;
+    gap: 0.5rem;
+}
+
+.btn {
+    padding: 0.5rem 1rem;
+    font-weight: 500;
+}
+
+.btn-sm {
+    padding: 0.375rem 0.75rem;
+    font-size: 0.875rem;
+}
+
+.input-group {
+    box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+}
+
+.input-group-text {
+    background-color: #f8f9fa;
+    border: 1px solid #dee2e6;
+}
+
+.form-control, .form-select {
+    border: 1px solid #dee2e6;
+}
+
+.form-control:focus, .form-select:focus {
+    border-color: #86b7fe;
+    box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.25);
+}
+
+.badge {
+    padding: 0.5em 0.75em;
+    font-weight: 500;
+}
+
+@media (max-width: 768px) {
+    .card-header {
+        padding: 1rem;
+    }
+
+    .btn-group {
+        flex-direction: column;
+        width: 100%;
+    }
+
+    .btn-group .btn {
+        width: 100%;
+        margin: 0.25rem 0;
+    }
+
+    .table td {
+        padding: 0.75rem;
+    }
+}
+</style>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const searchInput = document.getElementById('staffSearch');
+    const departmentFilter = document.getElementById('departmentFilter');
+    const tableRows = document.querySelectorAll('tbody tr');
+
+    function filterTable() {
+        const searchTerm = searchInput.value.toLowerCase();
+        const selectedDepartment = departmentFilter.value.toLowerCase();
+        
+        tableRows.forEach(row => {
+            const name = row.cells[0].textContent.toLowerCase();
+            const department = row.cells[1].textContent.toLowerCase();
+            const superintendent = row.cells[2].textContent.toLowerCase();
+            
+            const matchesSearch = name.includes(searchTerm) || 
+                                department.includes(searchTerm) || 
+                                superintendent.includes(searchTerm);
+            
+            const matchesDepartment = !selectedDepartment || department === selectedDepartment;
+            
+            row.style.display = matchesSearch && matchesDepartment ? '' : 'none';
+        });
+    }
+
+    searchInput.addEventListener('input', filterTable);
+    departmentFilter.addEventListener('change', filterTable);
+
+    // Delete confirmation
+    document.querySelectorAll('.delete-staff').forEach(button => {
+        button.addEventListener('click', function() {
+            const staffId = this.dataset.staffId;
+            const staffName = this.dataset.staffName;
+            
+            Swal.fire({
+                title: 'Confirm Delete',
+                html: `
+                    <p>Are you sure you want to delete ${staffName}?</p>
+                    <p class="text-danger"><strong>Note:</strong> This will also remove their access to the system and all associated performance records.</p>
+                `,
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonText: 'Yes, Delete',
+                cancelButtonText: 'No, Cancel',
+                confirmButtonColor: '#dc3545',
+                cancelButtonColor: '#6c757d'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    window.location.href = `/delete_staff/${staffId}/`;
+                }
+            });
+        });
+    });
+});
+</script>
+{% endblock %} 

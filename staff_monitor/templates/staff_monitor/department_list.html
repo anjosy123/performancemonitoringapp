@@ -4,20 +4,31 @@
 <div class="card">
     <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
         <h3 class="mb-0">
-            <i class="fas fa-list-alt me-2"></i>Departments
+            <i class="fas fa-hospital me-2"></i>Departments
         </h3>
         <a href="{% url 'add_department' %}" class="btn btn-light">
             <i class="fas fa-plus me-1"></i>Add Department
         </a>
     </div>
     <div class="card-body">
+        <!-- Search Section -->
+        <div class="row mb-4">
+            <div class="col-md-6">
+                <div class="input-group">
+                    <span class="input-group-text bg-light">
+                        <i class="fas fa-search"></i>
+                    </span>
+                    <input type="text" id="departmentSearch" class="form-control" placeholder="Search departments...">
+                </div>
+            </div>
+        </div>
+
         <div class="table-responsive">
             <table class="table table-hover">
                 <thead class="table-light">
                     <tr>
                         <th>Department Name</th>
                         <th>Created Date</th>
-                        <th>Staff Count</th>
                         <th>Actions</th>
                     </tr>
                 </thead>
@@ -26,13 +37,14 @@
                     <tr>
                         <td>{{ department.name }}</td>
                         <td>{{ department.created_at|date:"M d, Y" }}</td>
-                        <td>{{ department.staff_set.count }}</td>
                         <td>
                             <div class="btn-group">
                                 <a href="{% url 'edit_department' department.id %}" class="btn btn-warning btn-sm">
                                     <i class="fas fa-edit me-1"></i>Edit
                                 </a>
-                                <button type="button" class="btn btn-danger btn-sm" data-bs-toggle="modal" data-bs-target="#deleteModal{{ department.id }}">
+                                <button class="btn btn-danger btn-sm delete-department" 
+                                        data-department-id="{{ department.id }}"
+                                        data-department-name="{{ department.name }}">
                                     <i class="fas fa-trash me-1"></i>Delete
                                 </button>
                             </div>
@@ -40,8 +52,8 @@
                     </tr>
                     {% empty %}
                     <tr>
-                        <td colspan="4" class="text-center py-4">
-                            <i class="fas fa-folder-open text-muted me-2"></i>No departments found
+                        <td colspan="3" class="text-center py-4">
+                            <i class="fas fa-hospital text-muted me-2"></i>No departments found
                         </td>
                     </tr>
                     {% endfor %}
@@ -51,44 +63,138 @@
     </div>
 </div>
 
-<!-- Delete Confirmation Modals -->
-{% for department in departments %}
-<div class="modal fade" id="deleteModal{{ department.id }}" tabindex="-1">
-    <div class="modal-dialog">
-        <div class="modal-content">
-            <div class="modal-header bg-danger text-white">
-                <h5 class="modal-title">Confirm Delete</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-            </div>
-            <div class="modal-body">
-                <p>Are you sure you want to delete the department "{{ department.name }}"?</p>
-                <p class="mb-0"><strong>Note:</strong> This action cannot be undone if the department has associated staff members.</p>
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                <form method="post" action="{% url 'delete_department' department.id %}">
-                    {% csrf_token %}
-                    <button type="submit" class="btn btn-danger">Delete Department</button>
-                </form>
-            </div>
-        </div>
-    </div>
-</div>
-{% endfor %}
-
 <style>
     .card {
-        border-radius: 1rem;
         border: none;
-        box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15);
+        border-radius: 1rem;
+        box-shadow: 0 0.5rem 1rem rgba(0,0,0,0.1);
+        background-color: #fff;
+        margin-bottom: 1.5rem;
     }
+
     .card-header {
+        background: linear-gradient(135deg, #1a237e 0%, #0d47a1 100%);
+        color: white;
         border-top-left-radius: 1rem !important;
         border-top-right-radius: 1rem !important;
         padding: 1.5rem;
     }
-    .btn-group .btn {
-        margin-right: 0.25rem;
+
+    .table {
+        margin-bottom: 0;
+        background-color: #fff;
+    }
+
+    .table thead th {
+        background-color: #f8f9fa;
+        border-bottom: 2px solid #dee2e6;
+        font-weight: 600;
+        color: #212529;
+    }
+
+    .table tbody td {
+        vertical-align: middle;
+        color: #212529;
+    }
+
+    .table-hover tbody tr:hover {
+        background-color: rgba(13, 110, 253, 0.05);
+    }
+
+    .btn-group {
+        display: flex;
+        gap: 0.5rem;
+    }
+
+    .btn {
+        padding: 0.5rem 1rem;
+        font-weight: 500;
+    }
+
+    .btn-sm {
+        padding: 0.375rem 0.75rem;
+        font-size: 0.875rem;
+    }
+
+    .input-group {
+        box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+    }
+
+    .input-group-text {
+        background-color: #f8f9fa;
+        border: 1px solid #dee2e6;
+    }
+
+    .form-control {
+        border: 1px solid #dee2e6;
+    }
+
+    .form-control:focus {
+        border-color: #86b7fe;
+        box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.25);
+    }
+
+    @media (max-width: 768px) {
+        .card-header {
+            padding: 1rem;
+        }
+
+        .btn-group {
+            flex-direction: column;
+            width: 100%;
+        }
+
+        .btn-group .btn {
+            width: 100%;
+            margin: 0.25rem 0;
+        }
+
+        .table td {
+            padding: 0.75rem;
+        }
     }
 </style>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Search functionality
+    const searchInput = document.getElementById('departmentSearch');
+    const tableRows = document.querySelectorAll('tbody tr');
+
+    searchInput.addEventListener('input', function() {
+        const searchTerm = this.value.toLowerCase();
+        
+        tableRows.forEach(row => {
+            const departmentName = row.cells[0].textContent.toLowerCase();
+            row.style.display = departmentName.includes(searchTerm) ? '' : 'none';
+        });
+    });
+
+    // Delete confirmation
+    document.querySelectorAll('.delete-department').forEach(button => {
+        button.addEventListener('click', function() {
+            const departmentId = this.dataset.departmentId;
+            const departmentName = this.dataset.departmentName;
+            
+            Swal.fire({
+                title: 'Confirm Delete',
+                html: `
+                    <p>Are you sure you want to delete the department "${departmentName}"?</p>
+                    <p class="text-danger"><strong>Note:</strong> This action cannot be undone.</p>
+                `,
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonText: 'Yes, Delete',
+                cancelButtonText: 'No, Cancel',
+                confirmButtonColor: '#dc3545',
+                cancelButtonColor: '#6c757d'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    window.location.href = `/department/delete/${departmentId}/`;
+                }
+            });
+        });
+    });
+});
+</script>
 {% endblock %} 

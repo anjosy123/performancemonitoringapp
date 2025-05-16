@@ -3,6 +3,13 @@
 
 {% block content %}
 <div class="container print-container">
+    <!-- Cancel Button -->
+    <div class="no-print position-absolute top-0 end-0 p-3">
+        <a href="{% url 'report_list' %}" class="btn btn-light btn-sm close-btn">
+            <i class="fas fa-times"></i>
+        </a>
+    </div>
+
     <!-- Header -->
     <div class="text-center mb-4">
         <h2 class="hospital-name">MARIAMPUR HOSPITAL</h2>
@@ -164,6 +171,29 @@
         color: #000 !important;
         -webkit-print-color-adjust: exact;
     }
+}
+
+.close-btn {
+    width: 32px;
+    height: 32px;
+    padding: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    transition: all 0.3s ease;
+    background-color: #fff;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.close-btn:hover {
+    background-color: #dc3545;
+    color: white;
+    transform: rotate(90deg);
+}
+
+.close-btn i {
+    font-size: 1rem;
 }
 </style>
 

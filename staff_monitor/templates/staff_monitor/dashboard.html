@@ -2,141 +2,37 @@
 {% extends 'staff_monitor/base.html' %}
 
 {% block content %}
-<div class="row mb-4">
-    <!-- Medical Superintendents Section -->
-    {% if user.is_staff %}
-    <div class="col-12 mb-4">
+<div class="row justify-content-center">
+    <div class="col-md-8">
         <div class="card">
-            <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
-                <h3 class="mb-0">
-                    <i class="fas fa-user-md me-2"></i>Medical Superintendents
-                </h3>
-                <a href="{% url 'add_superintendent' %}" class="btn btn-light">
-                    <i class="fas fa-plus me-1"></i>Add Superintendent
-                </a>
-            </div>
-            <div class="card-body">
-                <div class="table-responsive">
-                    <table class="table table-hover">
-                        <thead class="table-light">
-                            <tr>
-                                <th>Name</th>
-                                <th>Department</th>
-                                <th>Contact</th>
-                                <th>Staff Count</th>
-                                <th>Actions</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {% for superintendent in superintendents %}
-                            <tr>
-                                <td>{{ superintendent.user.get_full_name }}</td>
-                                <td>{{ superintendent.department.name }}</td>
-                                <td>{{ superintendent.contact_number }}</td>
-                                <td>{{ superintendent.staff_count }}</td>
-                                <td>
-                                    <div class="btn-group">
-                                        <a href="{% url 'edit_superintendent' superintendent.id %}" class="btn btn-warning btn-sm">
-                                            <i class="fas fa-edit me-1"></i>Edit
-                                        </a>
-                                        <button class="btn btn-danger btn-sm delete-superintendent" data-superintendent-id="{{ superintendent.id }}" data-superintendent-name="{{ superintendent.user.get_full_name }}">
-                                            <i class="fas fa-trash me-1"></i>Delete
-                                        </button>
-                                    </div>
-                                </td>
-                            </tr>
-                            {% empty %}
-                            <tr>
-                                <td colspan="5" class="text-center py-4">
-                                    <i class="fas fa-user-md text-muted me-2"></i>No superintendents found
-                                </td>
-                            </tr>
-                            {% endfor %}
-                        </tbody>
-                    </table>
+            <div class="card-body text-center py-5">
+                <div class="welcome-icon mb-4">
+                    <i class="fas fa-hospital-user fa-4x text-primary"></i>
                 </div>
-            </div>
-        </div>
-    </div>
-    {% endif %}
-
-    <!-- Staff Section -->
-    <div class="col-12">
-        <div class="card">
-            <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
-                <h3 class="mb-0">
-                    <i class="fas fa-users me-2"></i>Staff Members
-                </h3>
-                {% if user.is_staff %}
-                <a href="{% url 'add_staff' %}" class="btn btn-light">
-                    <i class="fas fa-plus me-1"></i>Add Staff
-                </a>
-                {% endif %}
-            </div>
-            <div class="card-body">
-                <!-- Search and Filter Section -->
-                <div class="row g-3 mb-4">
-                    <div class="col-md-6">
-                        <div class="input-group">
-                            <span class="input-group-text bg-light">
-                                <i class="fas fa-search"></i>
-                            </span>
-                            <input type="text" id="staffSearch" class="form-control" placeholder="Search staff...">
+                <h2 class="welcome-title mb-3">Welcome to Mariampur Hospital</h2>
+                <p class="welcome-message mb-4">
+                    Staff Performance Monitoring System
+                </p>
+                <div class="quick-links">
+                    {% if user.is_staff %}
+                    <div class="row g-3 justify-content-center">
+                        <div class="col-md-4">
+                            <a href="{% url 'superintendent_list' %}" class="btn btn-outline-primary w-100">
+                                <i class="fas fa-user-md me-2"></i>View Superintendents
+                            </a>
+                        </div>
+                        <div class="col-md-4">
+                            <a href="{% url 'staff_list' %}" class="btn btn-outline-primary w-100">
+                                <i class="fas fa-users me-2"></i>View Staff
+                            </a>
+                        </div>
+                        <div class="col-md-4">
+                            <a href="{% url 'report_list' %}" class="btn btn-outline-primary w-100">
+                                <i class="fas fa-clipboard-list me-2"></i>View Reports
+                            </a>
                         </div>
                     </div>
-                    <div class="col-md-6">
-                        <select id="departmentFilter" class="form-select">
-                            <option value="">All Departments</option>
-                            {% for dept in departments %}
-                            <option value="{{ dept.name }}">{{ dept.name }}</option>
-                            {% endfor %}
-                        </select>
-                    </div>
-                </div>
-
-                <div class="table-responsive">
-                    <table class="table table-hover">
-                        <thead class="table-light">
-                            <tr>
-                                <th>Employee ID</th>
-                                <th>Name</th>
-                                <th>Department</th>
-                                <th>Position</th>
-                                <th>Joining Date</th>
-                                <th>Actions</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {% for staff in staff_list %}
-                            <tr>
-                                <td>{{ staff.employee_id }}</td>
-                                <td>{{ staff.user.get_full_name }}</td>
-                                <td>{{ staff.department.name }}</td>
-                                <td>{{ staff.position }}</td>
-                                <td>{{ staff.joining_date|date:"M d, Y" }}</td>
-                                <td>
-                                    <div class="btn-group">
-                                        <a href="{% url 'performance_form' staff.id %}" class="btn btn-primary btn-sm">
-                                            <i class="fas fa-clipboard-check me-1"></i>Evaluate
-                                        </a>
-                                        <a href="{% url 'edit_staff' staff.id %}" class="btn btn-warning btn-sm">
-                                            <i class="fas fa-edit me-1"></i>Edit
-                                        </a>
-                                        <button class="btn btn-danger btn-sm delete-staff" data-staff-id="{{ staff.id }}" data-staff-name="{{ staff.user.get_full_name }}">
-                                            <i class="fas fa-trash me-1"></i>Delete
-                                        </button>
-                                    </div>
-                                </td>
-                            </tr>
-                            {% empty %}
-                            <tr>
-                                <td colspan="6" class="text-center py-4">
-                                    <i class="fas fa-users text-muted me-2"></i>No staff members found
-                                </td>
-                            </tr>
-                            {% endfor %}
-                        </tbody>
-                    </table>
+                    {% endif %}
                 </div>
             </div>
         </div>
@@ -144,129 +40,50 @@
 </div>
 
 <style>
-    .card {
-        border-radius: 1rem;
-        border: none;
-        box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15);
+.welcome-icon {
+    color: #0d6efd;
+    margin-bottom: 2rem;
+}
+
+.welcome-title {
+    color: #1a237e;
+    font-weight: 600;
+    margin-bottom: 1rem;
+}
+
+.welcome-message {
+    color: #6c757d;
+    font-size: 1.1rem;
+    margin-bottom: 2rem;
+}
+
+.quick-links .btn {
+    padding: 1rem;
+    font-weight: 500;
+    transition: all 0.3s ease;
+}
+
+.quick-links .btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+}
+
+@media (max-width: 768px) {
+    .welcome-icon i {
+        font-size: 3rem;
     }
-    .card-header {
-        border-top-left-radius: 1rem !important;
-        border-top-right-radius: 1rem !important;
-        padding: 1.5rem;
+
+    .welcome-title {
+        font-size: 1.5rem;
     }
-    .btn-group .btn {
-        margin-right: 0.25rem;
+
+    .welcome-message {
+        font-size: 1rem;
     }
-    .btn-sm {
-        padding: 0.25rem 0.5rem;
-        font-size: 0.875rem;
+
+    .quick-links .btn {
+        margin-bottom: 0.5rem;
     }
-    .table th {
-        font-weight: 600;
-    }
+}
 </style>
-
-<script>
-document.addEventListener('DOMContentLoaded', function() {
-    // Search functionality
-    const searchInput = document.getElementById('staffSearch');
-    const departmentFilter = document.getElementById('departmentFilter');
-    const tableRows = document.querySelectorAll('tbody tr');
-
-    function filterTable() {
-        const searchTerm = searchInput.value.toLowerCase();
-        const department = departmentFilter.value.toLowerCase();
-
-        tableRows.forEach(row => {
-            const text = row.textContent.toLowerCase();
-            const deptCell = row.querySelector('td:nth-child(3)');
-            const deptText = deptCell ? deptCell.textContent.toLowerCase() : '';
-
-            const matchesSearch = text.includes(searchTerm);
-            const matchesDepartment = !department || deptText.includes(department);
-
-            row.style.display = matchesSearch && matchesDepartment ? '' : 'none';
-        });
-    }
-
-    searchInput.addEventListener('input', filterTable);
-    departmentFilter.addEventListener('change', filterTable);
-
-    // Handle staff deletion
-    document.querySelectorAll('.delete-staff').forEach(button => {
-        button.addEventListener('click', function() {
-            const staffId = this.dataset.staffId;
-            const staffName = this.dataset.staffName;
-            
-            Swal.fire({
-                title: 'Confirm Delete',
-                html: `
-                    <p>Are you sure you want to delete ${staffName}?</p>
-                    <p class="text-danger"><strong>Note:</strong> This will also remove their access to the system.</p>
-                `,
-                icon: 'warning',
-                showCancelButton: true,
-                confirmButtonText: 'Yes, Delete',
-                cancelButtonText: 'No, Cancel',
-                confirmButtonColor: '#dc3545',
-                cancelButtonColor: '#6c757d'
-            }).then((result) => {
-                if (result.isConfirmed) {
-                    // Create and submit the form
-                    const form = document.createElement('form');
-                    form.method = 'POST';
-                    form.action = `/delete_staff/${staffId}/`;
-                    
-                    const csrfInput = document.createElement('input');
-                    csrfInput.type = 'hidden';
-                    csrfInput.name = 'csrfmiddlewaretoken';
-                    csrfInput.value = '{{ csrf_token }}';
-                    
-                    form.appendChild(csrfInput);
-                    document.body.appendChild(form);
-                    form.submit();
-                }
-            });
-        });
-    });
-
-    // Handle superintendent deletion
-    document.querySelectorAll('.delete-superintendent').forEach(button => {
-        button.addEventListener('click', function() {
-            const superintendentId = this.dataset.superintendentId;
-            const superintendentName = this.dataset.superintendentName;
-            
-            Swal.fire({
-                title: 'Confirm Delete',
-                html: `
-                    <p>Are you sure you want to delete ${superintendentName}?</p>
-                    <p class="text-danger"><strong>Note:</strong> This will also remove their access to the system.</p>
-                `,
-                icon: 'warning',
-                showCancelButton: true,
-                confirmButtonText: 'Yes, Delete',
-                cancelButtonText: 'No, Cancel',
-                confirmButtonColor: '#dc3545',
-                cancelButtonColor: '#6c757d'
-            }).then((result) => {
-                if (result.isConfirmed) {
-                    // Create and submit the form
-                    const form = document.createElement('form');
-                    form.method = 'POST';
-                    form.action = `/delete_superintendent/${superintendentId}/`;
-                    
-                    const csrfInput = document.createElement('input');
-                    csrfInput.type = 'hidden';
-                    csrfInput.name = 'csrfmiddlewaretoken';
-                    csrfInput.value = '{{ csrf_token }}';
-                    
-                    form.appendChild(csrfInput);
-                    document.body.appendChild(form);
-                    form.submit();
-                }
-            });
-        });
-    });
-});
-</script>
 {% endblock %}

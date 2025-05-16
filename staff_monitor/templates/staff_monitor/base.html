@@ -46,6 +46,7 @@
             height: var(--navbar-height);
             box-shadow: 0 2px 4px rgba(0,0,0,0.1);
             background: linear-gradient(135deg, #1a237e 0%, #0d47a1 100%) !important;
+            padding: 0.5rem 1rem;
         }
 
         .navbar-brand {
@@ -54,6 +55,7 @@
             display: flex;
             align-items: center;
             gap: 0.75rem;
+            margin-right: 0;
         }
 
         .navbar-brand img {
@@ -66,28 +68,37 @@
 
         .navbar-brand span {
             color: #fff;
+            font-size: 1.1rem;
+            text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.2);
+        }
+
+        .navbar-toggler {
+            border: 2px solid rgba(255, 255, 255, 0.5);
+            padding: 0.5rem;
+            margin-left: auto;
+        }
+
+        .navbar-toggler:focus {
+            box-shadow: 0 0 0 0.25rem rgba(255, 255, 255, 0.25);
+        }
+
+        .navbar-toggler-icon {
+            background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 30 30'%3e%3cpath stroke='rgba%28255, 255, 255, 0.75%29' stroke-linecap='round' stroke-miterlimit='10' stroke-width='2' d='M4 7h22M4 15h22M4 23h22'/%3e%3c/svg%3e");
         }
 
         .nav-link {
             position: relative;
-            padding: 0.5rem 1rem;
+            padding: 0.75rem 1rem;
             transition: all 0.3s ease;
+            color: #fff !important;
+            font-weight: 500;
+            margin: 0 0.25rem;
         }
 
-        .nav-link::after {
-            content: '';
-            position: absolute;
-            bottom: 0;
-            left: 50%;
-            width: 0;
-            height: 2px;
-            background-color: #fff;
-            transition: all 0.3s ease;
-            transform: translateX(-50%);
-        }
-
-        .nav-link:hover::after {
-            width: 80%;
+        .nav-link:hover {
+            color: #fff !important;
+            background-color: rgba(255, 255, 255, 0.1);
+            border-radius: 0.25rem;
         }
 
         .nav-link i {
@@ -99,14 +110,20 @@
         .logout-btn {
             background: none;
             border: none;
-            color: #fff;
-            padding: 0.5rem 1rem;
+            color: #fff !important;
+            padding: 0.75rem 1rem;
             cursor: pointer;
             transition: all 0.3s ease;
+            width: 100%;
+            text-align: left;
+            font-weight: 500;
+            margin: 0 0.25rem;
         }
 
         .logout-btn:hover {
-            color: #ffc107;
+            color: #fff !important;
+            background-color: rgba(255, 255, 255, 0.1);
+            border-radius: 0.25rem;
         }
 
         /* Footer Styling */
@@ -139,20 +156,22 @@
             border: none;
             border-radius: 1rem;
             box-shadow: 0 0.5rem 1rem rgba(0,0,0,0.1);
-            transition: transform 0.3s ease, box-shadow 0.3s ease;
-        }
-
-        .card:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 0.75rem 1.5rem rgba(0,0,0,0.15);
+            background-color: #fff;
+            margin-bottom: 1.5rem;
         }
 
         .card-header {
-            background: linear-gradient(135deg, var(--primary-color) 0%, #0b5ed7 100%);
+            background: linear-gradient(135deg, #1a237e 0%, #0d47a1 100%);
             color: white;
             border-top-left-radius: 1rem !important;
             border-top-right-radius: 1rem !important;
             padding: 1rem 1.5rem;
+            font-weight: 600;
+        }
+
+        .card-body {
+            background-color: #fff;
+            padding: 1.5rem;
         }
 
         /* Button Styling */
@@ -175,32 +194,47 @@
 
         /* Responsive Adjustments */
         @media (max-width: 991px) {
-            .navbar-nav {
-                padding: 1rem 0;
-                background: rgba(0,0,0,0.1);
-                border-radius: 0.5rem;
-                margin-top: 0.5rem;
-            }
-
-            .nav-link {
-                padding: 0.75rem 1rem;
-            }
-
-            .nav-link::after {
-                display: none;
-            }
-
-            .logout-btn {
-                width: 100%;
-                text-align: left;
-                padding: 0.75rem 1rem;
+            .navbar-brand span {
+                font-size: 1rem;
             }
 
             .navbar-collapse {
-                background: rgba(0,0,0,0.1);
+                background: rgba(26, 35, 126, 0.95);
                 border-radius: 0.5rem;
                 padding: 1rem;
                 margin-top: 0.5rem;
+                position: absolute;
+                top: 100%;
+                left: 0;
+                right: 0;
+                z-index: 1000;
+                backdrop-filter: blur(10px);
+            }
+
+            .navbar-nav {
+                padding: 0.5rem 0;
+            }
+
+            .nav-link {
+                margin: 0.25rem 0;
+            }
+
+            .logout-btn {
+                margin: 0.25rem 0;
+            }
+        }
+
+        @media (max-width: 576px) {
+            .navbar-brand {
+                font-size: 1rem;
+            }
+
+            .navbar-brand img {
+                height: 35px;
+            }
+
+            .navbar-brand span {
+                font-size: 0.9rem;
             }
         }
 
@@ -213,14 +247,24 @@
 
         /* Table Styling */
         .table {
-            border-radius: 0.5rem;
-            overflow: hidden;
+            margin-bottom: 0;
+            background-color: #fff;
         }
 
         .table thead th {
             background-color: #f8f9fa;
             border-bottom: 2px solid #dee2e6;
             font-weight: 600;
+            color: #212529;
+        }
+
+        .table tbody td {
+            vertical-align: middle;
+            color: #212529;
+        }
+
+        .table-hover tbody tr:hover {
+            background-color: rgba(13, 110, 253, 0.05);
         }
 
         /* Form Styling */
@@ -250,6 +294,55 @@
             0% { transform: rotate(0deg); }
             100% { transform: rotate(360deg); }
         }
+
+        /* Dropdown Menu Styling */
+        .dropdown-menu {
+            border: none;
+            border-radius: 0.5rem;
+            box-shadow: 0 0.5rem 1rem rgba(0,0,0,0.15);
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            padding: 0.5rem;
+            margin-top: 0.5rem;
+        }
+
+        .dropdown-item {
+            border-radius: 0.375rem;
+            padding: 0.75rem 1rem;
+            color: #212529;
+            transition: all 0.2s ease;
+            margin: 0.25rem 0;
+        }
+
+        .dropdown-item:hover {
+            background-color: rgba(13, 110, 253, 0.1);
+            color: #0d6efd;
+        }
+
+        .dropdown-item i {
+            width: 1.25rem;
+            text-align: center;
+        }
+
+        /* Mobile Responsive Dropdown */
+        @media (max-width: 991px) {
+            .dropdown-menu {
+                background: rgba(26, 35, 126, 0.95);
+                border: none;
+                margin-top: 0.5rem;
+            }
+
+            .dropdown-item {
+                color: #fff;
+                padding: 0.75rem 1rem;
+                margin: 0.25rem 0;
+            }
+
+            .dropdown-item:hover {
+                background-color: rgba(255, 255, 255, 0.1);
+                color: #fff;
+            }
+        }
     </style>
 </head>
 <body>
@@ -260,7 +353,7 @@
                 <span>Mariampur Hospital, Kanpur</span>
             </a>
             {% if request.path != '/login/' %}
-            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
                 <span class="navbar-toggler-icon"></span>
             </button>
             
@@ -273,24 +366,48 @@
                         </a>
                     </li>
                     {% if user.is_staff %}
-                    <li class="nav-item">
-                        <a class="nav-link" href="{% url 'add_department' %}">
-                            <i class="fas fa-hospital"></i>Add Department
+                    <li class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle" href="#" id="centerManagementDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                            <i class="fas fa-cogs"></i>Centre Management
                         </a>
+                        <ul class="dropdown-menu" aria-labelledby="centerManagementDropdown">
+                            <li>
+                                <a class="dropdown-item" href="{% url 'add_department' %}">
+                                    <i class="fas fa-hospital me-2"></i>Add Department
+                                </a>
+                            </li>
+                            <li>
+                                <a class="dropdown-item" href="{% url 'add_superintendent' %}">
+                                    <i class="fas fa-user-md me-2"></i>Add Superintendent
+                                </a>
+                            </li>
+                            <li>
+                                <a class="dropdown-item" href="{% url 'add_staff' %}">
+                                    <i class="fas fa-user-plus me-2"></i>Add Staff
+                                </a>
+                            </li>
+                        </ul>
+                    </li>
+                    <li class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle" href="#" id="viewDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                            <i class="fas fa-eye"></i>View
+                        </a>
+                        <ul class="dropdown-menu" aria-labelledby="viewDropdown">
+                            <li>
+                                <a class="dropdown-item" href="{% url 'superintendent_list' %}">
+                                    <i class="fas fa-user-md me-2"></i>Medical Superintendents
+                                </a>
+                            </li>
+                            <li>
+                                <a class="dropdown-item" href="{% url 'staff_list' %}">
+                                    <i class="fas fa-users me-2"></i>Staff Members
+                                </a>
+                            </li>
+                        </ul>
                     </li>
                     <li class="nav-item">
                         <a class="nav-link" href="{% url 'department_list' %}">
                             <i class="fas fa-list-alt"></i>Departments
-                        </a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link" href="{% url 'add_superintendent' %}">
-                            <i class="fas fa-user-md"></i>Add Superintendent
-                        </a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link" href="{% url 'add_staff' %}">
-                            <i class="fas fa-user-plus"></i>Add Staff
                         </a>
                     </li>
                     <li class="nav-item">
@@ -300,9 +417,10 @@
                     </li>
                     {% endif %}
                     <li class="nav-item">
-                        <form method="post" action="{% url 'logout' %}">
+                        <form method="post" action="{% url 'logout' %}" id="logoutForm">
                             {% csrf_token %}
-                            <button type="submit" class="nav-link logout-btn">
+                            <input type="hidden" name="next" value="{% url 'login' %}">
+                            <button type="button" class="nav-link logout-btn">
                                 <i class="fas fa-sign-out-alt"></i>Logout
                             </button>
                         </form>
@@ -391,6 +509,92 @@
                 link.classList.add('active');
             }
         });
+
+        // Enhanced logout functionality
+        const logoutBtn = document.querySelector('.logout-btn');
+        const logoutForm = document.getElementById('logoutForm');
+        
+        if (logoutBtn && logoutForm) {
+            logoutBtn.addEventListener('click', function(e) {
+                e.preventDefault();
+                
+                // Show confirmation dialog
+                Swal.fire({
+                    title: 'Confirm Logout',
+                    text: 'Are you sure you want to logout?',
+                    icon: 'question',
+                    showCancelButton: true,
+                    confirmButtonText: 'Yes, Logout',
+                    cancelButtonText: 'No, Stay',
+                    confirmButtonColor: '#dc3545',
+                    cancelButtonColor: '#6c757d'
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        // Show loading state
+                        Swal.fire({
+                            title: 'Logging out...',
+                            text: 'Please wait while we clear your session',
+                            allowOutsideClick: false,
+                            allowEscapeKey: false,
+                            showConfirmButton: false,
+                            didOpen: () => {
+                                Swal.showLoading();
+                            }
+                        });
+
+                        // Function to clear all browser data
+                        function clearBrowserData() {
+                            return new Promise((resolve) => {
+                                // Clear session storage
+                                sessionStorage.clear();
+                                
+                                // Clear local storage
+                                localStorage.clear();
+                                
+                                // Clear cookies except CSRF token
+                                const cookies = document.cookie.split(";");
+                                for (let i = 0; i < cookies.length; i++) {
+                                    const cookie = cookies[i];
+                                    const eqPos = cookie.indexOf("=");
+                                    const name = eqPos > -1 ? cookie.substr(0, eqPos).trim() : cookie.trim();
+                                    if (name !== 'csrftoken') {
+                                        document.cookie = name + "=;expires=Thu, 01 Jan 1970 00:00:00 GMT;path=/";
+                                    }
+                                }
+
+                                // Clear cache if available
+                                if ('caches' in window) {
+                                    caches.keys().then(function(names) {
+                                        for (let name of names) {
+                                            caches.delete(name);
+                                        }
+                                    });
+                                }
+
+                                resolve();
+                            });
+                        }
+
+                        // Clear data and submit form
+                        clearBrowserData().then(() => {
+                            // Clear browser history
+                            window.history.pushState(null, '', window.location.href);
+                            window.onpopstate = function() {
+                                window.history.pushState(null, '', window.location.href);
+                            };
+
+                            // Disable back button
+                            window.addEventListener('popstate', function() {
+                                window.history.pushState(null, '', window.location.href);
+                            });
+
+                            // Submit the form
+                            logoutForm.submit();
+                        });
+                    }
+                });
+            });
+        }
     });
 
     // Prevent back navigation after logout
@@ -398,26 +602,16 @@
         window.location.href = "{% url 'login' %}";
     }
 
-    // Clear browser cache on logout
-    function clearCache() {
-        window.location.reload(true);
-        window.location.replace("{% url 'login' %}");
-    }
-
-    // Add event listener for logout
-    document.addEventListener('DOMContentLoaded', function() {
-        const logoutForm = document.querySelector('form[action="{% url "logout" %}"]');
-        if (logoutForm) {
-            logoutForm.addEventListener('submit', function(e) {
-                e.preventDefault();
-                // Clear session storage
-                sessionStorage.clear();
-                // Clear local storage
-                localStorage.clear();
-                // Clear cache and redirect
-                clearCache();
-            });
+    // Additional security measures
+    window.addEventListener('pageshow', function(event) {
+        if (event.persisted) {
+            window.location.reload();
         }
+    });
+
+    // Prevent caching of pages
+    window.addEventListener('beforeunload', function() {
+        sessionStorage.setItem('lastPage', window.location.href);
     });
     </script>
     {% block extra_js %}{% endblock %}

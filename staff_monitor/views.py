@@ -574,3 +574,19 @@ def get_section_totals(report):
             report.pressure_case_handling
         ])
     }
+
+@login_required
+def superintendent_list(request):
+    superintendents = MedicalSuperintendent.objects.all()
+    return render(request, 'staff_monitor/superintendent_list.html', {
+        'superintendents': superintendents
+    })
+
+@login_required
+def staff_list(request):
+    staff_members = Staff.objects.all()
+    departments = Department.objects.all()
+    return render(request, 'staff_monitor/staff_list.html', {
+        'staff_members': staff_members,
+        'departments': departments
+    })
