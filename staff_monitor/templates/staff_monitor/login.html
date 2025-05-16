@@ -3,6 +3,199 @@
 {% load static %}
 
 {% block content %}
+<style>
+    :root {
+        --primary-color: #0d6efd;
+        --hover-color: #0b5ed7;
+        --text-color: #2c3e50;
+        --muted-color: #6c757d;
+        --border-radius: 1rem;
+    }
+
+    body {
+        background: linear-gradient(rgba(0, 0, 0, 0.5), rgba(0, 0, 0, 0.5)),
+                    url('{% static "images/hospital_front.JPG" %}');
+        background-size: cover;
+        background-position: center;
+        background-repeat: no-repeat;
+        background-attachment: fixed;
+        min-height: 100vh;
+        margin: 0;
+        padding: 0;
+    }
+
+    .login-wrapper {
+        min-height: 100vh;
+        display: flex;
+        align-items: center;
+        position: relative;
+        padding: 2rem 0;
+    }
+
+    .login-container {
+        width: 100%;
+        padding: 1rem;
+        position: relative;
+        z-index: 1;
+    }
+
+    .logo-container {
+        display: flex;
+        justify-content: center;
+        margin-bottom: 1.5rem;
+    }
+
+    .hospital-logo {
+        width: 120px;
+        height: 120px;
+        border-radius: 50%;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        object-fit: cover;
+        background-color: white;
+        padding: 0.5rem;
+    }
+
+    .hospital-name {
+        color: white;
+        font-weight: 600;
+        font-size: calc(1.5rem + 0.5vw);
+        margin-bottom: 0.5rem;
+        text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+    }
+
+    .system-name {
+        font-size: calc(0.9rem + 0.1vw);
+        color: rgba(255, 255, 255, 0.9) !important;
+        text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.3);
+    }
+
+    .login-card {
+        background: rgba(255, 255, 255, 0.95);
+        border: none;
+        border-radius: var(--border-radius);
+        box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.3);
+        margin-bottom: 2rem;
+        backdrop-filter: blur(10px);
+    }
+
+    .form-floating > label {
+        color: var(--muted-color);
+        padding-left: 1rem;
+    }
+
+    .form-control {
+        border-radius: 0.5rem;
+        border: 2px solid #e9ecef;
+        height: 3.5rem;
+        padding: 1rem;
+        font-size: 1rem;
+        background-color: rgba(255, 255, 255, 0.9);
+    }
+
+    .form-control:focus {
+        border-color: var(--primary-color);
+        box-shadow: 0 0 0 0.2rem rgba(13, 110, 253, 0.25);
+        background-color: white;
+    }
+
+    .btn-primary {
+        background-color: var(--primary-color);
+        border: none;
+        border-radius: 0.5rem;
+        padding: 1rem;
+        font-weight: 500;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        transition: all 0.3s ease;
+    }
+
+    .btn-primary:hover {
+        background-color: var(--hover-color);
+        transform: translateY(-2px);
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    }
+
+    .alert {
+        border-radius: 0.5rem;
+        margin-bottom: 1.5rem;
+    }
+
+    .contact-info {
+        font-size: 0.9rem;
+        color: white !important;
+        text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.3);
+    }
+
+    .contact-info p {
+        color: rgba(255, 255, 255, 0.9) !important;
+    }
+
+    /* Responsive Adjustments */
+    @media (max-width: 576px) {
+        .login-container {
+            padding: 0.5rem;
+        }
+
+        .card-body {
+            padding: 1.5rem !important;
+        }
+
+        .hospital-logo {
+            width: 100px;
+            height: 100px;
+        }
+
+        .hospital-name {
+            font-size: 1.5rem;
+        }
+
+        .form-control {
+            height: 3rem;
+        }
+
+        .btn-lg {
+            padding: 0.75rem;
+        }
+    }
+
+    @media (max-width: 320px) {
+        .hospital-logo {
+            width: 80px;
+            height: 80px;
+        }
+
+        .hospital-name {
+            font-size: 1.25rem;
+        }
+
+        .card-body {
+            padding: 1rem !important;
+        }
+    }
+
+    /* Touch Device Optimizations */
+    @media (hover: none) {
+        .btn-primary:hover {
+            transform: none;
+        }
+    }
+</style>
+
+<script>
+// Prevent back navigation on login page
+window.onload = function() {
+    if (window.performance && window.performance.navigation.type === window.performance.navigation.TYPE_BACK_FORWARD) {
+        window.location.href = "{% url 'login' %}";
+    }
+};
+
+// Clear browser history on page load
+window.history.pushState(null, '', window.location.href);
+window.onpopstate = function() {
+    window.history.pushState(null, '', window.location.href);
+};
+</script>
+
 <div class="login-wrapper">
     <div class="login-container">
         <div class="row justify-content-center">
@@ -10,7 +203,6 @@
                 <!-- Hospital Branding -->
                 <div class="text-center mb-4">
                     <div class="logo-container">
-                        {% comment %} <img src="/static/images/hospital-logo.png" alt="Hospital Logo" class="hospital-logo"> {% endcomment %}
                         <img src="{% static 'images/hospital-logo.png' %}" alt="Hospital Logo" class="hospital-logo">
                     </div>
                     <h2 class="hospital-name">Mariampur Hospital</h2>
@@ -103,155 +295,6 @@
         </div>
     </div>
 </div>
-
-<style>
-    :root {
-        --primary-color: #0d6efd;
-        --hover-color: #0b5ed7;
-        --text-color: #2c3e50;
-        --muted-color: #6c757d;
-        --border-radius: 1rem;
-    }
-
-    .login-wrapper {
-        min-height: 100vh;
-        background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
-        display: flex;
-        align-items: center;
-    }
-
-    .login-container {
-        width: 100%;
-        padding: 1rem;
-    }
-
-    .logo-container {
-        display: flex;
-        justify-content: center;
-        margin-bottom: 1.5rem;
-    }
-
-    .hospital-logo {
-        width: 120px;
-        height: 120px;
-        border-radius: 50%;
-        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-        object-fit: cover;
-    }
-
-    .hospital-name {
-        color: var(--text-color);
-        font-weight: 600;
-        font-size: calc(1.5rem + 0.5vw);
-        margin-bottom: 0.5rem;
-    }
-
-    .system-name {
-        font-size: calc(0.9rem + 0.1vw);
-    }
-
-    .login-card {
-        background: white;
-        border: none;
-        border-radius: var(--border-radius);
-        box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15);
-        margin-bottom: 2rem;
-    }
-
-    .form-floating > label {
-        color: var(--muted-color);
-        padding-left: 1rem;
-    }
-
-    .form-control {
-        border-radius: 0.5rem;
-        border: 2px solid #e9ecef;
-        height: 3.5rem;
-        padding: 1rem;
-        font-size: 1rem;
-    }
-
-    .form-control:focus {
-        border-color: var(--primary-color);
-        box-shadow: 0 0 0 0.2rem rgba(13, 110, 253, 0.25);
-    }
-
-    .btn-primary {
-        background-color: var(--primary-color);
-        border: none;
-        border-radius: 0.5rem;
-        padding: 1rem;
-        font-weight: 500;
-        text-transform: uppercase;
-        letter-spacing: 0.5px;
-        transition: all 0.3s ease;
-    }
-
-    .btn-primary:hover {
-        background-color: var(--hover-color);
-        transform: translateY(-2px);
-        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-    }
-
-    .alert {
-        border-radius: 0.5rem;
-        margin-bottom: 1.5rem;
-    }
-
-    .contact-info {
-        font-size: 0.9rem;
-    }
-
-    /* Responsive Adjustments */
-    @media (max-width: 576px) {
-        .login-container {
-            padding: 0.5rem;
-        }
-
-        .card-body {
-            padding: 1.5rem !important;
-        }
-
-        .hospital-logo {
-            width: 100px;
-            height: 100px;
-        }
-
-        .hospital-name {
-            font-size: 1.5rem;
-        }
-
-        .form-control {
-            height: 3rem;
-        }
-
-        .btn-lg {
-            padding: 0.75rem;
-        }
-    }
-
-    @media (max-width: 320px) {
-        .hospital-logo {
-            width: 80px;
-            height: 80px;
-        }
-
-        .hospital-name {
-            font-size: 1.25rem;
-        }
-
-        .card-body {
-            padding: 1rem !important;
-        }
-    }
-
-    /* Touch Device Optimizations */
-    @media (hover: none) {
-        .btn-primary:hover {
-            transform: none;
-        }
-    }
-</style>
 
 <script>
 document.addEventListener('DOMContentLoaded', function() {

@@ -47,24 +47,24 @@
     </div>
 
     <div class="card-body">
-        <div class="table-responsive">
+<div class="table-responsive">
             <table class="table table-hover" id="reportsTable">
                 <thead class="table-light">
-                    <tr>
-                        <th>Staff Name</th>
+            <tr>
+                <th>Staff Name</th>
                         <th>Department</th>
-                        <th>Date</th>
+                <th>Date</th>
                         <th>Score</th>
                         <th>Performance Status</th>
-                        <th>Actions</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for report in reports %}
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for report in reports %}
                     <tr class="report-row">
-                        <td>{{ report.staff.user.get_full_name }}</td>
+                <td>{{ report.staff.user.get_full_name }}</td>
                         <td>{{ report.staff.department }}</td>
-                        <td>{{ report.date }}</td>
+                <td>{{ report.date }}</td>
                         <td>{{ report.percentage|floatformat:2 }}%</td>
                         <td>{{ report.get_performance_status }}</td>
                         <td>
@@ -81,15 +81,15 @@
                                 {% if user.is_staff %}
                                 <button type="button" class="btn btn-danger btn-sm" data-bs-toggle="modal" data-bs-target="#deleteModal{{ report.id }}">
                                     <i class="fas fa-trash me-1"></i>Delete
-                                </button>
+                    </button>
                                 {% endif %}
                             </div>
-                        </td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
-        </div>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
 
         <!-- No Results Message -->
         <div id="noResults" class="text-center py-4 d-none">
