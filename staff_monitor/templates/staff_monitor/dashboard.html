@@ -39,7 +39,7 @@
                                         <a href="{% url 'edit_superintendent' superintendent.id %}" class="btn btn-warning btn-sm">
                                             <i class="fas fa-edit me-1"></i>Edit
                                         </a>
-                                        <button class="btn btn-danger btn-sm" data-bs-toggle="modal" data-bs-target="#deleteSuperintendentModal{{ superintendent.id }}">
+                                        <button class="btn btn-danger btn-sm delete-superintendent" data-superintendent-id="{{ superintendent.id }}" data-superintendent-name="{{ superintendent.user.get_full_name }}">
                                             <i class="fas fa-trash me-1"></i>Delete
                                         </button>
                                     </div>
@@ -122,7 +122,7 @@
                                         <a href="{% url 'edit_staff' staff.id %}" class="btn btn-warning btn-sm">
                                             <i class="fas fa-edit me-1"></i>Edit
                                         </a>
-                                        <button class="btn btn-danger btn-sm" data-bs-toggle="modal" data-bs-target="#deleteStaffModal{{ staff.id }}">
+                                        <button class="btn btn-danger btn-sm delete-staff" data-staff-id="{{ staff.id }}" data-staff-name="{{ staff.user.get_full_name }}">
                                             <i class="fas fa-trash me-1"></i>Delete
                                         </button>
                                     </div>
@@ -142,57 +142,6 @@
         </div>
     </div>
 </div>
-
-<!-- Delete Modals -->
-{% if user.is_staff %}
-    {% for superintendent in superintendents %}
-    <div class="modal fade" id="deleteSuperintendentModal{{ superintendent.id }}" tabindex="-1">
-        <div class="modal-dialog">
-            <div class="modal-content">
-                <div class="modal-header bg-danger text-white">
-                    <h5 class="modal-title">Confirm Delete</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-                </div>
-                <div class="modal-body">
-                    <p>Are you sure you want to delete {{ superintendent.user.get_full_name }}?</p>
-                    <p class="mb-0"><strong>Note:</strong> This will also remove their access to the system.</p>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                    <form method="post" action="{% url 'delete_superintendent' superintendent.id %}">
-                        {% csrf_token %}
-                        <button type="submit" class="btn btn-danger">Delete</button>
-                    </form>
-                </div>
-            </div>
-        </div>
-    </div>
-    {% endfor %}
-
-    {% for staff in staff_list %}
-    <div class="modal fade" id="deleteStaffModal{{ staff.id }}" tabindex="-1">
-        <div class="modal-dialog">
-            <div class="modal-content">
-                <div class="modal-header bg-danger text-white">
-                    <h5 class="modal-title">Confirm Delete</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-                </div>
-                <div class="modal-body">
-                    <p>Are you sure you want to delete {{ staff.user.get_full_name }}?</p>
-                    <p class="mb-0"><strong>Note:</strong> This will also remove their access to the system.</p>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                    <form method="post" action="{% url 'delete_staff' staff.id %}">
-                        {% csrf_token %}
-                        <button type="submit" class="btn btn-danger">Delete</button>
-                    </form>
-                </div>
-            </div>
-        </div>
-    </div>
-    {% endfor %}
-{% endif %}
 
 <style>
     .card {
@@ -242,6 +191,82 @@ document.addEventListener('DOMContentLoaded', function() {
 
     searchInput.addEventListener('input', filterTable);
     departmentFilter.addEventListener('change', filterTable);
+
+    // Handle staff deletion
+    document.querySelectorAll('.delete-staff').forEach(button => {
+        button.addEventListener('click', function() {
+            const staffId = this.dataset.staffId;
+            const staffName = this.dataset.staffName;
+            
+            Swal.fire({
+                title: 'Confirm Delete',
+                html: `
+                    <p>Are you sure you want to delete ${staffName}?</p>
+                    <p class="text-danger"><strong>Note:</strong> This will also remove their access to the system.</p>
+                `,
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonText: 'Yes, Delete',
+                cancelButtonText: 'No, Cancel',
+                confirmButtonColor: '#dc3545',
+                cancelButtonColor: '#6c757d'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    // Create and submit the form
+                    const form = document.createElement('form');
+                    form.method = 'POST';
+                    form.action = `/delete_staff/${staffId}/`;
+                    
+                    const csrfInput = document.createElement('input');
+                    csrfInput.type = 'hidden';
+                    csrfInput.name = 'csrfmiddlewaretoken';
+                    csrfInput.value = '{{ csrf_token }}';
+                    
+                    form.appendChild(csrfInput);
+                    document.body.appendChild(form);
+                    form.submit();
+                }
+            });
+        });
+    });
+
+    // Handle superintendent deletion
+    document.querySelectorAll('.delete-superintendent').forEach(button => {
+        button.addEventListener('click', function() {
+            const superintendentId = this.dataset.superintendentId;
+            const superintendentName = this.dataset.superintendentName;
+            
+            Swal.fire({
+                title: 'Confirm Delete',
+                html: `
+                    <p>Are you sure you want to delete ${superintendentName}?</p>
+                    <p class="text-danger"><strong>Note:</strong> This will also remove their access to the system.</p>
+                `,
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonText: 'Yes, Delete',
+                cancelButtonText: 'No, Cancel',
+                confirmButtonColor: '#dc3545',
+                cancelButtonColor: '#6c757d'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    // Create and submit the form
+                    const form = document.createElement('form');
+                    form.method = 'POST';
+                    form.action = `/delete_superintendent/${superintendentId}/`;
+                    
+                    const csrfInput = document.createElement('input');
+                    csrfInput.type = 'hidden';
+                    csrfInput.name = 'csrfmiddlewaretoken';
+                    csrfInput.value = '{{ csrf_token }}';
+                    
+                    form.appendChild(csrfInput);
+                    document.body.appendChild(form);
+                    form.submit();
+                }
+            });
+        });
+    });
 });
 </script>
 {% endblock %}

@@ -2,6 +2,9 @@
 {% extends 'staff_monitor/base.html' %}
 
 {% block content %}
+<link href="https://cdn.jsdelivr.net/npm/sweetalert2@11.7.32/dist/sweetalert2.min.css" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11.7.32/dist/sweetalert2.all.min.js"></script>
+
 <div class="container-fluid">
     <!-- Header Section -->
     <div class="card mb-4">
@@ -12,6 +15,16 @@
         
         <!-- Basic Information Section -->
         <div class="card-body">
+            <div class="row mb-4">
+                <div class="col-12">
+                    <button type="button" id="fillMaxScores" class="btn btn-success">
+                        <i class="fas fa-star me-2"></i>Fill Maximum Scores (5)
+                    </button>
+                    <small class="text-muted ms-2">
+                        <i class="fas fa-info-circle me-1"></i>Click to fill all ratings with maximum score (5)
+                    </small>
+                </div>
+            </div>
             <div class="row mb-4">
                 <div class="col-md-6">
                     <table class="table table-bordered">
@@ -53,7 +66,7 @@
                 </div>
             </div>
 
-                <form method="post" class="needs-validation" novalidate>
+                <form method="post" class="needs-validation" novalidate id="performanceForm">
                     {% csrf_token %}
                     
                 <!-- Evaluation Date -->
@@ -93,7 +106,7 @@
                                                    min="1" 
                                                    max="5" 
                                                    required 
-                                                   placeholder="1-5"
+                                                   {% comment %} placeholder="1-5" {% endcomment %}
                                                    pattern="[1-5]">
                                         </td>
                                     </tr>
@@ -107,7 +120,7 @@
                                                    min="1" 
                                                    max="5" 
                                                    required 
-                                                   placeholder="1-5"
+                                                   {% comment %} placeholder="1-5" {% endcomment %}
                                                    pattern="[1-5]">
                                         </td>
                                     </tr>
@@ -121,7 +134,7 @@
                                                    min="1" 
                                                    max="5" 
                                                    required 
-                                                   placeholder="1-5"
+                                                   {% comment %} placeholder="1-5" {% endcomment %}
                                                    pattern="[1-5]">
                                         </td>
                                     </tr>
@@ -135,7 +148,7 @@
                                                    min="1" 
                                                    max="5" 
                                                    required 
-                                                   placeholder="1-5"
+                                                   {% comment %} placeholder="1-5" {% endcomment %}
                                                    pattern="[1-5]">
                                         </td>
                                     </tr>
@@ -149,7 +162,7 @@
                                                    min="1" 
                                                    max="5" 
                                                    required 
-                                                   placeholder="1-5"
+                                                   {% comment %} placeholder="1-5" {% endcomment %}
                                                    pattern="[1-5]">
                                         </td>
                                     </tr>
@@ -163,7 +176,7 @@
                                                    min="1" 
                                                    max="5" 
                                                    required 
-                                                   placeholder="1-5"
+                                                   {% comment %} placeholder="1-5" {% endcomment %}
                                                    pattern="[1-5]">
                                         </td>
                                     </tr>
@@ -177,7 +190,7 @@
                                                    min="1" 
                                                    max="5" 
                                                    required 
-                                                   placeholder="1-5"
+                                                   {% comment %} placeholder="1-5" {% endcomment %}
                                                    pattern="[1-5]">
                                         </td>
                                     </tr>
@@ -191,7 +204,7 @@
                                                    min="1" 
                                                    max="5" 
                                                    required 
-                                                   placeholder="1-5"
+                                                   {% comment %} placeholder="1-5" {% endcomment %}
                                                    pattern="[1-5]">
                                         </td>
                                     </tr>
@@ -231,7 +244,7 @@
                                                    min="1" 
                                                    max="5" 
                                                    required 
-                                                   placeholder="1-5"
+                                                   {% comment %} placeholder="1-5" {% endcomment %}
                                                    pattern="[1-5]">
                                         </td>
                                     </tr>
@@ -245,7 +258,7 @@
                                                    min="1" 
                                                    max="5" 
                                                    required 
-                                                   placeholder="1-5"
+                                                   {% comment %} placeholder="1-5" {% endcomment %}
                                                    pattern="[1-5]">
                                         </td>
                                     </tr>
@@ -259,7 +272,7 @@
                                                    min="1" 
                                                    max="5" 
                                                    required 
-                                                   placeholder="1-5"
+                                                   {% comment %} placeholder="1-5" {% endcomment %}
                                                    pattern="[1-5]">
                                         </td>
                                     </tr>
@@ -299,7 +312,7 @@
                                                    min="1" 
                                                    max="5" 
                                                    required 
-                                                   placeholder="1-5"
+                                                   {% comment %} placeholder="1-5" {% endcomment %}
                                                    pattern="[1-5]">
                                         </td>
                                     </tr>
@@ -313,7 +326,7 @@
                                                    min="1" 
                                                    max="5" 
                                                    required 
-                                                   placeholder="1-5"
+                                                   {% comment %} placeholder="1-5" {% endcomment %}
                                                    pattern="[1-5]">
                                         </td>
                                     </tr>
@@ -327,7 +340,7 @@
                                                    min="1" 
                                                    max="5" 
                                                    required 
-                                                   placeholder="1-5"
+                                                   {% comment %} placeholder="1-5" {% endcomment %}
                                                    pattern="[1-5]">
                                         </td>
                                     </tr>
@@ -341,7 +354,7 @@
                                                    min="1" 
                                                    max="5" 
                                                    required 
-                                                   placeholder="1-5"
+                                                   {% comment %} placeholder="1-5" {% endcomment %}
                                                    pattern="[1-5]">
                                         </td>
                                     </tr>
@@ -381,7 +394,7 @@
                                                    min="1" 
                                                    max="5" 
                                                    required 
-                                                   placeholder="1-5"
+                                                   {% comment %} placeholder="1-5" {% endcomment %}
                                                    pattern="[1-5]">
                                         </td>
                                     </tr>
@@ -395,7 +408,7 @@
                                                    min="1" 
                                                    max="5" 
                                                    required 
-                                                   placeholder="1-5"
+                                                   {% comment %} placeholder="1-5" {% endcomment %}
                                                    pattern="[1-5]">
                                         </td>
                                     </tr>
@@ -409,7 +422,7 @@
                                                    min="1" 
                                                    max="5" 
                                                    required 
-                                                   placeholder="1-5"
+                                                   {% comment %} placeholder="1-5" {% endcomment %}
                                                    pattern="[1-5]">
                                         </td>
                                     </tr>
@@ -423,7 +436,7 @@
                                                    min="1" 
                                                    max="5" 
                                                    required 
-                                                   placeholder="1-5"
+                                                   {% comment %} placeholder="1-5" {% endcomment %}
                                                    pattern="[1-5]">
                                         </td>
                                     </tr>
@@ -437,7 +450,7 @@
                                                    min="1" 
                                                    max="5" 
                                                    required 
-                                                   placeholder="1-5"
+                                                   {% comment %} placeholder="1-5" {% endcomment %}
                                                    pattern="[1-5]">
                                         </td>
                                     </tr>
@@ -477,7 +490,7 @@
                                                    min="1" 
                                                    max="5" 
                                                    required 
-                                                   placeholder="1-5"
+                                                   {% comment %} placeholder="1-5" {% endcomment %}
                                                    pattern="[1-5]">
                                         </td>
                                     </tr>
@@ -491,7 +504,7 @@
                                                    min="1" 
                                                    max="5" 
                                                    required 
-                                                   placeholder="1-5"
+                                                   {% comment %} placeholder="1-5" {% endcomment %}
                                                    pattern="[1-5]">
                                         </td>
                                     </tr>
@@ -505,7 +518,7 @@
                                                    min="1" 
                                                    max="5" 
                                                    required 
-                                                   placeholder="1-5"
+                                                   {% comment %} placeholder="1-5" {% endcomment %}
                                                    pattern="[1-5]">
                                         </td>
                                     </tr>
@@ -519,7 +532,7 @@
                                                    min="1" 
                                                    max="5" 
                                                    required 
-                                                   placeholder="1-5"
+                                                   {% comment %} placeholder="1-5" {% endcomment %}
                                                    pattern="[1-5]">
                                         </td>
                                     </tr>
@@ -533,7 +546,7 @@
                                                    min="1" 
                                                    max="5" 
                                                    required 
-                                                   placeholder="1-5"
+                                                   {% comment %} placeholder="1-5" {% endcomment %}
                                                    pattern="[1-5]">
                                         </td>
                                     </tr>
@@ -547,7 +560,7 @@
                                                    min="1" 
                                                    max="5" 
                                                    required 
-                                                   placeholder="1-5"
+                                                   {% comment %} placeholder="1-5" {% endcomment %}
                                                    pattern="[1-5]">
                                         </td>
                                     </tr>
@@ -587,7 +600,7 @@
                                                    min="1" 
                                                    max="5" 
                                                    required 
-                                                   placeholder="1-5"
+                                                   {% comment %} placeholder="1-5" {% endcomment %}
                                                    pattern="[1-5]">
                                         </td>
                                     </tr>
@@ -601,7 +614,7 @@
                                                    min="1" 
                                                    max="5" 
                                                    required 
-                                                   placeholder="1-5"
+                                                   {% comment %} placeholder="1-5" {% endcomment %}
                                                    pattern="[1-5]">
                                         </td>
                                     </tr>
@@ -615,7 +628,7 @@
                                                    min="1" 
                                                    max="5" 
                                                    required 
-                                                   placeholder="1-5"
+                                                   {% comment %} placeholder="1-5" {% endcomment %}
                                                    pattern="[1-5]">
                                         </td>
                                     </tr>
@@ -629,7 +642,7 @@
                                                    min="1" 
                                                    max="5" 
                                                    required 
-                                                   placeholder="1-5"
+                                                   {% comment %} placeholder="1-5" {% endcomment %}
                                                    pattern="[1-5]">
                                         </td>
                                     </tr>
@@ -643,7 +656,7 @@
                                                    min="1" 
                                                    max="5" 
                                                    required 
-                                                   placeholder="1-5"
+                                                   {% comment %} placeholder="1-5" {% endcomment %}
                                                    pattern="[1-5]">
                                         </td>
                                     </tr>
@@ -683,7 +696,7 @@
                                                    min="1" 
                                                    max="5" 
                                                    required 
-                                                   placeholder="1-5"
+                                                   {% comment %} placeholder="1-5" {% endcomment %}
                                                    pattern="[1-5]">
                                         </td>
                                     </tr>
@@ -697,7 +710,7 @@
                                                    min="1" 
                                                    max="5" 
                                                    required 
-                                                   placeholder="1-5"
+                                                   {% comment %} placeholder="1-5" {% endcomment %}
                                                    pattern="[1-5]">
                                         </td>
                                     </tr>
@@ -711,7 +724,7 @@
                                                    min="1" 
                                                    max="5" 
                                                    required 
-                                                   placeholder="1-5"
+                                                   {% comment %} placeholder="1-5" {% endcomment %}
                                                    pattern="[1-5]">
                                         </td>
                                     </tr>
@@ -751,7 +764,7 @@
                                                    min="1" 
                                                    max="5" 
                                                    required 
-                                                   placeholder="1-5"
+                                                   {% comment %} placeholder="1-5" {% endcomment %}
                                                    pattern="[1-5]">
                                         </td>
                                     </tr>
@@ -765,7 +778,7 @@
                                                    min="1" 
                                                    max="5" 
                                                    required 
-                                                   placeholder="1-5"
+                                                   {% comment %} placeholder="1-5" {% endcomment %}
                                                    pattern="[1-5]">
                                         </td>
                                     </tr>
@@ -779,7 +792,7 @@
                                                    min="1" 
                                                    max="5" 
                                                    required 
-                                                   placeholder="1-5"
+                                                   {% comment %} placeholder="1-5" {% endcomment %}
                                                    pattern="[1-5]">
                                         </td>
                                     </tr>
@@ -819,7 +832,7 @@
                                                    min="1" 
                                                    max="5" 
                                                    required 
-                                                   placeholder="1-5"
+                                                   {% comment %} placeholder="1-5" {% endcomment %}
                                                    pattern="[1-5]">
                                         </td>
                                     </tr>
@@ -833,7 +846,7 @@
                                                    min="1" 
                                                    max="5" 
                                                    required 
-                                                   placeholder="1-5"
+                                                   {% comment %} placeholder="1-5" {% endcomment %}
                                                    pattern="[1-5]">
                                         </td>
                                     </tr>
@@ -873,7 +886,7 @@
                                                    min="1" 
                                                    max="5" 
                                                    required 
-                                                   placeholder="1-5"
+                                                   {% comment %} placeholder="1-5" {% endcomment %}
                                                    pattern="[1-5]">
                                         </td>
                                     </tr>
@@ -887,7 +900,7 @@
                                                    min="1" 
                                                    max="5" 
                                                    required 
-                                                   placeholder="1-5"
+                                                   {% comment %} placeholder="1-5" {% endcomment %}
                                                    pattern="[1-5]">
                                         </td>
                                     </tr>
@@ -901,7 +914,7 @@
                                                    min="1" 
                                                    max="5" 
                                                    required 
-                                                   placeholder="1-5"
+                                                   {% comment %} placeholder="1-5" {% endcomment %}
                                                    pattern="[1-5]">
                                         </td>
                                     </tr>
@@ -1039,10 +1052,115 @@
     border-color: #86b7fe;
     box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.25);
 }
+
+.swal2-popup {
+    font-size: 1rem !important;
+}
+
+.swal2-title {
+    font-size: 1.5rem !important;
+}
+
+.swal2-html-container {
+    font-size: 1rem !important;
+}
+
+.swal2-confirm {
+    font-size: 1rem !important;
+}
+
+.swal2-cancel {
+    font-size: 1rem !important;
+}
+
+#fillMaxScores {
+    padding: 0.5rem 1rem;
+    font-weight: 500;
+    transition: all 0.3s ease;
+}
+
+#fillMaxScores:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.text-muted small {
+    font-size: 0.875rem;
+}
 </style>
 
 <script>
+// Add this function to handle Django messages with SweetAlert2
+function showDjangoMessage(message, type) {
+    const icons = {
+        'success': 'success',
+        'error': 'error',
+        'warning': 'warning',
+        'info': 'info'
+    };
+
+    const titles = {
+        'success': 'Success!',
+        'error': 'Error!',
+        'warning': 'Warning!',
+        'info': 'Information'
+    };
+
+    Swal.fire({
+        title: titles[type] || 'Message',
+        text: message,
+        icon: icons[type] || 'info',
+        confirmButtonColor: '#0d6efd',
+        timer: type === 'success' ? 2000 : null,
+        timerProgressBar: type === 'success' ? true : false
+    });
+}
+
+// Add this to handle Django messages on page load
 document.addEventListener('DOMContentLoaded', function() {
+    {% if messages %}
+        {% for message in messages %}
+            showDjangoMessage("{{ message }}", "{{ message.tags }}");
+        {% endfor %}
+    {% endif %}
+});
+
+document.addEventListener('DOMContentLoaded', function() {
+    function fillMaxScores() {
+        const inputs = document.querySelectorAll('.rating-input');
+        inputs.forEach(input => {
+            input.value = 5;
+        });
+        calculateTotals();
+    }
+
+    const fillMaxScoresBtn = document.getElementById('fillMaxScores');
+    if (fillMaxScoresBtn) {
+        fillMaxScoresBtn.addEventListener('click', function() {
+            Swal.fire({
+                title: 'Fill Maximum Scores',
+                text: 'This will set all ratings to 5. Do you want to continue?',
+                icon: 'question',
+                showCancelButton: true,
+                confirmButtonText: 'Yes, Fill All',
+                cancelButtonText: 'No, Cancel',
+                confirmButtonColor: '#198754',
+                cancelButtonColor: '#6c757d'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    fillMaxScores();
+                    Swal.fire({
+                        title: 'Scores Updated',
+                        text: 'All ratings have been set to 5',
+                        icon: 'success',
+                        timer: 1500,
+                        showConfirmButton: false
+                    });
+                }
+            });
+        });
+    }
+
     function calculateTotals() {
         const sections = document.querySelectorAll('.section-card');
         let grandTotal = 0;
@@ -1081,9 +1199,69 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     });
 
-    document.querySelectorAll('.rating-input').forEach(input => {
-        input.setAttribute('placeholder', '1-5');
-    });
+    const form = document.getElementById('performanceForm');
+    if (form) {
+        form.addEventListener('submit', function(e) {
+            e.preventDefault();
+
+            const requiredInputs = form.querySelectorAll('input[required]');
+            let allFilled = true;
+            requiredInputs.forEach(input => {
+                if (!input.value) {
+                    allFilled = false;
+                }
+            });
+
+            if (!allFilled) {
+                Swal.fire({
+                    title: 'Incomplete Form',
+                    text: 'Please fill in all required fields before submitting.',
+                    icon: 'warning',
+                    confirmButtonText: 'OK',
+                    confirmButtonColor: '#0d6efd'
+                });
+                return;
+            }
+
+            const totalScore = document.getElementById('grand-total').textContent;
+            const percentage = document.getElementById('percentage').textContent;
+
+            Swal.fire({
+                title: 'Confirm Submission',
+                html: `
+                    <div class="text-start">
+                        <p>Are you sure you want to submit this performance evaluation?</p>
+                        <p><strong>Total Score:</strong> ${totalScore}/210</p>
+                        <p><strong>Percentage:</strong> ${percentage}%</p>
+                    </div>
+                `,
+                icon: 'question',
+                showCancelButton: true,
+                confirmButtonText: 'Yes, Submit',
+                cancelButtonText: 'No, Review',
+                confirmButtonColor: '#0d6efd',
+                cancelButtonColor: '#6c757d',
+                reverseButtons: true
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    // Show loading state
+                    Swal.fire({
+                        title: 'Submitting...',
+                        text: 'Please wait while we process your evaluation.',
+                        allowOutsideClick: false,
+                        allowEscapeKey: false,
+                        showConfirmButton: false,
+                        didOpen: () => {
+                            Swal.showLoading();
+                        }
+                    });
+                    
+                    // Submit the form
+                    form.submit();
+                }
+            });
+        });
+    }
 });
 </script>
 {% endblock %}
