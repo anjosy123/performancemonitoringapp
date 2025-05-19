@@ -13,10 +13,26 @@ class Department(models.Model):
     class Meta:
         ordering = ['name']
 
-class MedicalSuperintendent(models.Model):
+class SubDepartment(models.Model):
+    name = models.CharField(max_length=100)
+    department = models.ForeignKey(Department, related_name='subdepartments', on_delete=models.CASCADE)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"{self.name} ({self.department.name})"
+    
+    class Meta:
+        ordering = ['name']
+        unique_together = ['name', 'department']  # Prevent duplicate subdepartment names within a department
+
+class DepartmentHead(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE)
     department = models.ForeignKey(Department, on_delete=models.PROTECT)
+    subdepartment = models.ForeignKey(SubDepartment, on_delete=models.PROTECT, null=True, blank=True)
+    designation = models.CharField(max_length=100, default="Department Head")
     contact_number = models.CharField(max_length=15)
+    joining_date = models.DateField(null=True, blank=True)
+    appointment_date = models.DateField(null=True, blank=True)
     managed_staff = models.ManyToManyField('Staff', related_name='supervisors', blank=True)
 
     def __str__(self):
@@ -26,8 +42,10 @@ class Staff(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE)
     employee_id = models.CharField(max_length=20, unique=True)
     department = models.ForeignKey(Department, on_delete=models.PROTECT)
+    subdepartment = models.ForeignKey(SubDepartment, on_delete=models.PROTECT, null=True, blank=True)
     position = models.CharField(max_length=100)
     joining_date = models.DateField()
+    appointment_date = models.DateField(null=True, blank=True)
 
     def __str__(self):
         return f"{self.user.get_full_name()} ({self.employee_id})"

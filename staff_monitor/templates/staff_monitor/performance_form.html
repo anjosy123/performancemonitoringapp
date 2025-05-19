@@ -34,7 +34,7 @@
                                 {% if request.user.is_staff %}
                                     HR Director - {{ request.user.get_full_name }}
                                 {% else %}
-                                    Medical Superintendent - {{ request.user.get_full_name }}
+                                    Department Head - {{ request.user.get_full_name }}
                                 {% endif %}
                             </td>
                         </tr>

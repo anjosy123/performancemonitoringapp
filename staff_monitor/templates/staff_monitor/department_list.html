@@ -28,14 +28,26 @@
                 <thead class="table-light">
                     <tr>
                         <th>Department Name</th>
-                        <th>Created Date</th>
+                        <th>Subdepartments</th>
+                        <th>Created On</th>
                         <th>Actions</th>
                     </tr>
                 </thead>
                 <tbody>
                     {% for department in departments %}
                     <tr>
-                        <td>{{ department.name }}</td>
+                        <td class="fw-bold">{{ department.name }}</td>
+                        <td>
+                            {% if department.subdepartments.exists %}
+                            <div class="subdepartments-list">
+                                {% for subdept in department.subdepartments.all %}
+                                <span class="badge bg-light text-dark me-1 mb-1">{{ subdept.name }}</span>
+                                {% endfor %}
+                            </div>
+                            {% else %}
+                            <span class="text-muted">No subdepartments</span>
+                            {% endif %}
+                        </td>
                         <td>{{ department.created_at|date:"M d, Y" }}</td>
                         <td>
                             <div class="btn-group">
@@ -52,7 +64,7 @@
                     </tr>
                     {% empty %}
                     <tr>
-                        <td colspan="3" class="text-center py-4">
+                        <td colspan="4" class="text-center py-4">
                             <i class="fas fa-hospital text-muted me-2"></i>No departments found
                         </td>
                     </tr>
@@ -153,6 +165,16 @@
             padding: 0.75rem;
         }
     }
+
+    .subdepartments-list {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.25rem;
+    }
+    .badge {
+        font-size: 0.8rem;
+        padding: 0.4rem 0.6rem;
+    }
 </style>
 
 <script>
@@ -190,11 +212,30 @@ document.addEventListener('DOMContentLoaded', function() {
                 cancelButtonColor: '#6c757d'
             }).then((result) => {
                 if (result.isConfirmed) {
-                    window.location.href = `/department/delete/${departmentId}/`;
+                    // Create a form for POST submission
+                    const deleteForm = document.createElement('form');
+                    deleteForm.method = 'post';
+                    deleteForm.action = `/department/delete/${departmentId}/`;
+                    
+                    // Add CSRF token
+                    const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]').value;
+                    const csrfInput = document.createElement('input');
+                    csrfInput.type = 'hidden';
+                    csrfInput.name = 'csrfmiddlewaretoken';
+                    csrfInput.value = csrfToken;
+                    deleteForm.appendChild(csrfInput);
+                    
+                    // Append to body and submit
+                    document.body.appendChild(deleteForm);
+                    deleteForm.submit();
                 }
             });
         });
     });
 });
 </script>
+
+<!-- Add CSRF token -->
+{% csrf_token %}
+
 {% endblock %} 

@@ -378,7 +378,7 @@
                             </li>
                             <li>
                                 <a class="dropdown-item" href="{% url 'add_superintendent' %}">
-                                    <i class="fas fa-user-md me-2"></i>Add Superintendent
+                                    <i class="fas fa-user-md me-2"></i>Add Department Head
                                 </a>
                             </li>
                             <li>
@@ -395,7 +395,7 @@
                         <ul class="dropdown-menu" aria-labelledby="viewDropdown">
                             <li>
                                 <a class="dropdown-item" href="{% url 'superintendent_list' %}">
-                                    <i class="fas fa-user-md me-2"></i>Medical Superintendents
+                                    <i class="fas fa-user-md me-2"></i>Department Heads
                                 </a>
                             </li>
                             <li>
@@ -403,13 +403,18 @@
                                     <i class="fas fa-users me-2"></i>Staff Members
                                 </a>
                             </li>
+                            <li>
+                                <a class="dropdown-item" href="{% url 'department_list' %}">
+                                    <i class="fas fa-users me-2"></i>Departments
+                                </a>
+                            </li>
                         </ul>
                     </li>
-                    <li class="nav-item">
+                    {% comment %} <li class="nav-item">
                         <a class="nav-link" href="{% url 'department_list' %}">
                             <i class="fas fa-list-alt"></i>Departments
                         </a>
-                    </li>
+                    </li> {% endcomment %}
                     <li class="nav-item">
                         <a class="nav-link" href="{% url 'report_list' %}">
                             <i class="fas fa-clipboard-list"></i>Reports
@@ -454,7 +459,7 @@
         <div class="container">
             <div class="footer-content">
                 <i class="fas fa-laptop-medical"></i>
-                <span>Developed and Managed by IT Department, Mariampur Hospital</span>
+                <span>Developed and Managed by IT Department, Mariampur Hospital, Kanpur</span>
             </div>
             <div class="footer-divider"></div>
             <div class="text-center text-white-50" style="font-size: 0.9rem;">

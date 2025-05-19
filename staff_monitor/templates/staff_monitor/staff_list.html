@@ -6,92 +6,89 @@
         <h3 class="mb-0">
             <i class="fas fa-users me-2"></i>Staff Members
         </h3>
-        <a href="{% url 'add_staff' %}" class="btn btn-light">
-            <i class="fas fa-plus me-1"></i>Add Staff
-        </a>
+        <div>
+            {% if user.is_staff %}
+            <a href="{% url 'add_staff' %}" class="btn btn-light btn-sm">
+                <i class="fas fa-user-plus me-1"></i>Add Staff
+            </a>
+            {% endif %}
+            <a href="{% url 'dashboard' %}" class="btn btn-light btn-sm ms-2">
+                <i class="fas fa-times"></i>
+            </a>
+        </div>
     </div>
-    <div class="card-body">
-        <!-- Search and Filter Section -->
-        <div class="row mb-4">
-            <div class="col-md-6">
+
+    <!-- Search and Filter Section -->
+    <div class="card-body border-bottom">
+        <div class="row g-3">
+            <div class="col-md-4">
                 <div class="input-group">
                     <span class="input-group-text bg-light">
                         <i class="fas fa-search"></i>
                     </span>
-                    <input type="text" id="staffSearch" class="form-control" placeholder="Search staff members...">
+                    <input type="text" id="searchInput" class="form-control" placeholder="Search by name, ID, or position...">
                 </div>
             </div>
-            <div class="col-md-6">
+            <div class="col-md-3">
                 <select id="departmentFilter" class="form-select">
                     <option value="">All Departments</option>
                     {% for department in departments %}
-                    <option value="{{ department.name }}">{{ department.name }}</option>
+                        <option value="{{ department.name }}">{{ department.name }}</option>
                     {% endfor %}
                 </select>
             </div>
+            <div class="col-md-3">
+                <select id="positionFilter" class="form-select">
+                    <option value="">All Positions</option>
+                    {% for staff in staff_members %}
+                        <option value="{{ staff.position }}">{{ staff.position }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-2">
+                <button id="resetFilters" class="btn btn-secondary w-100">
+                    <i class="fas fa-undo me-1"></i>Reset
+                </button>
+            </div>
         </div>
+    </div>
 
+    <div class="card-body">
         <div class="table-responsive">
-            <table class="table table-hover">
+            <table class="table table-hover" id="staffTable">
                 <thead class="table-light">
                     <tr>
                         <th>Name</th>
+                        <th>Employee ID</th>
                         <th>Department</th>
-                        <th>Superintendent</th>
-                        {% comment %} <th>Contact</th> {% endcomment %}
-                        <th>Performance Status</th>
+                        <th>Position</th>
+                        <th>Joining Date</th>
                         <th>Actions</th>
                     </tr>
                 </thead>
                 <tbody>
                     {% for staff in staff_members %}
-                    <tr>
+                    <tr class="staff-row">
                         <td>{{ staff.user.get_full_name }}</td>
-                        <td>{{ staff.department.name }}</td>
-                        <td>
-                            {% if staff.supervisors.all %}
-                                {% for superintendent in staff.supervisors.all %}
-                                    {{ superintendent.user.get_full_name }}{% if not forloop.last %}, {% endif %}
-                                {% endfor %}
-                            {% else %}
-                                <span class="text-muted">Not Assigned</span>
-                            {% endif %}
-                        </td>
-                        {% comment %} <td>
-                            {% if staff.contact_number %}
-                                {{ staff.contact_number }}
-                            {% else %}
-                                <span class="text-muted">Not Available</span>
-                            {% endif %}
-                        </td> {% endcomment %}
-                        <td>
-                            {% with latest_report=staff.performancereport_set.first %}
-                                {% if latest_report %}
-                                    {% if latest_report.percentage >= 76 %}
-                                        <span class="badge bg-success">Excellent</span>
-                                    {% elif latest_report.percentage >= 51 %}
-                                        <span class="badge bg-warning">Good</span>
-                                    {% else %}
-                                        <span class="badge bg-danger">Needs Improvement</span>
-                                    {% endif %}
-                                {% else %}
-                                    <span class="badge bg-secondary">No Rating</span>
-                                {% endif %}
-                            {% endwith %}
-                        </td>
+                        <td>{{ staff.employee_id }}</td>
+                        <td>{{ staff.department }}</td>
+                        <td>{{ staff.position }}</td>
+                        <td>{{ staff.joining_date }}</td>
                         <td>
                             <div class="btn-group">
-                                <a href="{% url 'edit_staff' staff.id %}" class="btn btn-warning btn-sm">
-                                    <i class="fas fa-edit me-1"></i>Edit
+                                <a href="{% url 'performance_form' staff.id %}" class="btn btn-primary btn-sm">
+                                    <i class="fas fa-clipboard-check me-1"></i>Evaluate
                                 </a>
-                                <a href="{% url 'performance_form' staff.id %}" class="btn btn-info btn-sm">
-                                    <i class="fas fa-chart-line me-1"></i>Evaluate
+                                {% if user.is_staff %}
+                                <a href="{% url 'edit_staff' staff.id %}" class="btn btn-info btn-sm">
+                                    <i class="fas fa-edit me-1"></i>Edit
                                 </a>
                                 <button class="btn btn-danger btn-sm delete-staff" 
                                         data-staff-id="{{ staff.id }}"
                                         data-staff-name="{{ staff.user.get_full_name }}">
                                     <i class="fas fa-trash me-1"></i>Delete
                                 </button>
+                                {% endif %}
                             </div>
                         </td>
                     </tr>
@@ -105,133 +102,169 @@
                 </tbody>
             </table>
         </div>
+
+        <!-- No Results Message -->
+        <div id="noResults" class="text-center py-4 d-none">
+            <i class="fas fa-search fa-2x text-muted mb-3"></i>
+            <p class="text-muted mb-0">No matching staff members found</p>
+        </div>
     </div>
 </div>
 
 <style>
-.card {
-    border: none;
-    border-radius: 1rem;
-    box-shadow: 0 0.5rem 1rem rgba(0,0,0,0.1);
-    background-color: #fff;
-    margin-bottom: 1.5rem;
-}
+    .card {
+        border: none;
+        border-radius: 1rem;
+        box-shadow: 0 0.5rem 1rem rgba(0,0,0,0.1);
+        background-color: #fff;
+        margin-bottom: 1.5rem;
+    }
 
-.card-header {
-    background: linear-gradient(135deg, #1a237e 0%, #0d47a1 100%);
-    color: white;
-    border-top-left-radius: 1rem !important;
-    border-top-right-radius: 1rem !important;
-    padding: 1.5rem;
-}
-
-.table {
-    margin-bottom: 0;
-    background-color: #fff;
-}
-
-.table thead th {
-    background-color: #f8f9fa;
-    border-bottom: 2px solid #dee2e6;
-    font-weight: 600;
-    color: #212529;
-}
-
-.table tbody td {
-    vertical-align: middle;
-    color: #212529;
-}
-
-.table-hover tbody tr:hover {
-    background-color: rgba(13, 110, 253, 0.05);
-}
-
-.btn-group {
-    display: flex;
-    gap: 0.5rem;
-}
-
-.btn {
-    padding: 0.5rem 1rem;
-    font-weight: 500;
-}
-
-.btn-sm {
-    padding: 0.375rem 0.75rem;
-    font-size: 0.875rem;
-}
-
-.input-group {
-    box-shadow: 0 2px 4px rgba(0,0,0,0.05);
-}
-
-.input-group-text {
-    background-color: #f8f9fa;
-    border: 1px solid #dee2e6;
-}
-
-.form-control, .form-select {
-    border: 1px solid #dee2e6;
-}
-
-.form-control:focus, .form-select:focus {
-    border-color: #86b7fe;
-    box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.25);
-}
-
-.badge {
-    padding: 0.5em 0.75em;
-    font-weight: 500;
-}
-
-@media (max-width: 768px) {
     .card-header {
-        padding: 1rem;
+        background: linear-gradient(135deg, #1a237e 0%, #0d47a1 100%);
+        color: white;
+        border-top-left-radius: 1rem !important;
+        border-top-right-radius: 1rem !important;
+        padding: 1.5rem;
+    }
+
+    .table {
+        margin-bottom: 0;
+        background-color: #fff;
+    }
+
+    .table thead th {
+        background-color: #f8f9fa;
+        border-bottom: 2px solid #dee2e6;
+        font-weight: 600;
+        color: #212529;
+    }
+
+    .table tbody td {
+        vertical-align: middle;
+        color: #212529;
+    }
+
+    .table-hover tbody tr:hover {
+        background-color: rgba(13, 110, 253, 0.05);
     }
 
     .btn-group {
-        flex-direction: column;
-        width: 100%;
+        display: flex;
+        gap: 0.5rem;
     }
 
-    .btn-group .btn {
-        width: 100%;
-        margin: 0.25rem 0;
+    .btn {
+        padding: 0.5rem 1rem;
+        font-weight: 500;
     }
 
-    .table td {
-        padding: 0.75rem;
+    .btn-sm {
+        padding: 0.375rem 0.75rem;
+        font-size: 0.875rem;
     }
-}
+
+    .input-group {
+        box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+    }
+
+    .input-group-text {
+        background-color: #f8f9fa;
+        border: 1px solid #dee2e6;
+    }
+
+    .form-control, .form-select {
+        border: 1px solid #dee2e6;
+    }
+
+    .form-control:focus, .form-select:focus {
+        border-color: #86b7fe;
+        box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.25);
+    }
+
+    @media (max-width: 768px) {
+        .card-header {
+            padding: 1rem;
+        }
+
+        .btn-group {
+            flex-direction: column;
+            width: 100%;
+        }
+
+        .btn-group .btn {
+            width: 100%;
+            margin: 0.25rem 0;
+        }
+
+        .table td {
+            padding: 0.75rem;
+        }
+    }
 </style>
 
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-    const searchInput = document.getElementById('staffSearch');
+    const searchInput = document.getElementById('searchInput');
     const departmentFilter = document.getElementById('departmentFilter');
-    const tableRows = document.querySelectorAll('tbody tr');
+    const positionFilter = document.getElementById('positionFilter');
+    const resetButton = document.getElementById('resetFilters');
+    const table = document.getElementById('staffTable');
+    const rows = table.getElementsByClassName('staff-row');
+    const noResults = document.getElementById('noResults');
+
+    // Remove duplicate position options
+    const uniquePositions = new Set();
+    Array.from(positionFilter.options).forEach(option => {
+        if (uniquePositions.has(option.value)) {
+            option.remove();
+        } else {
+            uniquePositions.add(option.value);
+        }
+    });
 
     function filterTable() {
         const searchTerm = searchInput.value.toLowerCase();
         const selectedDepartment = departmentFilter.value.toLowerCase();
-        
-        tableRows.forEach(row => {
+        const selectedPosition = positionFilter.value.toLowerCase();
+        let visibleCount = 0;
+
+        Array.from(rows).forEach(row => {
             const name = row.cells[0].textContent.toLowerCase();
-            const department = row.cells[1].textContent.toLowerCase();
-            const superintendent = row.cells[2].textContent.toLowerCase();
+            const employeeId = row.cells[1].textContent.toLowerCase();
+            const department = row.cells[2].textContent.toLowerCase();
+            const position = row.cells[3].textContent.toLowerCase();
             
             const matchesSearch = name.includes(searchTerm) || 
-                                department.includes(searchTerm) || 
-                                superintendent.includes(searchTerm);
-            
+                                employeeId.includes(searchTerm) ||
+                                position.includes(searchTerm);
             const matchesDepartment = !selectedDepartment || department === selectedDepartment;
-            
-            row.style.display = matchesSearch && matchesDepartment ? '' : 'none';
+            const matchesPosition = !selectedPosition || position === selectedPosition;
+
+            if (matchesSearch && matchesDepartment && matchesPosition) {
+                row.style.display = '';
+                visibleCount++;
+            } else {
+                row.style.display = 'none';
+            }
         });
+
+        // Toggle no results message
+        noResults.classList.toggle('d-none', visibleCount > 0);
+        table.classList.toggle('d-none', visibleCount === 0);
     }
 
+    // Event listeners
     searchInput.addEventListener('input', filterTable);
     departmentFilter.addEventListener('change', filterTable);
+    positionFilter.addEventListener('change', filterTable);
+    
+    resetButton.addEventListener('click', function() {
+        searchInput.value = '';
+        departmentFilter.value = '';
+        positionFilter.value = '';
+        filterTable();
+    });
 
     // Delete confirmation
     document.querySelectorAll('.delete-staff').forEach(button => {
@@ -242,8 +275,9 @@ document.addEventListener('DOMContentLoaded', function() {
             Swal.fire({
                 title: 'Confirm Delete',
                 html: `
-                    <p>Are you sure you want to delete ${staffName}?</p>
-                    <p class="text-danger"><strong>Note:</strong> This will also remove their access to the system and all associated performance records.</p>
+                    <p>Are you sure you want to delete staff member:</p>
+                    <p><strong>${staffName}</strong></p>
+                    <p class="text-danger"><strong>Note:</strong> This action cannot be undone.</p>
                 `,
                 icon: 'warning',
                 showCancelButton: true,
@@ -253,11 +287,30 @@ document.addEventListener('DOMContentLoaded', function() {
                 cancelButtonColor: '#6c757d'
             }).then((result) => {
                 if (result.isConfirmed) {
-                    window.location.href = `/delete_staff/${staffId}/`;
+                    // Create a form for POST submission
+                    const deleteForm = document.createElement('form');
+                    deleteForm.method = 'post';
+                    deleteForm.action = `/delete-staff/${staffId}/`;
+                    
+                    // Add CSRF token
+                    const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]').value;
+                    const csrfInput = document.createElement('input');
+                    csrfInput.type = 'hidden';
+                    csrfInput.name = 'csrfmiddlewaretoken';
+                    csrfInput.value = csrfToken;
+                    deleteForm.appendChild(csrfInput);
+                    
+                    // Append to body and submit
+                    document.body.appendChild(deleteForm);
+                    deleteForm.submit();
                 }
             });
         });
     });
 });
 </script>
+
+<!-- Add CSRF token for the delete form -->
+{% csrf_token %}
+
 {% endblock %} 

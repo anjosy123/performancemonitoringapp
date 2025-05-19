@@ -6,12 +6,13 @@
         <div class="card">
             <div class="card-header bg-primary text-white">
                 <h3 class="mb-0">
-                    <i class="fas fa-hospital me-2"></i>Add Department
+                    <i class="fas fa-hospital me-2"></i>{{ department|yesno:"Edit,Add" }} Department
                 </h3>
             </div>
             <div class="card-body">
                 <form method="post" class="needs-validation" novalidate>
                     {% csrf_token %}
+                    <!-- Department Name -->
                     <div class="mb-3">
                         <label class="form-label">Department Name</label>
                         {{ form.name }}
@@ -22,12 +23,56 @@
                         {% endif %}
                     </div>
 
+                    <!-- Subdepartments -->
+                    <div class="mb-4">
+                        <h5 class="mb-3">Subdepartments</h5>
+                        <div id="subdepartments-formset">
+                            {{ formset.management_form }}
+                            <div class="subdepartment-forms">
+                                {% for subform in formset %}
+                                <div class="subdepartment-form mb-3">
+                                    <div class="row align-items-end">
+                                        <div class="col">
+                                            {{ subform.id }}
+                                            <label class="form-label">Subdepartment Name</label>
+                                            {{ subform.name }}
+                                            {% if subform.name.errors %}
+                                            <div class="invalid-feedback d-block">
+                                                {{ subform.name.errors.0 }}
+                                            </div>
+                                            {% endif %}
+                                        </div>
+                                        {% if formset.can_delete %}
+                                        <div class="col-auto">
+                                            <div class="form-check">
+                                                {{ subform.DELETE }}
+                                                <label class="form-check-label" for="{{ subform.DELETE.id_for_label }}">
+                                                    Delete
+                                                </label>
+                                            </div>
+                                        </div>
+                                        {% endif %}
+                                        <div class="col-auto">
+                                            <button type="button" class="btn btn-danger btn-sm remove-form">
+                                                <i class="fas fa-trash me-1"></i>Remove
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                                {% endfor %}
+                            </div>
+                            <button type="button" class="btn btn-secondary btn-sm" id="add-subdepartment">
+                                <i class="fas fa-plus me-1"></i>Add Another Subdepartment
+                            </button>
+                        </div>
+                    </div>
+
                     <div class="d-grid gap-2 d-md-flex justify-content-md-end">
                         <a href="{% url 'department_list' %}" class="btn btn-secondary me-2">
                             <i class="fas fa-times me-1"></i>Cancel
                         </a>
                         <button type="submit" class="btn btn-primary">
-                            <i class="fas fa-save me-1"></i>Add Department
+                            <i class="fas fa-save me-1"></i>{{ department|yesno:"Update,Add" }} Department
                         </button>
                     </div>
                 </form>
@@ -51,5 +96,78 @@
         padding: 0.75rem;
         border-radius: 0.5rem;
     }
+    .subdepartment-form {
+        padding: 1rem;
+        border: 1px solid #dee2e6;
+        border-radius: 0.5rem;
+        background-color: #f8f9fa;
+    }
+    .remove-form {
+        margin-bottom: 0.5rem;
+    }
 </style>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const addButton = document.getElementById('add-subdepartment');
+        const totalFormsInput = document.getElementById('id_subdepartments-TOTAL_FORMS');
+        const subdepartmentForms = document.querySelector('.subdepartment-forms');
+        
+        // Create a form template
+        const formTemplate = subdepartmentForms.querySelector('.subdepartment-form').cloneNode(true);
+        
+        // Handle add button click
+        addButton.addEventListener('click', function() {
+            // Get current form count
+            let formCount = parseInt(totalFormsInput.value);
+            
+            // Update form IDs and names
+            const newForm = formTemplate.cloneNode(true);
+            newForm.innerHTML = newForm.innerHTML.replace(
+                new RegExp('subdepartments-\\d+', 'g'), 
+                `subdepartments-${formCount}`
+            );
+            
+            // Clear input values
+            newForm.querySelectorAll('input[type="text"]').forEach(input => {
+                input.value = '';
+            });
+            
+            // Append the new form
+            subdepartmentForms.appendChild(newForm);
+            
+            // Update total forms count
+            totalFormsInput.value = formCount + 1;
+            
+            // Initialize remove button for the new form
+            initRemoveButtons();
+        });
+        
+        // Initialize remove buttons
+        function initRemoveButtons() {
+            document.querySelectorAll('.remove-form').forEach(button => {
+                button.addEventListener('click', function() {
+                    // Get the parent form
+                    const form = this.closest('.subdepartment-form');
+                    
+                    // If there's a DELETE checkbox, check it instead of removing
+                    const deleteCheckbox = form.querySelector('input[name$="-DELETE"]');
+                    if (deleteCheckbox) {
+                        deleteCheckbox.checked = true;
+                        form.style.display = 'none';
+                    } else {
+                        // Otherwise, remove the form
+                        form.remove();
+                        
+                        // Update form count
+                        totalFormsInput.value = parseInt(totalFormsInput.value) - 1;
+                    }
+                });
+            });
+        }
+        
+        // Initialize remove buttons on page load
+        initRemoveButtons();
+    });
+</script>
 {% endblock %} 

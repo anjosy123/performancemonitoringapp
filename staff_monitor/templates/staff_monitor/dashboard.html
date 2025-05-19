@@ -18,7 +18,7 @@
                     <div class="row g-3 justify-content-center">
                         <div class="col-md-4">
                             <a href="{% url 'superintendent_list' %}" class="btn btn-outline-primary w-100">
-                                <i class="fas fa-user-md me-2"></i>View Superintendents
+                                <i class="fas fa-user-md me-2"></i>View Department Heads
                             </a>
                         </div>
                         <div class="col-md-4">
@@ -30,6 +30,85 @@
                             <a href="{% url 'report_list' %}" class="btn btn-outline-primary w-100">
                                 <i class="fas fa-clipboard-list me-2"></i>View Reports
                             </a>
+                        </div>
+                    </div>
+                    {% else %}
+                    <!-- Superintendent Dashboard -->
+                    <div class="row g-3 justify-content-center">
+                        <div class="col-md-6">
+                            <div class="card h-100">
+                                <div class="card-body">
+                                    <h5 class="card-title">
+                                        <i class="fas fa-users me-2"></i>Department Staff
+                                    </h5>
+                                    <p class="card-text text-muted">
+                                        Manage and evaluate staff members in your department
+                                    </p>
+                                    <a href="{% url 'staff_list' %}" class="btn btn-primary w-100">
+                                        <i class="fas fa-user-check me-2"></i>View Staff List
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="card h-100">
+                                <div class="card-body">
+                                    <h5 class="card-title">
+                                        <i class="fas fa-clipboard-check me-2"></i>Performance Reports
+                                    </h5>
+                                    <p class="card-text text-muted">
+                                        View and manage performance evaluations
+                                    </p>
+                                    <a href="{% url 'report_list' %}" class="btn btn-primary w-100">
+                                        <i class="fas fa-list-alt me-2"></i>View Reports
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Staff List Section -->
+                    <div class="mt-4">
+                        <div class="card">
+                            <div class="card-header bg-primary text-white">
+                                <h5 class="mb-0">
+                                    <i class="fas fa-users me-2"></i>Your Department Staff
+                                </h5>
+                            </div>
+                            <div class="card-body">
+                                <div class="table-responsive">
+                                    <table class="table table-hover">
+                                        <thead>
+                                            <tr>
+                                                <th>Name</th>
+                                                <th>Position</th>
+                                                <th>Employee ID</th>
+                                                <th>Actions</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {% for staff in staff_list %}
+                                            <tr>
+                                                <td>{{ staff.user.get_full_name }}</td>
+                                                <td>{{ staff.position }}</td>
+                                                <td>{{ staff.employee_id }}</td>
+                                                <td>
+                                                    <a href="{% url 'performance_form' staff.id %}" class="btn btn-primary btn-sm">
+                                                        <i class="fas fa-clipboard-check me-1"></i>Evaluate
+                                                    </a>
+                                                </td>
+                                            </tr>
+                                            {% empty %}
+                                            <tr>
+                                                <td colspan="4" class="text-center py-4">
+                                                    <i class="fas fa-users text-muted me-2"></i>No staff members found
+                                                </td>
+                                            </tr>
+                                            {% endfor %}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
                         </div>
                     </div>
                     {% endif %}
@@ -68,6 +147,36 @@
     box-shadow: 0 4px 6px rgba(0,0,0,0.1);
 }
 
+.card {
+    border: none;
+    border-radius: 1rem;
+    box-shadow: 0 0.5rem 1rem rgba(0,0,0,0.1);
+    transition: all 0.3s ease;
+}
+
+.card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 0.5rem 1.5rem rgba(0,0,0,0.15);
+}
+
+.table {
+    margin-bottom: 0;
+}
+
+.table th {
+    background-color: #f8f9fa;
+    font-weight: 600;
+}
+
+.table td {
+    vertical-align: middle;
+}
+
+.btn-sm {
+    padding: 0.375rem 0.75rem;
+    font-size: 0.875rem;
+}
+
 @media (max-width: 768px) {
     .welcome-icon i {
         font-size: 3rem;
@@ -83,6 +192,10 @@
 
     .quick-links .btn {
         margin-bottom: 0.5rem;
+    }
+
+    .table-responsive {
+        margin: 0 -1rem;
     }
 }
 </style>
