@@ -5,10 +5,15 @@
     <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
         <h3 class="mb-0">
             <i class="fas fa-user-md me-2"></i>List of Department Heads
+            {% if is_hr_head %}
+            <span class="badge bg-warning ms-2">HR View</span>
+            {% endif %}
         </h3>
+        {% if is_admin or is_hr_head and department_head.privileges.can_add_department_head %}
         <a href="{% url 'add_superintendent' %}" class="btn btn-light">
             <i class="fas fa-user-md me-1"></i>Add Department Head
         </a>
+        {% endif %}
     </div>
     <div class="card-body">
         <!-- Search and Filter Section -->
@@ -21,8 +26,98 @@
                     <input type="text" id="superintendentSearch" class="form-control" placeholder="Search the Head of departments...">
                 </div>
             </div>
+            {% if is_admin or is_hr_head %}
+            <div class="col-md-4">
+                <select id="departmentFilter" class="form-select">
+                    <option value="">All Departments</option>
+                    {% for dept in departments %}
+                    <option value="{{ dept.name }}">{{ dept.name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-2">
+                <button id="resetFilters" class="btn btn-secondary w-100">
+                    <i class="fas fa-undo me-1"></i>Reset
+                </button>
+            </div>
+            {% endif %}
         </div>
 
+        {% if show_by_department %}
+        <!-- HR Head View - Department Heads Grouped by Department -->
+        <div class="accordion" id="departmentsAccordion">
+            {% for dept_id, dept_data in superintendents_by_department.items %}
+            <div class="accordion-item mb-3 department-section" data-department="{{ dept_data.name }}">
+                <h2 class="accordion-header" id="heading{{ dept_id }}">
+                    <button class="accordion-button" type="button" data-bs-toggle="collapse" data-bs-target="#collapse{{ dept_id }}" aria-expanded="true" aria-controls="collapse{{ dept_id }}">
+                        <i class="fas fa-hospital me-2"></i>{{ dept_data.name }} Department
+                        <span class="badge bg-primary ms-2">{{ dept_data.department_heads.count }} Department Heads</span>
+                    </button>
+                </h2>
+                <div id="collapse{{ dept_id }}" class="accordion-collapse collapse show" aria-labelledby="heading{{ dept_id }}" data-bs-parent="#departmentsAccordion">
+                    <div class="accordion-body p-0">
+                        <div class="table-responsive">
+                            <table class="table table-hover mb-0">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th>Name</th>
+                                        <th>Subdepartment</th>
+                                        <th>Contact</th>
+                                        <th>Staff Count</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for superintendent in dept_data.department_heads %}
+                                    <tr class="superintendent-row">
+                                        <td>{{ superintendent.user.get_full_name }}</td>
+                                        <td>
+                                            {% if superintendent.subdepartment %}
+                                                {{ superintendent.subdepartment.name }}
+                                            {% else %}
+                                                <span class="text-muted">Not Assigned</span>
+                                            {% endif %}
+                                        </td>
+                                        <td>{{ superintendent.contact_number }}</td>
+                                        <td>
+                                            <span class="badge bg-info">
+                                                {{ superintendent.staff_count }} Staff
+                                            </span>
+                                        </td>
+                                        <td>
+                                            <div class="btn-group">
+                                                {% if is_hr_head and department_head.privileges.can_edit_department_head %}
+                                                <a href="{% url 'edit_superintendent' superintendent.id %}" class="btn btn-warning btn-sm">
+                                                    <i class="fas fa-edit me-1"></i>Edit
+                                                </a>
+                                                {% endif %}
+                                                {% if is_hr_head and department_head.privileges.can_delete_department_head %}
+                                                <button class="btn btn-danger btn-sm delete-department-head" 
+                                                        data-superintendent-id="{{ superintendent.id }}"
+                                                        data-superintendent-name="{{ superintendent.user.get_full_name }}">
+                                                    <i class="fas fa-trash me-1"></i>Delete
+                                                </button>
+                                                {% endif %}
+                                            </div>
+                                        </td>
+                                    </tr>
+                                    {% empty %}
+                                    <tr>
+                                        <td colspan="5" class="text-center py-4">
+                                            <i class="fas fa-user-md text-muted me-2"></i>No department heads found
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        {% else %}
+        <!-- Regular Department Heads Table View -->
         <div class="table-responsive">
             <table class="table table-hover">
                 <thead class="table-light">
@@ -37,7 +132,7 @@
                 </thead>
                 <tbody>
                     {% for superintendent in superintendents %}
-                    <tr>
+                    <tr class="superintendent-row">
                         <td>{{ superintendent.user.get_full_name }}</td>
                         <td>{{ superintendent.department.name }}</td>
                         <td>
@@ -76,6 +171,7 @@
                 </tbody>
             </table>
         </div>
+        {% endif %}
     </div>
 </div>
 
@@ -155,6 +251,31 @@
     font-weight: 500;
 }
 
+/* Accordion Styling */
+.accordion-item {
+    border-radius: 0.5rem !important;
+    overflow: hidden;
+    border: 1px solid #dee2e6;
+    box-shadow: 0 0.125rem 0.25rem rgba(0,0,0,0.05);
+}
+
+.accordion-button {
+    font-weight: 600;
+    padding: 1rem 1.25rem;
+    background-color: #f8f9fa;
+    color: #212529;
+}
+
+.accordion-button:not(.collapsed) {
+    background-color: #e9ecef;
+    color: #0d6efd;
+}
+
+.accordion-button:focus {
+    box-shadow: none;
+    border-color: #dee2e6;
+}
+
 @media (max-width: 768px) {
     .card-header {
         padding: 1rem;
@@ -179,27 +300,90 @@
 <script>
 document.addEventListener('DOMContentLoaded', function() {
     const searchInput = document.getElementById('superintendentSearch');
-    const tableRows = document.querySelectorAll('tbody tr');
-
+    const departmentFilter = document.getElementById('departmentFilter');
+    const resetFilter = document.getElementById('resetFilters');
+    const superintendentRows = document.querySelectorAll('.superintendent-row');
+    const departmentSections = document.querySelectorAll('.department-section');
+    
+    // Function to filter department heads
     function filterTable() {
         const searchTerm = searchInput.value.toLowerCase();
+        const selectedDepartment = departmentFilter ? departmentFilter.value.toLowerCase() : '';
         
-        tableRows.forEach(row => {
-            const name = row.cells[0].textContent.toLowerCase();
-            const department = row.cells[1].textContent.toLowerCase();
-            const subdepartment = row.cells[2].textContent.toLowerCase();
-            const contact = row.cells[3].textContent.toLowerCase();
-            
-            const matchesSearch = name.includes(searchTerm) || 
-                                department.includes(searchTerm) ||
-                                subdepartment.includes(searchTerm) || 
-                                contact.includes(searchTerm);
-            
-            row.style.display = matchesSearch ? '' : 'none';
+        // If we're using the department grouped view
+        if (departmentSections.length > 0) {
+            departmentSections.forEach(section => {
+                const deptName = section.getAttribute('data-department').toLowerCase();
+                let hasVisibleRows = false;
+                
+                // If department filter doesn't match, hide the whole section
+                if (selectedDepartment && deptName !== selectedDepartment) {
+                    section.style.display = 'none';
+                    return;
+                } else {
+                    section.style.display = '';
+                }
+                
+                // Filter rows within this department
+                const rows = section.querySelectorAll('.superintendent-row');
+                rows.forEach(row => {
+                    const name = row.querySelector('td:first-child').textContent.toLowerCase();
+                    const subdept = row.querySelector('td:nth-child(2)').textContent.toLowerCase();
+                    const contact = row.querySelector('td:nth-child(3)').textContent.toLowerCase();
+                    
+                    if (searchTerm === '' || 
+                        name.includes(searchTerm) || 
+                        subdept.includes(searchTerm) || 
+                        contact.includes(searchTerm)) {
+                        row.style.display = '';
+                        hasVisibleRows = true;
+                    } else {
+                        row.style.display = 'none';
+                    }
+                });
+                
+                // If all rows in this department are hidden by search, hide the department
+                if (!hasVisibleRows && searchTerm) {
+                    section.style.display = 'none';
+                }
+            });
+        } else {
+            // Regular table view
+            superintendentRows.forEach(row => {
+                const name = row.querySelector('td:first-child').textContent.toLowerCase();
+                const department = row.querySelector('td:nth-child(2)').textContent.toLowerCase();
+                const subdept = row.querySelector('td:nth-child(3)').textContent.toLowerCase();
+                const contact = row.querySelector('td:nth-child(4)').textContent.toLowerCase();
+                
+                if ((searchTerm === '' || 
+                     name.includes(searchTerm) || 
+                     subdept.includes(searchTerm) || 
+                     contact.includes(searchTerm)) &&
+                    (selectedDepartment === '' || department.includes(selectedDepartment))) {
+                    row.style.display = '';
+                } else {
+                    row.style.display = 'none';
+                }
+            });
+        }
+    }
+    
+    // Set event listeners
+    if (searchInput) {
+        searchInput.addEventListener('input', filterTable);
+    }
+    
+    if (departmentFilter) {
+        departmentFilter.addEventListener('change', filterTable);
+    }
+    
+    if (resetFilter) {
+        resetFilter.addEventListener('click', function() {
+            if (searchInput) searchInput.value = '';
+            if (departmentFilter) departmentFilter.value = '';
+            filterTable();
         });
     }
-
-    searchInput.addEventListener('input', filterTable);
 
     // Create a hidden form for POST submission
     const deleteForm = document.createElement('form');
@@ -234,7 +418,7 @@ document.addEventListener('DOMContentLoaded', function() {
             }).then((result) => {
                 if (result.isConfirmed) {
                     // Set the form action to the delete URL
-                    deleteForm.action = `/delete-department-head/${superintendentId}/`;
+                    deleteForm.action = `/delete_superintendent/${superintendentId}/`;
                     
                     // Submit the form
                     deleteForm.submit();

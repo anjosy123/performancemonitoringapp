@@ -131,7 +131,7 @@ class DepartmentHeadForm(forms.ModelForm):
             'placeholder': 'Enter contact number'
         })
     )
-
+    
     class Meta:
         model = DepartmentHead
         fields = ['department', 'subdepartment', 'designation', 'joining_date', 'appointment_date', 'contact_number']
@@ -146,6 +146,8 @@ class DepartmentHeadForm(forms.ModelForm):
         # If we have a department in the instance, filter subdepartments
         if self.instance and hasattr(self.instance, 'department') and self.instance.department:
             self.fields['subdepartment'].queryset = SubDepartment.objects.filter(department=self.instance.department)
+            # Set initial value for department to ensure it's available for subdepartment filtering
+            self.initial['department'] = self.instance.department.id
         
         # If we have form data and 'department' in it
         if 'department' in self.data:
@@ -160,6 +162,21 @@ class DepartmentHeadForm(forms.ModelForm):
             self.fields['email'].widget.attrs['readonly'] = True
             self.fields['email'].widget.attrs['disabled'] = True
             self.fields['email'].help_text = "Email cannot be changed once account is created."
+
+    def clean(self):
+        cleaned_data = super().clean()
+        department = cleaned_data.get('department')
+        subdepartment = cleaned_data.get('subdepartment')
+        
+        # If subdepartment is selected, make sure it belongs to the selected department
+        if subdepartment and department and subdepartment.department != department:
+            # If there's a mismatch, raise validation error
+            self.add_error('subdepartment', 'The selected subdepartment does not belong to the selected department.')
+            
+            # Reset subdepartment queryset to show valid choices
+            self.fields['subdepartment'].queryset = SubDepartment.objects.filter(department=department)
+        
+        return cleaned_data
 
     def clean_email(self):
         email = self.cleaned_data.get('email')
@@ -217,6 +234,9 @@ class DepartmentHeadForm(forms.ModelForm):
             if commit:
                 head.save()
                 
+                # Store the password as an attribute so the view can access it
+                head.user_password = password
+                
                 try:
                     # Send email with credentials
                     from django.core.mail import send_mail
@@ -244,11 +264,13 @@ class DepartmentHeadForm(forms.ModelForm):
                         email_message,
                         settings.EMAIL_HOST_USER,
                         [user.email],
-                        fail_silently=False,
+                        fail_silently=True,  # Changed to True to prevent exceptions
                     )
-                except Exception as e:
-                    # Handle email sending error
-                    raise forms.ValidationError(f"Failed to send email: {str(e)}")
+                    # Mark successful email sending
+                    head.email_sent = True
+                except Exception:
+                    # Just mark that email wasn't sent, but don't raise an exception
+                    head.email_sent = False
             
             return head
 
@@ -317,6 +339,8 @@ class StaffForm(forms.ModelForm):
         # If we have a department in the instance, filter subdepartments
         if self.instance and hasattr(self.instance, 'department') and self.instance.department:
             self.fields['subdepartment'].queryset = SubDepartment.objects.filter(department=self.instance.department)
+            # Set initial value for department to ensure it's available for subdepartment filtering
+            self.initial['department'] = self.instance.department.id
         else:
             self.fields['subdepartment'].queryset = SubDepartment.objects.none()
         
@@ -333,6 +357,21 @@ class StaffForm(forms.ModelForm):
             self.fields['email'].widget.attrs['readonly'] = True
             self.fields['email'].widget.attrs['disabled'] = True
             self.fields['email'].help_text = "Email cannot be changed once account is created."
+
+    def clean(self):
+        cleaned_data = super().clean()
+        department = cleaned_data.get('department')
+        subdepartment = cleaned_data.get('subdepartment')
+        
+        # If subdepartment is selected, make sure it belongs to the selected department
+        if subdepartment and department and subdepartment.department != department:
+            # If there's a mismatch, raise validation error
+            self.add_error('subdepartment', 'The selected subdepartment does not belong to the selected department.')
+            
+            # Reset subdepartment queryset to show valid choices
+            self.fields['subdepartment'].queryset = SubDepartment.objects.filter(department=department)
+        
+        return cleaned_data
 
     def clean_email(self):
         email = self.cleaned_data.get('email')
@@ -402,6 +441,9 @@ class StaffForm(forms.ModelForm):
                     if commit:
                         staff.save()
                         
+                        # Store the password as an attribute so the view can access it
+                        staff.user_password = password
+                        
                         try:
                             # Send email with credentials
                             from django.core.mail import send_mail
@@ -429,11 +471,13 @@ class StaffForm(forms.ModelForm):
                                 email_message,
                                 settings.EMAIL_HOST_USER,
                                 [user.email],
-                                fail_silently=False,
+                                fail_silently=True,  # Set to True to prevent exceptions
                             )
-                        except Exception as e:
-                            # Log the error but don't fail
-                            print(f"Error sending email: {e}")
+                            # Mark successful email sending
+                            staff.email_sent = True
+                        except Exception:
+                            # Just mark that email wasn't sent, but don't raise an exception
+                            staff.email_sent = False
                 
                 return staff
                 

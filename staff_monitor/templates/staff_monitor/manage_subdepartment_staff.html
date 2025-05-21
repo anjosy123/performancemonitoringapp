@@ -1,0 +1,136 @@
+<!-- staff_monitor/templates/staff_monitor/manage_subdepartment_staff.html -->
+{% extends 'staff_monitor/base.html' %}
+
+{% block content %}
+<div class="card">
+    <div class="card-header bg-primary text-white">
+        <h3 class="mb-0">
+            <i class="fas fa-users-cog me-2"></i>Manage Staff Assignments
+        </h3>
+    </div>
+    <div class="card-body">
+        <div class="mb-4">
+            <h5 class="card-subtitle mb-2">Assigning Staff to Subdepartment Head</h5>
+            <div class="alert alert-info">
+                <i class="fas fa-info-circle me-2"></i>
+                <strong>Subdepartment Head:</strong> {{ subdepartment_head.user.get_full_name }} - 
+                <span class="text-secondary">{{ subdepartment_head.department.name }} / 
+                {% if subdepartment_head.subdepartment %}
+                    {{ subdepartment_head.subdepartment.name }}
+                {% else %}
+                    N/A
+                {% endif %}
+                </span>
+            </div>
+        </div>
+
+        <form method="post" class="needs-validation" novalidate>
+            {% csrf_token %}
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead class="table-light">
+                        <tr>
+                            <th width="5%">Select</th>
+                            <th>Name</th>
+                            <th>Employee ID</th>
+                            <th>Position</th>
+                            <th>Contact Info</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for staff in all_staff %}
+                        <tr>
+                            <td>
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" 
+                                           name="staff_assignments" 
+                                           value="{{ staff.id }}" 
+                                           id="staff-{{ staff.id }}"
+                                           {% if staff in assigned_staff %}checked{% endif %}>
+                                </div>
+                            </td>
+                            <td>{{ staff.user.get_full_name }}</td>
+                            <td>{{ staff.employee_id }}</td>
+                            <td>{{ staff.position }}</td>
+                            <td>{{ staff.user.email }}</td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="5" class="text-center py-4">
+                                <i class="fas fa-users text-muted me-2"></i>No staff members available for assignment
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="d-flex justify-content-between mt-4">
+                <a href="{% url 'dashboard' %}" class="btn btn-secondary">
+                    <i class="fas fa-arrow-left me-2"></i>Back to Dashboard
+                </a>
+                <div>
+                    <button type="submit" class="btn btn-success">
+                        <i class="fas fa-save me-2"></i>Save Assignments
+                    </button>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+
+<style>
+    .card {
+        border: none;
+        border-radius: 1rem;
+        box-shadow: 0 0.5rem 1rem rgba(0,0,0,0.1);
+        background-color: #fff;
+        margin-bottom: 1.5rem;
+    }
+
+    .card-header {
+        background: linear-gradient(135deg, #1a237e 0%, #0d47a1 100%);
+        color: white;
+        border-top-left-radius: 1rem !important;
+        border-top-right-radius: 1rem !important;
+        padding: 1.5rem;
+    }
+
+    .form-check-input {
+        width: 1.25rem;
+        height: 1.25rem;
+        cursor: pointer;
+    }
+
+    .table tbody td {
+        vertical-align: middle;
+    }
+
+    .btn {
+        padding: 0.5rem 1.5rem;
+        font-weight: 500;
+    }
+</style>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Add row highlighting when checkbox is checked
+        const checkboxes = document.querySelectorAll('input[name="staff_assignments"]');
+        checkboxes.forEach(checkbox => {
+            // Initial state
+            if (checkbox.checked) {
+                checkbox.closest('tr').classList.add('table-primary');
+            }
+            
+            // Change event
+            checkbox.addEventListener('change', function() {
+                if (this.checked) {
+                    this.closest('tr').classList.add('table-primary');
+                } else {
+                    this.closest('tr').classList.remove('table-primary');
+                }
+            });
+        });
+    });
+</script>
+{% endblock %} 

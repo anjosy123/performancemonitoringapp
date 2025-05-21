@@ -63,8 +63,8 @@
 
                     <div class="row">
                         <div class="col-md-6 mb-3">
-                            <label class="form-label">Joining Date</label>
-                            {{ form.joining_date }}
+                        <label class="form-label">Joining Date</label>
+                        {{ form.joining_date }}
                         </div>
                         <div class="col-md-6 mb-3">
                             <label class="form-label">Date of Appointment</label>
@@ -145,6 +145,9 @@ document.addEventListener('DOMContentLoaded', function() {
     const subdepartmentSelect = document.getElementById('subdepartment-select');
     const noSubdeptsMsg = document.getElementById('no-subdepts-msg');
 
+    // Store the initial subdepartment selection
+    const initialSubdepartmentId = subdepartmentSelect ? subdepartmentSelect.value : null;
+
     // Function to load subdepartments for the selected department
     function loadSubdepartments() {
         const departmentId = departmentSelect.value;
@@ -155,46 +158,88 @@ document.addEventListener('DOMContentLoaded', function() {
             return;
         }
 
+        // Show loading indicator
+        if (noSubdeptsMsg) {
+            noSubdeptsMsg.textContent = "Loading subdepartments...";
+            noSubdeptsMsg.style.display = 'block';
+        }
+        
+        console.log(`Fetching subdepartments for department ID: ${departmentId}`);
+
         // Make AJAX request to get subdepartments
         fetch(`/get-subdepartments/${departmentId}/`)
-            .then(response => response.json())
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error(`HTTP error! Status: ${response.status}`);
+                }
+                console.log('Response received, parsing JSON');
+                return response.json();
+            })
             .then(data => {
+                console.log('Subdepartments data:', data);
                 // Clear current options
                 subdepartmentSelect.innerHTML = '<option value="">Select Sub Department</option>';
                 
                 // If subdepartments exist, add them as options
                 if (data.subdepartments && data.subdepartments.length > 0) {
+                    let hasInitialSubdept = false;
+
                     data.subdepartments.forEach(subdept => {
                         const option = document.createElement('option');
                         option.value = subdept.id;
                         option.textContent = subdept.name;
+                        
+                        // If this is the initially selected subdepartment, select it again
+                        if (initialSubdepartmentId && subdept.id == initialSubdepartmentId) {
+                            option.selected = true;
+                            hasInitialSubdept = true;
+                        }
+                        
                         subdepartmentSelect.appendChild(option);
                     });
                     
                     subdepartmentSelect.style.display = 'block';
                     noSubdeptsMsg.style.display = 'none';
                     subdepartmentContainer.style.display = 'block';
+                    
+                    console.log(`Added ${data.subdepartments.length} subdepartments`);
+                    
+                    // If the initial subdept was added but doesn't belong to this department, show a warning
+                    if (initialSubdepartmentId && !hasInitialSubdept) {
+                        console.warn("Initial subdepartment does not belong to the selected department");
+                    }
                 } else {
                     // If no subdepartments, show message
                     subdepartmentSelect.style.display = 'none';
+                    noSubdeptsMsg.textContent = "No subdepartments available for the selected department";
                     noSubdeptsMsg.style.display = 'block';
                     subdepartmentContainer.style.display = 'block';
+                    console.log('No subdepartments found for this department');
                 }
             })
             .catch(error => {
                 console.error('Error loading subdepartments:', error);
-                subdepartmentContainer.style.display = 'none';
+                if (noSubdeptsMsg) {
+                    noSubdeptsMsg.textContent = "Error loading subdepartments. Please try again.";
+                    noSubdeptsMsg.style.display = 'block';
+                }
+                if (subdepartmentSelect) {
+                    subdepartmentSelect.style.display = 'none';
+                }
+                subdepartmentContainer.style.display = 'block';
             });
     }
 
     // Load subdepartments when department changes
-    departmentSelect.addEventListener('change', loadSubdepartments);
-    
-    // Initial load of subdepartments if a department is already selected
-    if (departmentSelect.value) {
-        loadSubdepartments();
-    } else {
-        subdepartmentContainer.style.display = 'none';
+    if (departmentSelect) {
+        departmentSelect.addEventListener('change', loadSubdepartments);
+        
+        // Initial load of subdepartments if a department is already selected
+        if (departmentSelect.value) {
+            loadSubdepartments();
+        } else {
+            subdepartmentContainer.style.display = 'none';
+        }
     }
 });
 </script>

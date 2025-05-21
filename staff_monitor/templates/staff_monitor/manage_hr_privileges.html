@@ -1,0 +1,262 @@
+{% extends 'staff_monitor/base.html' %}
+
+{% block content %}
+<div class="card">
+    <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+        <h3 class="mb-0">
+            <i class="fas fa-user-shield me-2"></i>Manage HR Privileges
+        </h3>
+        <a href="{% url 'hr_privileges_list' %}" class="btn btn-light btn-sm close-btn">
+            <i class="fas fa-times"></i>
+        </a>
+    </div>
+    
+    <div class="card-body">
+        <div class="alert alert-info mb-4">
+            <i class="fas fa-info-circle me-2"></i>
+            Configure privileges for <strong>{{ department_head.user.get_full_name }}</strong> from the <strong>{{ department_head.department.name }}</strong> department.
+            <br>
+            <small class="text-muted">These settings control what actions this department head can perform in the system.</small>
+            
+            {% if department_head.department.name|lower == "hr" %}
+            <hr>
+            <div class="badge bg-success p-2 mb-2">HR DEPARTMENT MEMBER</div>
+            <p class="mb-0 fw-bold">This user is from the HR department and has automatically enabled privileges regardless of settings below.</p>
+            {% endif %}
+        </div>
+        
+        <form method="post" id="privilegesForm">
+            {% csrf_token %}
+            
+            <!-- Staff Management Section -->
+            <div class="card mb-4">
+                <div class="card-header bg-light">
+                    <h5 class="mb-0"><i class="fas fa-users me-2"></i>Staff Management</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-4">
+                            <div class="form-check form-switch">
+                                <input class="form-check-input" type="checkbox" id="can_add_staff" name="can_add_staff" {% if privileges.can_add_staff %}checked{% endif %}>
+                                <label class="form-check-label" for="can_add_staff">
+                                    <i class="fas fa-user-plus me-1"></i>Add Staff Members
+                                </label>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="form-check form-switch">
+                                <input class="form-check-input" type="checkbox" id="can_edit_staff" name="can_edit_staff" {% if privileges.can_edit_staff %}checked{% endif %}>
+                                <label class="form-check-label" for="can_edit_staff">
+                                    <i class="fas fa-user-edit me-1"></i>Edit Staff Members
+                                </label>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="form-check form-switch">
+                                <input class="form-check-input" type="checkbox" id="can_delete_staff" name="can_delete_staff" {% if privileges.can_delete_staff %}checked{% endif %}>
+                                <label class="form-check-label" for="can_delete_staff">
+                                    <i class="fas fa-user-minus me-1"></i>Delete Staff Members
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Department Head Management Section -->
+            <div class="card mb-4">
+                <div class="card-header bg-light">
+                    <h5 class="mb-0"><i class="fas fa-user-md me-2"></i>Department Head Management</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-4">
+                            <div class="form-check form-switch">
+                                <input class="form-check-input" type="checkbox" id="can_add_department_head" name="can_add_department_head" {% if privileges.can_add_department_head %}checked{% endif %}>
+                                <label class="form-check-label" for="can_add_department_head">
+                                    <i class="fas fa-user-plus me-1"></i>Add Department Heads
+                                </label>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="form-check form-switch">
+                                <input class="form-check-input" type="checkbox" id="can_edit_department_head" name="can_edit_department_head" {% if privileges.can_edit_department_head %}checked{% endif %}>
+                                <label class="form-check-label" for="can_edit_department_head">
+                                    <i class="fas fa-user-edit me-1"></i>Edit Department Heads
+                                </label>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="form-check form-switch">
+                                <input class="form-check-input" type="checkbox" id="can_delete_department_head" name="can_delete_department_head" {% if privileges.can_delete_department_head %}checked{% endif %}>
+                                <label class="form-check-label" for="can_delete_department_head">
+                                    <i class="fas fa-user-minus me-1"></i>Delete Department Heads
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Department Management Section -->
+            <div class="card mb-4">
+                <div class="card-header bg-light">
+                    <h5 class="mb-0"><i class="fas fa-hospital-alt me-2"></i>Department Management</h5>
+                </div>
+                <div class="card-body">
+                    <div class="form-check form-switch">
+                        <input class="form-check-input" type="checkbox" id="can_manage_departments" name="can_manage_departments" {% if privileges.can_manage_departments %}checked{% endif %}>
+                        <label class="form-check-label" for="can_manage_departments">
+                            <i class="fas fa-hospital me-1"></i>Manage Departments & Subdepartments
+                        </label>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Report Management Section -->
+            <div class="card mb-4">
+                <div class="card-header bg-light">
+                    <h5 class="mb-0"><i class="fas fa-clipboard-list me-2"></i>Report Management</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="form-check form-switch">
+                                <input class="form-check-input" type="checkbox" id="can_view_all_reports" name="can_view_all_reports" {% if privileges.can_view_all_reports %}checked{% endif %}>
+                                <label class="form-check-label" for="can_view_all_reports">
+                                    <i class="fas fa-eye me-1"></i>View All Performance Reports
+                                </label>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-check form-switch">
+                                <input class="form-check-input" type="checkbox" id="can_delete_reports" name="can_delete_reports" {% if privileges.can_delete_reports %}checked{% endif %}>
+                                <label class="form-check-label" for="can_delete_reports">
+                                    <i class="fas fa-trash me-1"></i>Delete Performance Reports
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Submit Buttons -->
+            <div class="d-flex justify-content-end gap-2">
+                <a href="{% url 'hr_privileges_list' %}" class="btn btn-secondary">
+                    <i class="fas fa-times me-2"></i>Cancel
+                </a>
+                <button type="submit" class="btn btn-primary">
+                    <i class="fas fa-save me-2"></i>Save Privileges
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<style>
+    .card {
+        border: none;
+        border-radius: 1rem;
+        box-shadow: 0 0.5rem 1rem rgba(0,0,0,0.1);
+        background-color: #fff;
+        margin-bottom: 1.5rem;
+    }
+
+    .card-header {
+        background: linear-gradient(135deg, #1a237e 0%, #0d47a1 100%);
+        color: white;
+        border-top-left-radius: 1rem !important;
+        border-top-right-radius: 1rem !important;
+        padding: 1.5rem;
+    }
+
+    .card .card-header {
+        background: #f8f9fa;
+        color: #212529;
+        padding: 1rem;
+        font-weight: 600;
+    }
+
+    .close-btn {
+        width: 32px;
+        height: 32px;
+        padding: 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 50%;
+        transition: all 0.3s ease;
+    }
+
+    .close-btn:hover {
+        background-color: #dc3545;
+        color: white;
+        transform: rotate(90deg);
+    }
+
+    .form-check-input {
+        width: 2.5em;
+        height: 1.25em;
+        margin-top: 0.25em;
+    }
+
+    .form-switch .form-check-input {
+        background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='-4 -4 8 8'%3e%3ccircle r='3' fill='rgba%280, 0, 0, 0.25%29'/%3e%3c/svg%3e");
+        background-position: left center;
+        border-radius: 2em;
+        transition: background-position 0.15s ease-in-out;
+    }
+
+    .form-switch .form-check-input:checked {
+        background-position: right center;
+        background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='-4 -4 8 8'%3e%3ccircle r='3' fill='%23fff'/%3e%3c/svg%3e");
+    }
+
+    .form-check-label {
+        font-weight: 500;
+    }
+</style>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Add any JavaScript functionality needed for the privilege management form
+    
+    // Example: Highlight changes when switches are toggled
+    const switches = document.querySelectorAll('.form-check-input');
+    switches.forEach(switchEl => {
+        switchEl.addEventListener('change', function() {
+            if (this.checked) {
+                this.closest('.form-check').classList.add('text-primary');
+            } else {
+                this.closest('.form-check').classList.remove('text-primary');
+            }
+        });
+        
+        // Initialize highlight on page load
+        if (switchEl.checked) {
+            switchEl.closest('.form-check').classList.add('text-primary');
+        }
+    });
+    
+    // Form submission with confirmation
+    const form = document.getElementById('privilegesForm');
+    form.addEventListener('submit', function(e) {
+        e.preventDefault();
+        
+        Swal.fire({
+            title: 'Save Privileges?',
+            text: 'The selected privileges will be applied to this HR department head.',
+            icon: 'question',
+            showCancelButton: true,
+            confirmButtonText: 'Save Changes',
+            cancelButtonText: 'Cancel',
+            confirmButtonColor: '#0d6efd',
+        }).then((result) => {
+            if (result.isConfirmed) {
+                form.submit();
+            }
+        });
+    });
+});
+</script>
+{% endblock %} 

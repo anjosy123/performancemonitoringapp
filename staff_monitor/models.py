@@ -34,9 +34,31 @@ class DepartmentHead(models.Model):
     joining_date = models.DateField(null=True, blank=True)
     appointment_date = models.DateField(null=True, blank=True)
     managed_staff = models.ManyToManyField('Staff', related_name='supervisors', blank=True)
+    is_hr_head = models.BooleanField(default=False)
 
     def __str__(self):
         return f"{self.user.get_full_name()} - {self.department}"
+
+class HRPrivileges(models.Model):
+    hr_head = models.OneToOneField(DepartmentHead, on_delete=models.CASCADE, related_name='privileges')
+    can_add_staff = models.BooleanField(default=False)
+    can_edit_staff = models.BooleanField(default=False)
+    can_delete_staff = models.BooleanField(default=False)
+    can_add_department_head = models.BooleanField(default=False)
+    can_edit_department_head = models.BooleanField(default=False)
+    can_delete_department_head = models.BooleanField(default=False)
+    can_manage_departments = models.BooleanField(default=False)
+    can_view_all_reports = models.BooleanField(default=False)
+    can_delete_reports = models.BooleanField(default=False)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    def __str__(self):
+        return f"Privileges for {self.hr_head.user.get_full_name()}"
+
+    class Meta:
+        verbose_name = "HR Privileges"
+        verbose_name_plural = "HR Privileges"
 
 class Staff(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE)

@@ -1,0 +1,432 @@
+<!-- staff_monitor/templates/staff_monitor/feedback_form.html -->
+{% extends 'staff_monitor/base.html' %}
+
+{% block content %}
+<link href="https://cdn.jsdelivr.net/npm/sweetalert2@11.7.32/dist/sweetalert2.min.css" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11.7.32/dist/sweetalert2.all.min.js"></script>
+
+<div class="container-fluid">
+    <!-- Header Section -->
+    <div class="card mb-4">
+        <div class="card-header bg-success text-white">
+            <h2 class="text-center mb-0">MARIAMPUR HOSPITAL</h2>
+            <h4 class="text-center mb-0">STAFF FEEDBACK FORM</h4>
+        </div>
+        
+        <!-- Basic Information Section -->
+        <div class="card-body">
+            <div class="row mb-4">
+                <div class="col-md-6">
+                    <table class="table table-bordered">
+                        <tr>
+                            <th>Evaluator Name:</th>
+                            <td>
+                                {% if request.user.is_staff %}
+                                    HR Director - {{ request.user.get_full_name }}
+                                {% else %}
+                                    Department Head - {{ request.user.get_full_name }}
+                                {% endif %}
+                            </td>
+                        </tr>
+                        <tr>
+                            <th>Department:</th>
+                            <td>{{ staff.department }}</td>
+                        </tr>
+                        <tr>
+                            <th>Staff Name:</th>
+                            <td>{{ staff.user.get_full_name }}</td>
+                        </tr>
+                    </table>
+                </div>
+                <div class="col-md-6">
+                    <table class="table table-bordered">
+                        <tr>
+                            <th>Designation:</th>
+                            <td>{{ staff.position }}</td>
+                        </tr>
+                        <tr>
+                            <th>Employee Code:</th>
+                            <td>{{ staff.employee_id }}</td>
+                        </tr>
+                        <tr>
+                            <th>Date of Joining:</th>
+                            <td>{{ staff.joining_date }}</td>
+                        </tr>
+                    </table>
+                </div>
+            </div>
+
+            <form method="post" class="needs-validation" novalidate id="feedbackForm">
+                {% csrf_token %}
+                
+                <!-- Evaluation Date -->
+                <div class="row mb-4">
+                    <div class="col-md-4">
+                        <label class="form-label">Feedback Date:</label>
+                        <input type="date" name="date" class="form-control" required
+                               max="{{ today|date:'Y-m-d' }}"
+                               value="{{ today|date:'Y-m-d' }}">
+                    </div>
+                </div>
+
+                <!-- Feedback Parameters - Sample Format -->
+                <div class="evaluation-sections">
+                    <!-- Communication Skills -->
+                    <div class="section-card mb-4">
+                        <h5 class="section-header bg-success text-white p-2">
+                            COMMUNICATION SKILLS
+                        </h5>
+                        <div class="table-responsive">
+                            <table class="table table-bordered">
+                                <thead>
+                                    <tr>
+                                        <th width="5%">No.</th>
+                                        <th>Parameters</th>
+                                        <th width="20%">Rating (1-5)</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr>
+                                        <td>1</td>
+                                        <td>Clarity in verbal communication</td>
+                                        <td>
+                                            <input type="number" 
+                                                   name="comm1" 
+                                                   class="form-control rating-input" 
+                                                   min="1" 
+                                                   max="5" 
+                                                   required 
+                                                   pattern="[1-5]">
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td>2</td>
+                                        <td>Effectiveness in written communication</td>
+                                        <td>
+                                            <input type="number" 
+                                                   name="comm2" 
+                                                   class="form-control rating-input" 
+                                                   min="1" 
+                                                   max="5" 
+                                                   required 
+                                                   pattern="[1-5]">
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td>3</td>
+                                        <td>Active listening skills</td>
+                                        <td>
+                                            <input type="number" 
+                                                   name="comm3" 
+                                                   class="form-control rating-input" 
+                                                   min="1" 
+                                                   max="5" 
+                                                   required 
+                                                   pattern="[1-5]">
+                                        </td>
+                                    </tr>
+                                </tbody>
+                                <tfoot>
+                                    <tr class="table-secondary">
+                                        <th colspan="2">TOTAL</th>
+                                        <td><span class="section-total">0</span>/15</td>
+                                    </tr>
+                                </tfoot>
+                            </table>
+                        </div>
+                    </div>
+
+                    <!-- Professional Conduct -->
+                    <div class="section-card mb-4">
+                        <h5 class="section-header bg-success text-white p-2">
+                            PROFESSIONAL CONDUCT
+                        </h5>
+                        <div class="table-responsive">
+                            <table class="table table-bordered">
+                                <thead>
+                                    <tr>
+                                        <th width="5%">No.</th>
+                                        <th>Parameters</th>
+                                        <th width="20%">Rating (1-5)</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr>
+                                        <td>1</td>
+                                        <td>Punctuality and attendance</td>
+                                        <td>
+                                            <input type="number" 
+                                                   name="conduct1" 
+                                                   class="form-control rating-input" 
+                                                   min="1" 
+                                                   max="5" 
+                                                   required 
+                                                   pattern="[1-5]">
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td>2</td>
+                                        <td>Adherence to hospital policies</td>
+                                        <td>
+                                            <input type="number" 
+                                                   name="conduct2" 
+                                                   class="form-control rating-input" 
+                                                   min="1" 
+                                                   max="5" 
+                                                   required 
+                                                   pattern="[1-5]">
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td>3</td>
+                                        <td>Professional appearance and demeanor</td>
+                                        <td>
+                                            <input type="number" 
+                                                   name="conduct3" 
+                                                   class="form-control rating-input" 
+                                                   min="1" 
+                                                   max="5" 
+                                                   required 
+                                                   pattern="[1-5]">
+                                        </td>
+                                    </tr>
+                                </tbody>
+                                <tfoot>
+                                    <tr class="table-secondary">
+                                        <th colspan="2">TOTAL</th>
+                                        <td><span class="section-total">0</span>/15</td>
+                                    </tr>
+                                </tfoot>
+                            </table>
+                        </div>
+                    </div>
+
+                    <!-- Patient Care -->
+                    <div class="section-card mb-4">
+                        <h5 class="section-header bg-success text-white p-2">
+                            PATIENT CARE
+                        </h5>
+                        <div class="table-responsive">
+                            <table class="table table-bordered">
+                                <thead>
+                                    <tr>
+                                        <th width="5%">No.</th>
+                                        <th>Parameters</th>
+                                        <th width="20%">Rating (1-5)</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr>
+                                        <td>1</td>
+                                        <td>Empathy towards patients</td>
+                                        <td>
+                                            <input type="number" 
+                                                   name="care1" 
+                                                   class="form-control rating-input" 
+                                                   min="1" 
+                                                   max="5" 
+                                                   required 
+                                                   pattern="[1-5]">
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td>2</td>
+                                        <td>Response to patient needs</td>
+                                        <td>
+                                            <input type="number" 
+                                                   name="care2" 
+                                                   class="form-control rating-input" 
+                                                   min="1" 
+                                                   max="5" 
+                                                   required 
+                                                   pattern="[1-5]">
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td>3</td>
+                                        <td>Patient satisfaction feedback</td>
+                                        <td>
+                                            <input type="number" 
+                                                   name="care3" 
+                                                   class="form-control rating-input" 
+                                                   min="1" 
+                                                   max="5" 
+                                                   required 
+                                                   pattern="[1-5]">
+                                        </td>
+                                    </tr>
+                                </tbody>
+                                <tfoot>
+                                    <tr class="table-secondary">
+                                        <th colspan="2">TOTAL</th>
+                                        <td><span class="section-total">0</span>/15</td>
+                                    </tr>
+                                </tfoot>
+                            </table>
+                        </div>
+                    </div>
+
+                    <!-- Final Score Section -->
+                    <div class="card mb-4">
+                        <div class="card-body">
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <h5>Total Marks Obtained: <span id="grand-total">0</span>/45</h5>
+                                    <h5>Percentage: <span id="percentage">0</span>%</h5>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="alert alert-info">
+                                        <strong>Rating Scale:</strong><br>
+                                        1 - Poor<br>
+                                        2 - Fair<br>
+                                        3 - Good<br>
+                                        4 - Very Good<br>
+                                        5 - Excellent
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Remarks and Signatures -->
+                    <div class="card mb-4">
+                        <div class="card-body">
+                            <div class="mb-3">
+                                <label class="form-label">Feedback Comments:</label>
+                                <textarea name="remarks" class="form-control" rows="4"></textarea>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Submit Buttons -->
+                    <div class="d-flex justify-content-end gap-2">
+                        <a href="{% url 'dashboard' %}" class="btn btn-secondary">
+                            <i class="fas fa-times me-2"></i>Cancel
+                        </a>
+                        <button type="submit" class="btn btn-success">
+                            <i class="fas fa-save me-2"></i>Submit Feedback
+                        </button>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<style>
+.section-card {
+    border: 1px solid #dee2e6;
+    border-radius: 0.5rem;
+    overflow: hidden;
+}
+
+.section-header {
+    margin: 0;
+    padding: 1rem;
+    background-color: #198754;
+    border-bottom: 1px solid #dee2e6;
+}
+
+.rating-input {
+    width: 100%;
+    margin: 0 auto;
+    display: block;
+    padding: 0.5rem;
+    font-size: 16px;
+    -webkit-appearance: none;
+    -moz-appearance: textfield;
+}
+
+.table th {
+    background-color: #f8f9fa;
+}
+
+.evaluation-sections {
+    max-width: 1200px;
+    margin: 0 auto;
+}
+
+.rating-input::-webkit-inner-spin-button,
+.rating-input::-webkit-outer-spin-button {
+    opacity: 1;
+    height: 40px;
+}
+
+.rating-input:focus {
+    outline: none;
+    border-color: #86b7fe;
+    box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.25);
+}
+</style>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    function calculateTotals() {
+        const sections = document.querySelectorAll('.section-card');
+        let grandTotal = 0;
+        
+        sections.forEach(section => {
+            const inputs = section.querySelectorAll('.rating-input');
+            let sectionTotal = 0;
+            
+            inputs.forEach(input => {
+                sectionTotal += Number(input.value) || 0;
+            });
+            
+            section.querySelector('.section-total').textContent = sectionTotal;
+            grandTotal += sectionTotal;
+        });
+        
+        document.getElementById('grand-total').textContent = grandTotal;
+        const percentage = ((grandTotal / 45) * 100).toFixed(2);
+        document.getElementById('percentage').textContent = percentage;
+    }
+
+    document.querySelectorAll('.rating-input').forEach(input => {
+        input.addEventListener('input', function() {
+            let value = parseInt(this.value) || 0;
+            
+            if (value > 5) this.value = 5;
+            if (value < 1) this.value = 1;
+            if (value === 0) this.value = "";
+            
+            calculateTotals();
+        });
+    });
+
+    const form = document.getElementById('feedbackForm');
+    if (form) {
+        form.addEventListener('submit', function(e) {
+            e.preventDefault();
+
+            const requiredInputs = form.querySelectorAll('input[required]');
+            let allFilled = true;
+            requiredInputs.forEach(input => {
+                if (!input.value) {
+                    allFilled = false;
+                }
+            });
+
+            if (!allFilled) {
+                Swal.fire({
+                    title: 'Incomplete Form',
+                    text: 'Please fill in all required fields before submitting.',
+                    icon: 'warning',
+                    confirmButtonText: 'OK',
+                    confirmButtonColor: '#198754'
+                });
+                return;
+            }
+
+            Swal.fire({
+                title: 'Form Submission',
+                text: 'This is a sample form. The full form will be implemented later.',
+                icon: 'info',
+                confirmButtonText: 'OK',
+                confirmButtonColor: '#198754'
+            });
+        });
+    }
+});
+</script>
+{% endblock %} 
