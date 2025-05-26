@@ -63,6 +63,8 @@ class PerformanceReportForm(forms.ModelForm):
             
         return selected_date
 
+# staff_monitor/forms.py
+
 class DepartmentHeadForm(forms.ModelForm):
     email = forms.EmailField(
         required=True,
@@ -408,64 +410,91 @@ class StaffForm(forms.ModelForm):
                 
             return staff
         else:
-            # Create new user for a new staff member
-            password = ''.join(random.choices(string.ascii_letters + string.digits, k=8))
-            
-            # Create User instance
-            user = User.objects.create_user(
-                username=self.cleaned_data['email'],
-                email=self.cleaned_data['email'],
-                password=password,
-                first_name=self.cleaned_data['first_name'],
-                last_name=self.cleaned_data['last_name']
-            )
-            
-            # Create Staff instance
-            staff = super().save(commit=False)
-            staff.user = user
-            
-            if commit:
-                staff.save()
-                
-                # Store the password as an attribute so the view can access it
-                staff.user_password = password
-                
-                try:
-                    # Send email with credentials
-                    from django.core.mail import send_mail
-                    from django.conf import settings
+            # Create new user for a new staff
+            try:
+                # Check again if the username/email already exists to avoid race conditions
+                email = self.cleaned_data['email']
+                if User.objects.filter(username=email).exists() or User.objects.filter(email=email).exists():
+                    raise forms.ValidationError("This email is already registered in the system.")
                     
-                    email_subject = 'Your Performance Monitoring System Credentials'
-                    email_message = f"""
-                    Dear {user.get_full_name()},
-
-                    Your account has been created in the Performance Monitoring System.
-
-                    Login Details:
-                    Username: {user.username}
-                    Password: {password}
-
-                    Please login at: http://127.0.0.1:8000/login/
-                    We recommend changing your password after your first login.
-
-                    Best regards,
-                    Performance Monitoring System Team
-                    """
-                    
-                    send_mail(
-                        email_subject,
-                        email_message,
-                        settings.EMAIL_HOST_USER,
-                        [user.email],
-                        fail_silently=True,  # Set to True to prevent exceptions
+                # Create Staff instance first without saving to DB
+                staff = super().save(commit=False)
+                
+                # Generate random password
+                password = ''.join(random.choices(string.ascii_letters + string.digits, k=8))
+                
+                # Create User instance with transaction
+                from django.db import transaction
+                with transaction.atomic():
+                    # Create User instance
+                    user = User.objects.create_user(
+                        username=email,
+                        email=email,
+                        password=password,
+                        first_name=self.cleaned_data['first_name'],
+                        last_name=self.cleaned_data['last_name']
                     )
-                    # Mark successful email sending
-                    staff.email_sent = True
-                except Exception:
-                    # Just mark that email wasn't sent, but don't raise an exception
-                    staff.email_sent = False
                     
-            return staff
+                    # Attach user to staff
+                    staff.user = user
+                    
+                    if commit:
+                        staff.save()
+                        
+                        # Store the password as an attribute so the view can access it
+                        staff.user_password = password
+                        
+                        try:
+                            # Send email with credentials
+                            from django.core.mail import send_mail
+                            from django.conf import settings
+                            
+                            email_subject = 'Your Performance Monitoring System Credentials'
+                            email_message = f"""
+                            Dear {user.get_full_name()},
+
+                            Your account has been created in the Performance Monitoring System.
+
+                            Login Details:
+                            Username: {user.username}
+                            Password: {password}
+
+                            Please login at: http://127.0.0.1:8000/login/
+                            We recommend changing your password after your first login.
+
+                            Best regards,
+                            Performance Monitoring System Team
+                            """
+                            
+                            send_mail(
+                                email_subject,
+                                email_message,
+                                settings.EMAIL_HOST_USER,
+                                [user.email],
+                                fail_silently=True,  # Set to True to prevent exceptions
+                            )
+                            # Mark successful email sending
+                            staff.email_sent = True
+                        except Exception:
+                            # Just mark that email wasn't sent, but don't raise an exception
+                            staff.email_sent = False
+                
+                return staff
+                
+            except IntegrityError as e:
+                # Provide more specific error message based on the exception
+                if 'UNIQUE constraint' in str(e):
+                    raise forms.ValidationError("This email is already in use. Please use a different email address.")
+                else:
+                    raise forms.ValidationError(f"Database error: {str(e)}")
+            except forms.ValidationError as e:
+                # Propagate validation errors
+                raise e
+            except Exception as e:
+                # Handle any other unexpected errors
+                raise forms.ValidationError(f"An unexpected error occurred: {str(e)}")
+                
+        return super().save(commit=False)
 
 class DepartmentForm(forms.ModelForm):
     name = forms.CharField(

@@ -11,6 +11,7 @@ urlpatterns = [
     path('staff/', views.staff_list, name='staff_list'),
     path('department-heads/', views.superintendent_list, name='superintendent_list'),
     path('reports/', views.report_list, name='report_list'),
+    path('incident-reports/', views.incident_report_list, name='incident_report_list'),
     
     # Performance evaluation
     path('evaluate/<int:staff_id>/', views.performance_form, name='performance_form'),

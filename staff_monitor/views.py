@@ -331,6 +331,40 @@ def report_list(request):
         return redirect('dashboard')
 
 @login_required
+def incident_report_list(request):
+    try:
+        # Check permissions (same as performance reports)
+        if request.user.is_staff:
+            # Admin sees all reports
+            is_authorized = True
+        else:
+            try:
+                # Check if the user is a department head
+                department_head = DepartmentHead.objects.get(user=request.user)
+                
+                # Check if HR head with all-reports privilege
+                if department_head.is_hr_head and hasattr(department_head, 'privileges') and department_head.privileges.can_view_all_reports:
+                    is_authorized = True
+                elif department_head.department.name.lower() == "hr":
+                    is_authorized = True
+                else:
+                    # Regular department head is authorized to see their department's reports
+                    is_authorized = True
+            except DepartmentHead.DoesNotExist:
+                is_authorized = False
+        
+        if not is_authorized:
+            messages.error(request, "You do not have permission to view incident reports.")
+            return redirect('dashboard')
+            
+        # For now, just render the template (no actual data yet)
+        return render(request, 'staff_monitor/incident_report_list.html')
+        
+    except Exception as e:
+        messages.error(request, f"Error loading incident reports: {str(e)}")
+        return redirect('dashboard')
+
+@login_required
 @user_passes_test(lambda u: can_perform_action(u, 'can_add_department_head') or u.is_staff)
 def add_superintendent(request):
     if request.method == 'POST':

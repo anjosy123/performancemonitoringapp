@@ -29,9 +29,23 @@
                             </a>
                         </div>
                         <div class="col-md-4">
-                            <a href="{% url 'report_list' %}" class="btn btn-outline-primary w-100">
-                                <i class="fas fa-clipboard-list me-2"></i>View Reports
-                            </a>
+                            <div class="dropdown">
+                                <button class="btn btn-outline-primary w-100 dropdown-toggle" type="button" id="reportsDropdownBtn" data-bs-toggle="dropdown" aria-expanded="false">
+                                    <i class="fas fa-clipboard-list me-2"></i>View Reports
+                                </button>
+                                <ul class="dropdown-menu w-100" aria-labelledby="reportsDropdownBtn">
+                                    <li>
+                                        <a class="dropdown-item" href="{% url 'report_list' %}">
+                                            <i class="fas fa-chart-line me-2"></i>Performance Appraisal
+                                        </a>
+                                    </li>
+                                    <li>
+                                        <a class="dropdown-item" href="{% url 'incident_report_list' %}">
+                                            <i class="fas fa-exclamation-triangle me-2"></i>Incident Reports
+                                        </a>
+                                    </li>
+                                </ul>
+                            </div>
                         </div>
                     </div>
                     
@@ -100,9 +114,14 @@
                                 <p class="card-text text-muted">
                                     View and manage performance reports
                                 </p>
-                                <a href="{% url 'report_list' %}" class="btn btn-info w-100 text-white">
-                                    <i class="fas fa-clipboard-check me-2"></i>View Reports
-                                </a>
+                                <div class="d-grid gap-2">
+                                    <a href="{% url 'report_list' %}" class="btn btn-info text-white">
+                                        <i class="fas fa-chart-line me-2"></i>Performance Appraisal
+                                    </a>
+                                    <a href="{% url 'incident_report_list' %}" class="btn btn-warning text-dark">
+                                        <i class="fas fa-exclamation-triangle me-2"></i>Incident Reports
+                                    </a>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -217,9 +236,14 @@
                                 <p class="card-text text-muted">
                                     View and manage performance evaluations
                                 </p>
-                                <a href="{% url 'report_list' %}" class="btn btn-success w-100">
-                                    <i class="fas fa-list-alt me-2"></i>View Reports
-                                </a>
+                                <div class="d-grid gap-2">
+                                    <a href="{% url 'report_list' %}" class="btn btn-success">
+                                        <i class="fas fa-chart-line me-2"></i>Performance Appraisal
+                                    </a>
+                                    <a href="{% url 'incident_report_list' %}" class="btn btn-warning text-dark">
+                                        <i class="fas fa-exclamation-triangle me-2"></i>Incident Reports
+                                    </a>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -305,13 +329,13 @@
                         </h5>
                     </div>
                     <div class="card-body">
-                        <div class="table-responsive">
+<div class="table-responsive">
                             <table class="table table-hover">
-                                <thead>
-                                    <tr>
+        <thead>
+            <tr>
                                         <th>Name</th>
                                         <th>Position</th>
-                                        <th>Employee ID</th>
+                <th>Employee ID</th>
                                         <th>Email</th>
                                         <th>Actions</th>
                                     </tr>
@@ -367,9 +391,14 @@
                                 <p class="card-text text-muted">
                                     View and manage performance evaluations
                                 </p>
-                                <a href="{% url 'report_list' %}" class="btn btn-success w-100">
-                                    <i class="fas fa-list-alt me-2"></i>View Reports
-                                </a>
+                                <div class="d-grid gap-2">
+                                    <a href="{% url 'report_list' %}" class="btn btn-success">
+                                        <i class="fas fa-chart-line me-2"></i>Performance Appraisal
+                                    </a>
+                                    <a href="{% url 'incident_report_list' %}" class="btn btn-warning text-dark">
+                                        <i class="fas fa-exclamation-triangle me-2"></i>Incident Reports
+                                    </a>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -387,18 +416,18 @@
                             <table class="table table-hover">
                                 <thead>
                                     <tr>
-                                        <th>Name</th>
-                                        <th>Position</th>
+                <th>Name</th>
+                <th>Position</th>
                                         <th>Employee ID</th>
                                         <th>Email</th>
-                                        <th>Actions</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    {% for staff in staff_list %}
-                                    <tr>
-                                        <td>{{ staff.user.get_full_name }}</td>
-                                        <td>{{ staff.position }}</td>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for staff in staff_list %}
+            <tr>
+                <td>{{ staff.user.get_full_name }}</td>
+                <td>{{ staff.position }}</td>
                                         <td>{{ staff.employee_id }}</td>
                                         <td>{{ staff.user.email }}</td>
                                         <td>
@@ -410,18 +439,18 @@
                                                     <i class="fas fa-comment-dots me-1"></i>Feedback
                                                 </a>
                                             </div>
-                                        </td>
-                                    </tr>
-                                    {% empty %}
-                                    <tr>
+                </td>
+            </tr>
+            {% empty %}
+            <tr>
                                         <td colspan="5" class="text-center py-4">
                                             <i class="fas fa-users text-muted me-2"></i>No staff members assigned to you
                                         </td>
-                                    </tr>
-                                    {% endfor %}
-                                </tbody>
-                            </table>
-                        </div>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
                     </div>
                 </div>
                 

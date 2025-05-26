@@ -365,7 +365,7 @@
                             <i class="fas fa-home"></i>Dashboard
                         </a>
                     </li>
-                    {% if user.is_staff %}
+                {% if user.is_staff %}
                     <li class="nav-item dropdown">
                         <a class="nav-link dropdown-toggle" href="#" id="centerManagementDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
                             <i class="fas fa-cogs"></i>Centre Management
@@ -420,12 +420,24 @@
                             <i class="fas fa-list-alt"></i>Departments
                         </a>
                     </li> {% endcomment %}
-                    <li class="nav-item">
-                        <a class="nav-link" href="{% url 'report_list' %}">
+                    <li class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle" href="#" id="reportsDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
                             <i class="fas fa-clipboard-list"></i>Reports
                         </a>
+                        <ul class="dropdown-menu" aria-labelledby="reportsDropdown">
+                            <li>
+                                <a class="dropdown-item" href="{% url 'report_list' %}">
+                                    <i class="fas fa-chart-line me-2"></i>Performance Appraisal Report
+                                </a>
+                            </li>
+                            <li>
+                                <a class="dropdown-item" href="{% url 'incident_report_list' %}">
+                                    <i class="fas fa-exclamation-triangle me-2"></i>Incident Report
+                                </a>
+                            </li>
+                        </ul>
                     </li>
-                    {% endif %}
+                {% endif %}
                     <li class="nav-item">
                         <form method="post" action="{% url 'logout' %}" id="logoutForm">
                             {% csrf_token %}
@@ -443,21 +455,21 @@
     </nav>
 
     <div class="content-wrapper">
-        <div class="container mt-4">
+    <div class="container mt-4">
             {% comment %}
-            {% if messages %}
-            {% for message in messages %}
+        {% if messages %}
+        {% for message in messages %}
             <div class="alert alert-{{ message.tags }} alert-dismissible fade show">
-                {{ message }}
+            {{ message }}
                 <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-            </div>
-            {% endfor %}
-            {% endif %}
+        </div>
+        {% endfor %}
+        {% endif %}
             {% endcomment %}
 
-            {% block content %}
-            {% endblock %}
-        </div>
+        {% block content %}
+        {% endblock %}
+    </div>
     </div>
 
     <footer class="footer">

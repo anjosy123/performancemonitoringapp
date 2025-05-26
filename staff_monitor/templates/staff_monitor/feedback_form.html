@@ -7,306 +7,359 @@
 
 <div class="container-fluid">
     <!-- Header Section -->
-    <div class="card mb-4">
-        <div class="card-header bg-success text-white">
+    <div class="card mb-4 form-card main-card">
+        <div class="card-header bg-danger text-white py-3">
             <h2 class="text-center mb-0">MARIAMPUR HOSPITAL</h2>
-            <h4 class="text-center mb-0">STAFF FEEDBACK FORM</h4>
+            <h4 class="text-center mb-0">STAFF PERFORMANCE APPRAISAL FORM</h4>
         </div>
         
-        <!-- Basic Information Section -->
-        <div class="card-body">
-            <div class="row mb-4">
-                <div class="col-md-6">
-                    <table class="table table-bordered">
-                        <tr>
-                            <th>Evaluator Name:</th>
-                            <td>
-                                {% if request.user.is_staff %}
-                                    HR Director - {{ request.user.get_full_name }}
-                                {% else %}
-                                    Department Head - {{ request.user.get_full_name }}
-                                {% endif %}
-                            </td>
-                        </tr>
-                        <tr>
-                            <th>Department:</th>
-                            <td>{{ staff.department }}</td>
-                        </tr>
-                        <tr>
-                            <th>Staff Name:</th>
-                            <td>{{ staff.user.get_full_name }}</td>
-                        </tr>
-                    </table>
-                </div>
-                <div class="col-md-6">
-                    <table class="table table-bordered">
-                        <tr>
-                            <th>Designation:</th>
-                            <td>{{ staff.position }}</td>
-                        </tr>
-                        <tr>
-                            <th>Employee Code:</th>
-                            <td>{{ staff.employee_id }}</td>
-                        </tr>
-                        <tr>
-                            <th>Date of Joining:</th>
-                            <td>{{ staff.joining_date }}</td>
-                        </tr>
-                    </table>
-                </div>
-            </div>
-
-            <form method="post" class="needs-validation" novalidate id="feedbackForm">
+        <div class="card-body p-4">
+            <form method="post" class="needs-validation" novalidate id="incidentForm">
                 {% csrf_token %}
                 
-                <!-- Evaluation Date -->
-                <div class="row mb-4">
-                    <div class="col-md-4">
-                        <label class="form-label">Feedback Date:</label>
-                        <input type="date" name="date" class="form-control" required
-                               max="{{ today|date:'Y-m-d' }}"
-                               value="{{ today|date:'Y-m-d' }}">
+                <!-- Staff Information Section -->
+                <div class="card form-section-card mb-4">
+                    <div class="card-body">
+                        <div class="section-title mb-3">
+                            <i class="fas fa-user-tie me-2 text-danger"></i>
+                            <span>Staff Information</span>
+                        </div>
+                        <div class="row">
+                            <div class="col-md-6">
+                                <table class="table table-bordered">
+                                    <tr>
+                                        <th class="bg-light" width="40%">Name:</th>
+                                        <td>{{ staff.user.get_full_name }}</td>
+                                    </tr>
+                                    <tr>
+                                        <th class="bg-light">Designation:</th>
+                                        <td>{{ staff.position }}</td>
+                                    </tr>
+                                    <tr>
+                                        <th class="bg-light">Employee ID:</th>
+                                        <td>{{ staff.employee_id }}</td>
+                                    </tr>
+                                </table>
+                            </div>
+                            <div class="col-md-6">
+                                <table class="table table-bordered">
+                                    <tr>
+                                        <th class="bg-light" width="40%">Department:</th>
+                                        <td>{{ staff.department }}</td>
+                                    </tr>
+                                    <tr>
+                                        <th class="bg-light">Date of Joining:</th>
+                                        <td>{{ staff.joining_date }}</td>
+                                    </tr>
+                                    <tr>
+                                        <th class="bg-light">Date of Appointment:</th>
+                                        <td>{{ staff.appointment_date|default:"-" }}</td>
+                                    </tr>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Incident Information Section -->
+                <div class="card form-section-card mb-4">
+                    <div class="card-body">
+                        <div class="section-title mb-3">
+                            <i class="fas fa-info-circle me-2 text-danger"></i>
+                            <span>Incident Information</span>
+                        </div>
+                        <div class="row mb-3">
+                            <div class="col-md-3">
+                                <label class="form-label fw-semibold">DATE OF INCIDENT:</label>
+                                <input type="date" name="incident_date" id="incident_date" class="form-control form-input" required
+                                    max="{{ today|date:'Y-m-d' }}"
+                                    value="{{ today|date:'Y-m-d' }}" onchange="generateReportNumber()">
+                            </div>
+                            <div class="col-md-3">
+                                <label class="form-label fw-semibold">TIME:</label>
+                                <input type="time" name="incident_time" class="form-control form-input" required>
+                            </div>
+                            <div class="col-md-3">
+                                <label class="form-label fw-semibold">LOCATION:</label>
+                                <input type="text" name="incident_location" class="form-control form-input" required>
+                            </div>
+                            <div class="col-md-3">
+                                <label class="form-label fw-semibold">INCIDENT REPORT NO.:</label>
+                                <input type="text" name="report_number" id="report_number" class="form-control form-input bg-light" 
+                                    readonly>
+                                <small class="form-text text-muted">(Auto generated)</small>
+                            </div>
+                        </div>
                     </div>
                 </div>
 
-                <!-- Feedback Parameters - Sample Format -->
-                <div class="evaluation-sections">
-                    <!-- Communication Skills -->
-                    <div class="section-card mb-4">
-                        <h5 class="section-header bg-success text-white p-2">
-                            COMMUNICATION SKILLS
-                        </h5>
-                        <div class="table-responsive">
-                            <table class="table table-bordered">
-                                <thead>
-                                    <tr>
-                                        <th width="5%">No.</th>
-                                        <th>Parameters</th>
-                                        <th width="20%">Rating (1-5)</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    <tr>
-                                        <td>1</td>
-                                        <td>Clarity in verbal communication</td>
-                                        <td>
-                                            <input type="number" 
-                                                   name="comm1" 
-                                                   class="form-control rating-input" 
-                                                   min="1" 
-                                                   max="5" 
-                                                   required 
-                                                   pattern="[1-5]">
-                                        </td>
-                                    </tr>
-                                    <tr>
-                                        <td>2</td>
-                                        <td>Effectiveness in written communication</td>
-                                        <td>
-                                            <input type="number" 
-                                                   name="comm2" 
-                                                   class="form-control rating-input" 
-                                                   min="1" 
-                                                   max="5" 
-                                                   required 
-                                                   pattern="[1-5]">
-                                        </td>
-                                    </tr>
-                                    <tr>
-                                        <td>3</td>
-                                        <td>Active listening skills</td>
-                                        <td>
-                                            <input type="number" 
-                                                   name="comm3" 
-                                                   class="form-control rating-input" 
-                                                   min="1" 
-                                                   max="5" 
-                                                   required 
-                                                   pattern="[1-5]">
-                                        </td>
-                                    </tr>
-                                </tbody>
-                                <tfoot>
-                                    <tr class="table-secondary">
-                                        <th colspan="2">TOTAL</th>
-                                        <td><span class="section-total">0</span>/15</td>
-                                    </tr>
-                                </tfoot>
-                            </table>
+                <!-- Nature of Incident Section -->
+                <div class="card form-section-card mb-4">
+                    <div class="card-body">
+                        <div class="section-title mb-3">
+                            <i class="fas fa-exclamation-circle me-2 text-danger"></i>
+                            <span>Nature of incident</span>
                         </div>
-                    </div>
-
-                    <!-- Professional Conduct -->
-                    <div class="section-card mb-4">
-                        <h5 class="section-header bg-success text-white p-2">
-                            PROFESSIONAL CONDUCT
-                        </h5>
-                        <div class="table-responsive">
-                            <table class="table table-bordered">
-                                <thead>
-                                    <tr>
-                                        <th width="5%">No.</th>
-                                        <th>Parameters</th>
-                                        <th width="20%">Rating (1-5)</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    <tr>
-                                        <td>1</td>
-                                        <td>Punctuality and attendance</td>
-                                        <td>
-                                            <input type="number" 
-                                                   name="conduct1" 
-                                                   class="form-control rating-input" 
-                                                   min="1" 
-                                                   max="5" 
-                                                   required 
-                                                   pattern="[1-5]">
-                                        </td>
-                                    </tr>
-                                    <tr>
-                                        <td>2</td>
-                                        <td>Adherence to hospital policies</td>
-                                        <td>
-                                            <input type="number" 
-                                                   name="conduct2" 
-                                                   class="form-control rating-input" 
-                                                   min="1" 
-                                                   max="5" 
-                                                   required 
-                                                   pattern="[1-5]">
-                                        </td>
-                                    </tr>
-                                    <tr>
-                                        <td>3</td>
-                                        <td>Professional appearance and demeanor</td>
-                                        <td>
-                                            <input type="number" 
-                                                   name="conduct3" 
-                                                   class="form-control rating-input" 
-                                                   min="1" 
-                                                   max="5" 
-                                                   required 
-                                                   pattern="[1-5]">
-                                        </td>
-                                    </tr>
-                                </tbody>
-                                <tfoot>
-                                    <tr class="table-secondary">
-                                        <th colspan="2">TOTAL</th>
-                                        <td><span class="section-total">0</span>/15</td>
-                                    </tr>
-                                </tfoot>
-                            </table>
-                        </div>
-                    </div>
-
-                    <!-- Patient Care -->
-                    <div class="section-card mb-4">
-                        <h5 class="section-header bg-success text-white p-2">
-                            PATIENT CARE
-                        </h5>
-                        <div class="table-responsive">
-                            <table class="table table-bordered">
-                                <thead>
-                                    <tr>
-                                        <th width="5%">No.</th>
-                                        <th>Parameters</th>
-                                        <th width="20%">Rating (1-5)</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    <tr>
-                                        <td>1</td>
-                                        <td>Empathy towards patients</td>
-                                        <td>
-                                            <input type="number" 
-                                                   name="care1" 
-                                                   class="form-control rating-input" 
-                                                   min="1" 
-                                                   max="5" 
-                                                   required 
-                                                   pattern="[1-5]">
-                                        </td>
-                                    </tr>
-                                    <tr>
-                                        <td>2</td>
-                                        <td>Response to patient needs</td>
-                                        <td>
-                                            <input type="number" 
-                                                   name="care2" 
-                                                   class="form-control rating-input" 
-                                                   min="1" 
-                                                   max="5" 
-                                                   required 
-                                                   pattern="[1-5]">
-                                        </td>
-                                    </tr>
-                                    <tr>
-                                        <td>3</td>
-                                        <td>Patient satisfaction feedback</td>
-                                        <td>
-                                            <input type="number" 
-                                                   name="care3" 
-                                                   class="form-control rating-input" 
-                                                   min="1" 
-                                                   max="5" 
-                                                   required 
-                                                   pattern="[1-5]">
-                                        </td>
-                                    </tr>
-                                </tbody>
-                                <tfoot>
-                                    <tr class="table-secondary">
-                                        <th colspan="2">TOTAL</th>
-                                        <td><span class="section-total">0</span>/15</td>
-                                    </tr>
-                                </tfoot>
-                            </table>
-                        </div>
-                    </div>
-
-                    <!-- Final Score Section -->
-                    <div class="card mb-4">
-                        <div class="card-body">
-                            <div class="row">
-                                <div class="col-md-6">
-                                    <h5>Total Marks Obtained: <span id="grand-total">0</span>/45</h5>
-                                    <h5>Percentage: <span id="percentage">0</span>%</h5>
+                        <div class="row">
+                            <div class="col-md-4">
+                                <div class="form-check custom-checkbox mb-2">
+                                    <input class="form-check-input incident-type" type="checkbox" name="incident_type" 
+                                        value="negligence" id="negligence">
+                                    <label class="form-check-label" for="negligence">
+                                        1. Negligence
+                                    </label>
                                 </div>
-                                <div class="col-md-6">
-                                    <div class="alert alert-info">
-                                        <strong>Rating Scale:</strong><br>
-                                        1 - Poor<br>
-                                        2 - Fair<br>
-                                        3 - Good<br>
-                                        4 - Very Good<br>
-                                        5 - Excellent
-                                    </div>
+                                <div class="form-check custom-checkbox mb-2">
+                                    <input class="form-check-input incident-type" type="checkbox" name="incident_type" 
+                                        value="rude_behavior" id="rudeBehavior">
+                                    <label class="form-check-label" for="rudeBehavior">
+                                        2. Rude behavior / Attitude
+                                    </label>
+                                </div>
+                                <div class="form-check custom-checkbox mb-2">
+                                    <input class="form-check-input incident-type" type="checkbox" name="incident_type" 
+                                        value="communication_error" id="communicationError">
+                                    <label class="form-check-label" for="communicationError">
+                                        3. Communication error / issue
+                                    </label>
+                                </div>
+                                <div class="form-check custom-checkbox">
+                                    <input class="form-check-input incident-type" type="checkbox" name="incident_type" 
+                                        value="documentation_issue" id="documentationIssue">
+                                    <label class="form-check-label" for="documentationIssue">
+                                        4. Documentation issue / error
+                                    </label>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="form-check custom-checkbox mb-2">
+                                    <input class="form-check-input incident-type" type="checkbox" name="incident_type" 
+                                        value="reporting_error" id="reportingError">
+                                    <label class="form-check-label" for="reportingError">
+                                        5. Reporting error / issue
+                                    </label>
+                                </div>
+                                <div class="form-check custom-checkbox mb-2">
+                                    <input class="form-check-input incident-type" type="checkbox" name="incident_type" 
+                                        value="medication_error" id="medicationError">
+                                    <label class="form-check-label" for="medicationError">
+                                        6. Medication error
+                                    </label>
+                                </div>
+                                <div class="form-check custom-checkbox mb-2">
+                                    <input class="form-check-input incident-type" type="checkbox" name="incident_type" 
+                                        value="assault" id="assault">
+                                    <label class="form-check-label" for="assault">
+                                        7. Assault
+                                    </label>
+                                </div>
+                                <div class="form-check custom-checkbox">
+                                    <input class="form-check-input incident-type" type="checkbox" name="incident_type" 
+                                        value="policy_violation" id="policyViolation">
+                                    <label class="form-check-label" for="policyViolation">
+                                        8. Policy violation
+                                    </label>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="form-check custom-checkbox mb-2">
+                                    <input class="form-check-input incident-type" type="checkbox" name="incident_type" 
+                                        value="collaborative_work_issue" id="collaborativeWorkIssue">
+                                    <label class="form-check-label" for="collaborativeWorkIssue">
+                                        9. Collaborative work issue / Error
+                                    </label>
+                                </div>
+                                <div class="form-check custom-checkbox mb-2">
+                                    <input class="form-check-input incident-type" type="checkbox" name="incident_type" 
+                                        value="procedure_failure" id="procedureFailure">
+                                    <label class="form-check-label" for="procedureFailure">
+                                        10. Failure to carry out procedure well
+                                    </label>
+                                </div>
+                                <div class="form-check custom-checkbox">
+                                    <input class="form-check-input incident-type" type="checkbox" name="incident_type" 
+                                        value="other" id="otherIncident">
+                                    <label class="form-check-label" for="otherIncident">
+                                        11. Others (Specify)
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="row mt-3 other-incident-details" style="display: none;">
+                            <div class="col-md-12">
+                                <input type="text" name="other_incident_type" class="form-control form-input" 
+                                    placeholder="Please specify the incident type">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Related To Section -->
+                <div class="card form-section-card mb-4">
+                    <div class="card-body">
+                        <div class="section-title mb-3">
+                            <i class="fas fa-link me-2 text-danger"></i>
+                            <span>Related to</span>
+                        </div>
+                        <div class="row">
+                            <div class="col-md-4">
+                                <div class="form-check custom-checkbox mb-2">
+                                    <input class="form-check-input related-party" type="checkbox" name="related_party" 
+                                        value="colleagues" id="colleagues">
+                                    <label class="form-check-label" for="colleagues">
+                                        1. Colleagues
+                                    </label>
+                                </div>
+                                <div class="form-check custom-checkbox">
+                                    <input class="form-check-input related-party" type="checkbox" name="related_party" 
+                                        value="patients" id="patients">
+                                    <label class="form-check-label" for="patients">
+                                        2. Patients
+                                    </label>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="form-check custom-checkbox mb-2">
+                                    <input class="form-check-input related-party" type="checkbox" name="related_party" 
+                                        value="attender" id="attender">
+                                    <label class="form-check-label" for="attender">
+                                        3. Attender
+                                    </label>
+                                </div>
+                                <div class="form-check custom-checkbox">
+                                    <input class="form-check-input related-party" type="checkbox" name="related_party" 
+                                        value="doctors" id="doctors">
+                                    <label class="form-check-label" for="doctors">
+                                        4. Doctors
+                                    </label>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="form-check custom-checkbox">
+                                    <input class="form-check-input related-party" type="checkbox" name="related_party" 
+                                        value="policies" id="policies">
+                                    <label class="form-check-label" for="policies">
+                                        5. Policies / Procedures
+                                    </label>
                                 </div>
                             </div>
                         </div>
                     </div>
+                </div>
 
-                    <!-- Remarks and Signatures -->
-                    <div class="card mb-4">
-                        <div class="card-body">
-                            <div class="mb-3">
-                                <label class="form-label">Feedback Comments:</label>
-                                <textarea name="remarks" class="form-control" rows="4"></textarea>
+                <!-- Individuals Involved Section -->
+                <div class="card form-section-card mb-4">
+                    <div class="card-body">
+                        <div class="section-title mb-3 d-flex justify-content-between align-items-center">
+                            <div>
+                                <i class="fas fa-users me-2 text-danger"></i>
+                                <span>Individuals involved</span>
+                            </div>
+                            <button type="button" class="btn btn-sm btn-outline-danger add-individual-btn">
+                                <i class="fas fa-plus me-1"></i>Add Individual
+                            </button>
+                        </div>
+                        
+                        <div id="individuals-container">
+                            <!-- Template row for individuals involved -->
+                            <div class="individual-row row mb-3">
+                                <div class="col-md-3">
+                                    <label class="form-label fw-semibold">1. Name of Employee('s)</label>
+                                    <input type="text" name="individual_name[]" class="form-control form-input">
+                                </div>
+                                <div class="col-md-3">
+                                    <label class="form-label fw-semibold">2. Department</label>
+                                    <input type="text" name="individual_department[]" class="form-control form-input">
+                                </div>
+                                <div class="col-md-3">
+                                    <label class="form-label fw-semibold">3. Position of Employee</label>
+                                    <input type="text" name="individual_position[]" class="form-control form-input">
+                                </div>
+                                <div class="col-md-2">
+                                    <label class="form-label fw-semibold">4. Role in Incident</label>
+                                    <input type="text" name="individual_role[]" class="form-control form-input">
+                                </div>
+                                <div class="col-md-1">
+                                    <label class="form-label text-white d-block">Remove</label>
+                                    <button type="button" class="btn btn-outline-secondary remove-individual-btn" disabled>
+                                        <i class="fas fa-times"></i>
+                                    </button>
+                                </div>
                             </div>
                         </div>
                     </div>
+                </div>
 
-                    <!-- Submit Buttons -->
-                    <div class="d-flex justify-content-end gap-2">
-                        <a href="{% url 'dashboard' %}" class="btn btn-secondary">
-                            <i class="fas fa-times me-2"></i>Cancel
-                        </a>
-                        <button type="submit" class="btn btn-success">
-                            <i class="fas fa-save me-2"></i>Submit Feedback
-                        </button>
+                <!-- Action Taken Section -->
+                <div class="card form-section-card mb-4">
+                    <div class="card-body">
+                        <div class="section-title mb-3">
+                            <i class="fas fa-tasks me-2 text-danger"></i>
+                            <span>Action taken</span>
+                        </div>
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="form-check custom-checkbox mb-2">
+                                    <input class="form-check-input action-taken" type="checkbox" name="action_type" 
+                                        value="immediate_action" id="immediateAction">
+                                    <label class="form-check-label" for="immediateAction">
+                                        1. Immediate action taken
+                                    </label>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="form-check custom-checkbox mb-2">
+                                    <input class="form-check-input action-taken" type="checkbox" name="action_type" 
+                                        value="follow_up_action" id="followUpAction">
+                                    <label class="form-check-label" for="followUpAction">
+                                        2. Follow-up Action Taken
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Conditional fields that appear when specific actions are selected -->
+                        <div class="row mt-3 immediate-action-details action-detail-box" style="display: none;">
+                            <div class="col-md-12 mb-3">
+                                <textarea name="immediate_action_details" class="form-control form-input" rows="3" 
+                                        placeholder="Describe immediate action taken"></textarea>
+                            </div>
+                        </div>
+                        
+                        <div class="row mt-3 follow-up-action-details action-detail-box" style="display: none;">
+                            <div class="col-md-12 mb-3">
+                                <textarea name="follow_up_action_details" class="form-control form-input" rows="3" 
+                                        placeholder="Describe follow-up action taken"></textarea>
+                            </div>
+                        </div>
                     </div>
+                </div>
+
+                <!-- Report Preparer Section -->
+                <div class="card form-section-card mb-4">
+                    <div class="card-body">
+                        <div class="section-title mb-3">
+                            <i class="fas fa-user-edit me-2 text-danger"></i>
+                            <span>Report Preparation</span>
+                        </div>
+                        <div class="row">
+                            <div class="col-md-6">
+                                <label class="form-label fw-semibold">Report Prepared by:</label>
+                                <input type="text" name="prepared_by" class="form-control form-input bg-light" 
+                                    value="{{ request.user.get_full_name }}" readonly>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Submit Buttons -->
+                <div class="d-flex justify-content-end gap-2">
+                    <a href="{% url 'dashboard' %}" class="btn btn-outline-secondary btn-lg">
+                        <i class="fas fa-times me-2"></i>Cancel
+                    </a>
+                    <button type="submit" class="btn btn-danger btn-lg">
+                        <i class="fas fa-save me-2"></i>Submit Report
+                    </button>
                 </div>
             </form>
         </div>
@@ -314,98 +367,302 @@
 </div>
 
 <style>
-.section-card {
-    border: 1px solid #dee2e6;
-    border-radius: 0.5rem;
+.card-header {
+    background-color: #dc3545 !important;
+}
+
+.main-card {
+    border: none;
+    border-radius: 0.75rem;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+}
+
+.form-section-card {
+    border: none;
+    border-radius: 0.75rem;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+    transition: all 0.3s ease;
     overflow: hidden;
 }
 
-.section-header {
-    margin: 0;
-    padding: 1rem;
-    background-color: #198754;
-    border-bottom: 1px solid #dee2e6;
+.form-section-card:hover {
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+    transform: translateY(-2px);
 }
 
-.rating-input {
-    width: 100%;
-    margin: 0 auto;
-    display: block;
-    padding: 0.5rem;
-    font-size: 16px;
-    -webkit-appearance: none;
-    -moz-appearance: textfield;
+.section-title {
+    font-size: 1.25rem;
+    font-weight: 600;
+    color: #333;
+    padding-bottom: 0.5rem;
+    border-bottom: 1px solid #eee;
 }
 
-.table th {
+.form-input {
+    border-radius: 0.5rem;
+    border: 1px solid #ced4da;
+    padding: 0.625rem;
+    transition: all 0.2s ease;
+}
+
+.form-input:focus {
+    border-color: #dc3545;
+    box-shadow: 0 0 0 0.25rem rgba(220, 53, 69, 0.25);
+}
+
+.form-check-input:checked {
+    background-color: #dc3545;
+    border-color: #dc3545;
+}
+
+.btn-danger {
+    background-color: #dc3545;
+    border-color: #dc3545;
+    border-radius: 0.5rem;
+    transition: all 0.3s ease;
+}
+
+.btn-danger:hover {
+    background-color: #bb2d3b;
+    border-color: #b02a37;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 10px rgba(220, 53, 69, 0.3);
+}
+
+.btn-outline-secondary {
+    border-radius: 0.5rem;
+    transition: all 0.3s ease;
+}
+
+.btn-outline-secondary:hover {
+    transform: translateY(-2px);
+}
+
+.btn-outline-danger {
+    color: #dc3545;
+    border-color: #dc3545;
+    transition: all 0.3s ease;
+}
+
+.btn-outline-danger:hover {
+    background-color: #dc3545;
+    color: white;
+    transform: translateY(-1px);
+}
+
+.fw-bold {
+    font-weight: bold;
+}
+
+.fw-semibold {
+    font-weight: 600;
+}
+
+.action-detail-box {
     background-color: #f8f9fa;
+    border-radius: 0.5rem;
+    padding: 0.5rem;
+    border-left: 3px solid #dc3545;
 }
 
-.evaluation-sections {
-    max-width: 1200px;
-    margin: 0 auto;
+.custom-checkbox .form-check-input {
+    width: 1.25rem;
+    height: 1.25rem;
+    margin-top: 0.15rem;
 }
 
-.rating-input::-webkit-inner-spin-button,
-.rating-input::-webkit-outer-spin-button {
-    opacity: 1;
-    height: 40px;
+.custom-checkbox .form-check-label {
+    padding-left: 0.25rem;
 }
 
-.rating-input:focus {
-    outline: none;
-    border-color: #86b7fe;
-    box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.25);
+.table-bordered th {
+    background-color: #f8f9fa;
+    font-weight: 600;
+}
+
+.table-bordered td, .table-bordered th {
+    padding: 0.75rem;
+}
+
+.individual-row {
+    animation: fadeIn 0.3s ease-in-out;
+    position: relative;
+    padding: 0.75rem;
+    border-radius: 0.5rem;
+}
+
+.individual-row:not(:last-child) {
+    border-bottom: 1px dashed #dee2e6;
+    margin-bottom: 1rem;
+    padding-bottom: 1rem;
+}
+
+.individual-row:nth-child(even) {
+    background-color: rgba(0,0,0,0.01);
+}
+
+.remove-individual-btn {
+    border-radius: 50%;
+    width: 36px;
+    height: 36px;
+    padding: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.add-individual-btn {
+    border-radius: 0.5rem;
+    font-weight: 500;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
 }
 </style>
 
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-    function calculateTotals() {
-        const sections = document.querySelectorAll('.section-card');
-        let grandTotal = 0;
-        
-        sections.forEach(section => {
-            const inputs = section.querySelectorAll('.rating-input');
-            let sectionTotal = 0;
-            
-            inputs.forEach(input => {
-                sectionTotal += Number(input.value) || 0;
-            });
-            
-            section.querySelector('.section-total').textContent = sectionTotal;
-            grandTotal += sectionTotal;
-        });
-        
-        document.getElementById('grand-total').textContent = grandTotal;
-        const percentage = ((grandTotal / 45) * 100).toFixed(2);
-        document.getElementById('percentage').textContent = percentage;
-    }
-
-    document.querySelectorAll('.rating-input').forEach(input => {
-        input.addEventListener('input', function() {
-            let value = parseInt(this.value) || 0;
-            
-            if (value > 5) this.value = 5;
-            if (value < 1) this.value = 1;
-            if (value === 0) this.value = "";
-            
-            calculateTotals();
-        });
+    // Initialize the report number on page load
+    generateReportNumber();
+    
+    // Show/hide other incident type details
+    document.getElementById('otherIncident').addEventListener('change', function() {
+        const otherIncidentDetails = document.querySelector('.other-incident-details');
+        otherIncidentDetails.style.display = this.checked ? 'flex' : 'none';
+    });
+    
+    // Show/hide immediate action details
+    document.getElementById('immediateAction').addEventListener('change', function() {
+        const immediateActionDetails = document.querySelector('.immediate-action-details');
+        immediateActionDetails.style.display = this.checked ? 'flex' : 'none';
+    });
+    
+    // Show/hide follow-up action details
+    document.getElementById('followUpAction').addEventListener('change', function() {
+        const followUpActionDetails = document.querySelector('.follow-up-action-details');
+        followUpActionDetails.style.display = this.checked ? 'flex' : 'none';
     });
 
-    const form = document.getElementById('feedbackForm');
+    // Add subtle animation to checkboxes
+    const checkboxes = document.querySelectorAll('.form-check-input');
+    checkboxes.forEach(checkbox => {
+        checkbox.addEventListener('change', function() {
+            if (this.checked) {
+                this.closest('.form-check').classList.add('checkbox-active');
+            } else {
+                this.closest('.form-check').classList.remove('checkbox-active');
+            }
+        });
+    });
+    
+    // Individual rows functionality
+    const individualsContainer = document.getElementById('individuals-container');
+    const addIndividualBtn = document.querySelector('.add-individual-btn');
+    
+    // Function to add a new individual row
+    addIndividualBtn.addEventListener('click', function() {
+        // Get all existing rows
+        const existingRows = document.querySelectorAll('.individual-row');
+        
+        // Enable remove button on the first row if it was disabled
+        if (existingRows.length === 1) {
+            existingRows[0].querySelector('.remove-individual-btn').disabled = false;
+        }
+        
+        // Clone the first row
+        const newRow = existingRows[0].cloneNode(true);
+        
+        // Clear input values
+        newRow.querySelectorAll('input').forEach(input => {
+            input.value = '';
+        });
+        
+        // Enable remove button
+        const removeBtn = newRow.querySelector('.remove-individual-btn');
+        removeBtn.disabled = false;
+        
+        // Add event listener to remove button
+        removeBtn.addEventListener('click', function() {
+            removeIndividualRow(this);
+        });
+        
+        // Append the new row
+        individualsContainer.appendChild(newRow);
+        
+        // Update numbering
+        updateIndividualRowNumbers();
+    });
+    
+    // Function to remove an individual row
+    function removeIndividualRow(button) {
+        const row = button.closest('.individual-row');
+        row.style.opacity = '0';
+        row.style.transform = 'translateY(10px)';
+        
+        setTimeout(() => {
+            row.remove();
+            
+            // If only one row remains, disable its remove button
+            const remainingRows = document.querySelectorAll('.individual-row');
+            if (remainingRows.length === 1) {
+                remainingRows[0].querySelector('.remove-individual-btn').disabled = true;
+            }
+            
+            // Update numbering
+            updateIndividualRowNumbers();
+        }, 300);
+    }
+    
+    // Add event listener to existing remove buttons
+    document.querySelectorAll('.remove-individual-btn').forEach(button => {
+        button.addEventListener('click', function() {
+            removeIndividualRow(this);
+        });
+    });
+    
+    // Function to update row numbers
+    function updateIndividualRowNumbers() {
+        const rows = document.querySelectorAll('.individual-row');
+        rows.forEach((row, index) => {
+            const rowNumber = index + 1;
+            row.dataset.rowNumber = rowNumber;
+        });
+    }
+
+    // Form validation and submission
+    const form = document.getElementById('incidentForm');
     if (form) {
         form.addEventListener('submit', function(e) {
             e.preventDefault();
 
+            // Check required fields
             const requiredInputs = form.querySelectorAll('input[required]');
             let allFilled = true;
+            
             requiredInputs.forEach(input => {
-                if (!input.value) {
+                if (!input.value.trim()) {
                     allFilled = false;
+                    input.classList.add('is-invalid');
+                } else {
+                    input.classList.remove('is-invalid');
                 }
             });
+
+            // Check if at least one incident type is selected
+            const incidentTypes = form.querySelectorAll('input[name="incident_type"]:checked');
+            if (incidentTypes.length === 0) {
+                allFilled = false;
+                Swal.fire({
+                    title: 'Incomplete Form',
+                    text: 'Please select at least one incident type.',
+                    icon: 'warning',
+                    confirmButtonText: 'OK',
+                    confirmButtonColor: '#dc3545'
+                });
+                return;
+            }
 
             if (!allFilled) {
                 Swal.fire({
@@ -413,20 +670,63 @@ document.addEventListener('DOMContentLoaded', function() {
                     text: 'Please fill in all required fields before submitting.',
                     icon: 'warning',
                     confirmButtonText: 'OK',
-                    confirmButtonColor: '#198754'
+                    confirmButtonColor: '#dc3545'
                 });
                 return;
             }
 
+            // This would be replaced with actual form submission when backend is implemented
             Swal.fire({
-                title: 'Form Submission',
-                text: 'This is a sample form. The full form will be implemented later.',
-                icon: 'info',
+                title: 'Report Submitted',
+                text: 'The incident report has been submitted successfully.',
+                icon: 'success',
                 confirmButtonText: 'OK',
-                confirmButtonColor: '#198754'
+                confirmButtonColor: '#dc3545'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    // Redirect to dashboard or reload form based on preference
+                    window.location.href = "{% url 'dashboard' %}";
+                }
             });
         });
     }
 });
+
+// Function to generate a unique report number based on date
+function generateReportNumber() {
+    const dateInput = document.getElementById('incident_date');
+    const reportNumberField = document.getElementById('report_number');
+    
+    if (dateInput && reportNumberField) {
+        const selectedDate = new Date(dateInput.value);
+        const year = selectedDate.getFullYear();
+        const month = String(selectedDate.getMonth() + 1).padStart(2, '0');
+        const day = String(selectedDate.getDate()).padStart(2, '0');
+        const dateString = `${year}${month}${day}`;
+        
+        // Since we don't have direct access to the database count, 
+        // we'll simulate by using localStorage to keep count of reports for the day
+        let reportCounter = 1;
+        
+        // Get stored counters from localStorage
+        const storedCounters = localStorage.getItem('incidentReportCounters');
+        let counters = storedCounters ? JSON.parse(storedCounters) : {};
+        
+        // Check if there's a counter for today's date
+        if (counters[dateString]) {
+            reportCounter = counters[dateString] + 1;
+        }
+        
+        // Update the counter for this date
+        counters[dateString] = reportCounter;
+        localStorage.setItem('incidentReportCounters', JSON.stringify(counters));
+        
+        // Format the serial number as two digits (01, 02, etc.)
+        const serialNumber = String(reportCounter).padStart(2, '0');
+        
+        // Set the report number in the format IR-YYYYMMDD-XX
+        reportNumberField.value = `IR-${dateString}-${serialNumber}`;
+    }
+}
 </script>
 {% endblock %} 
