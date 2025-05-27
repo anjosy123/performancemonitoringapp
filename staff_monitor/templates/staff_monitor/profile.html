@@ -1,0 +1,574 @@
+<!-- staff_monitor/templates/staff_monitor/profile.html -->
+{% extends 'staff_monitor/base.html' %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-lg-10">
+        <!-- Profile Header -->
+        <div class="profile-header mb-4">
+            <div class="d-flex align-items-center">
+                <div class="profile-avatar">
+                    <i class="fas fa-user-circle fa-4x"></i>
+                </div>
+                <div class="profile-info">
+                    <h2 class="mb-0">{{ user.get_full_name }}</h2>
+                    <p class="text-muted mb-0">
+                        {% if is_staff %}
+                            System Administrator
+                        {% elif is_department_head %}
+                            {{ position }} - {{ department_name }}
+                            {% if subdepartment_name %}
+                            ({{ subdepartment_name }})
+                            {% endif %}
+                        {% else %}
+                            {{ position }} - {{ department_name }}
+                            {% if subdepartment_name %}
+                            ({{ subdepartment_name }})
+                            {% endif %}
+                        {% endif %}
+                    </p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Tabs Navigation -->
+        <div class="high-contrast-tabs mb-4">
+            <ul class="nav nav-tabs profile-nav" id="profileTabs" role="tablist">
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link active" id="personal-tab" data-bs-toggle="tab" data-bs-target="#personal" type="button" role="tab" aria-controls="personal" aria-selected="true">
+                        <i class="fas fa-id-card me-2"></i>Personal Details
+                    </button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link" id="password-tab" data-bs-toggle="tab" data-bs-target="#password" type="button" role="tab" aria-controls="password" aria-selected="false">
+                        <i class="fas fa-key me-2"></i>Change Password
+                    </button>
+                </li>
+            </ul>
+        </div>
+        
+        <div class="tab-content" id="profileTabsContent">
+            <!-- Personal Details Tab -->
+            <div class="tab-pane fade show active" id="personal" role="tabpanel" aria-labelledby="personal-tab">
+                <form method="post" action="{% url 'update_profile' %}" class="needs-validation" novalidate>
+                    {% csrf_token %}
+                    <input type="hidden" name="form_type" value="personal">
+                    
+                    <div class="row g-4">
+                        <!-- Basic Information Card -->
+                        <div class="col-md-6">
+                            <div class="profile-card">
+                                <div class="profile-card-header">
+                                    <div class="profile-card-icon">
+                                        <i class="fas fa-user"></i>
+                                    </div>
+                                    <h3 class="profile-card-title">Basic Information</h3>
+                                </div>
+                                <div class="profile-card-body">
+                                    <div class="mb-4">
+                                        <label for="first_name" class="form-label">First Name</label>
+                                        <input type="text" class="form-control" id="first_name" name="first_name" value="{{ user.first_name }}" required>
+                                    </div>
+                                    <div class="mb-4">
+                                        <label for="last_name" class="form-label">Last Name</label>
+                                        <input type="text" class="form-control" id="last_name" name="last_name" value="{{ user.last_name }}" required>
+                                    </div>
+                                    <div class="mb-4">
+                                        <label for="email" class="form-label">Email Address</label>
+                                        <input type="email" class="form-control readonly-field" id="email" name="email" value="{{ user.email }}" readonly>
+                                        <small class="form-text">Email address cannot be changed</small>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Position Details Card -->
+                        <div class="col-md-6">
+                            <div class="profile-card">
+                                <div class="profile-card-header">
+                                    <div class="profile-card-icon">
+                                        <i class="fas fa-id-badge"></i>
+                                    </div>
+                                    <h3 class="profile-card-title">Position Details</h3>
+                                </div>
+                                <div class="profile-card-body">
+                                    {% if is_staff %}
+                                        <div class="alert alert-info mb-0">
+                                            <i class="fas fa-user-shield me-2"></i>You are a system administrator with full access to the system.
+                                        </div>
+                                    {% elif is_department_head %}
+                                        <div class="mb-4">
+                                            <label class="form-label">Position</label>
+                                            <input type="text" class="form-control readonly-field" value="{{ position }}" readonly>
+                                        </div>
+                                        <div class="mb-4">
+                                            <label class="form-label">Department</label>
+                                            <input type="text" class="form-control readonly-field" value="{{ department_name }}" readonly>
+                                        </div>
+                                        {% if subdepartment_name %}
+                                        <div class="mb-4">
+                                            <label class="form-label">Sub Department</label>
+                                            <input type="text" class="form-control readonly-field" value="{{ subdepartment_name }}" readonly>
+                                        </div>
+                                        {% endif %}
+                                        <div class="mb-0">
+                                            <label for="contact_number" class="form-label">Contact Number</label>
+                                            <input type="text" class="form-control" id="contact_number" name="contact_number" value="{{ contact_number }}">
+                                        </div>
+                                    {% else %}
+                                        <div class="mb-4">
+                                            <label class="form-label">Employee ID</label>
+                                            <input type="text" class="form-control readonly-field" value="{{ employee_id }}" readonly>
+                                        </div>
+                                        <div class="mb-4">
+                                            <label class="form-label">Position</label>
+                                            <input type="text" class="form-control readonly-field" value="{{ position }}" readonly>
+                                        </div>
+                                        <div class="mb-4">
+                                            <label class="form-label">Department</label>
+                                            <input type="text" class="form-control readonly-field" value="{{ department_name }}" readonly>
+                                        </div>
+                                        {% if subdepartment_name %}
+                                        <div class="mb-0">
+                                            <label class="form-label">Sub Department</label>
+                                            <input type="text" class="form-control readonly-field" value="{{ subdepartment_name }}" readonly>
+                                        </div>
+                                        {% endif %}
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="profile-submit-wrapper">
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-save me-2"></i>Save Changes
+                        </button>
+                    </div>
+                </form>
+            </div>
+            
+            <!-- Change Password Tab -->
+            <div class="tab-pane fade" id="password" role="tabpanel" aria-labelledby="password-tab">
+                <div class="row justify-content-center">
+                    <div class="col-lg-8 col-md-10">
+                        <div class="profile-card">
+                            <div class="profile-card-header">
+                                <div class="profile-card-icon">
+                                    <i class="fas fa-lock"></i>
+                                </div>
+                                <h3 class="profile-card-title">Change Your Password</h3>
+                            </div>
+                            <div class="profile-card-body">
+                                <form method="post" action="{% url 'update_profile' %}" class="needs-validation" novalidate id="password-form">
+                                    {% csrf_token %}
+                                    <input type="hidden" name="form_type" value="password">
+                                    
+                                    <div class="mb-4">
+                                        <label for="current_password" class="form-label">Current Password</label>
+                                        <div class="password-input-group">
+                                            <input type="password" class="form-control" id="current_password" name="current_password" required>
+                                            <button class="btn toggle-password" type="button" data-target="current_password">
+                                                <i class="fas fa-eye"></i>
+                                            </button>
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="mb-4">
+                                        <label for="new_password" class="form-label">New Password</label>
+                                        <div class="password-input-group">
+                                            <input type="password" class="form-control" id="new_password" name="new_password" required minlength="8">
+                                            <button class="btn toggle-password" type="button" data-target="new_password">
+                                                <i class="fas fa-eye"></i>
+                                            </button>
+                                        </div>
+                                        <small class="form-text">Password must be at least 8 characters long</small>
+                                    </div>
+                                    
+                                    <div class="mb-4">
+                                        <label for="confirm_password" class="form-label">Confirm New Password</label>
+                                        <div class="password-input-group">
+                                            <input type="password" class="form-control" id="confirm_password" name="confirm_password" required>
+                                            <button class="btn toggle-password" type="button" data-target="confirm_password">
+                                                <i class="fas fa-eye"></i>
+                                            </button>
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="profile-submit-wrapper">
+                                        <button type="submit" class="btn btn-primary">
+                                            <i class="fas fa-key me-2"></i>Change Password
+                                        </button>
+                                    </div>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    /* Profile Page Styles */
+    .profile-header {
+        background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+        border-radius: 15px;
+        padding: 2rem;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+        margin-bottom: 2rem;
+    }
+    
+    .profile-avatar {
+        width: 80px;
+        height: 80px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin-right: 1.5rem;
+        background-color: #e9ecef;
+        border-radius: 50%;
+        color: #0d47a1;
+    }
+    
+    .profile-info {
+        flex: 1;
+    }
+    
+    .profile-info h2 {
+        font-weight: 600;
+        color: #0d47a1;
+        font-size: 1.75rem;
+    }
+    
+    /* High Contrast Tabs */
+    .high-contrast-tabs {
+        background-color: #f8f9fa;
+        padding: 1rem;
+        border-radius: 0.75rem;
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        border: 1px solid #dee2e6;
+    }
+    
+    .profile-nav {
+        border: none;
+        border-radius: 0.5rem;
+        overflow: hidden;
+    }
+    
+    .profile-nav .nav-item {
+        margin-right: 6px;
+    }
+    
+    .profile-nav .nav-link {
+        background-color: #343a40;
+        color: #ffffff;
+        font-weight: 700;
+        padding: 1rem 1.5rem;
+        border: none;
+        border-radius: 0.5rem;
+        font-size: 1.1rem;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+        position: relative;
+        transition: transform 0.2s ease, box-shadow 0.2s ease;
+        min-width: 180px;
+        text-align: center;
+    }
+    
+    .profile-nav .nav-link.active {
+        color: #ffffff;
+        background: #0b5ed7;
+        box-shadow: 0 4px 8px rgba(11, 94, 215, 0.4);
+        border: none;
+        transform: translateY(-3px);
+    }
+    
+    .profile-nav .nav-link.active::after {
+        content: '';
+        position: absolute;
+        bottom: -10px;
+        left: 50%;
+        transform: translateX(-50%);
+        width: 0;
+        height: 0;
+        border-left: 10px solid transparent;
+        border-right: 10px solid transparent;
+        border-top: 10px solid #0b5ed7;
+    }
+    
+    .profile-nav .nav-link:hover:not(.active) {
+        background-color: #495057;
+        color: #ffffff;
+        transform: translateY(-2px);
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+    }
+    
+    .profile-nav .nav-link i {
+        font-size: 1.2rem;
+    }
+    
+    .profile-card {
+        background-color: #fff;
+        border-radius: 15px;
+        box-shadow: 0 6px 15px rgba(0, 0, 0, 0.08);
+        overflow: hidden;
+        transition: transform 0.3s ease, box-shadow 0.3s ease;
+        margin-bottom: 2rem;
+        border: none;
+    }
+    
+    .profile-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 10px 20px rgba(0, 0, 0, 0.12);
+    }
+    
+    .profile-card-header {
+        padding: 1.5rem;
+        border-bottom: 1px solid #f1f3f5;
+        display: flex;
+        align-items: center;
+    }
+    
+    .profile-card-icon {
+        width: 48px;
+        height: 48px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: linear-gradient(135deg, #0d47a1 0%, #283593 100%);
+        border-radius: 12px;
+        margin-right: 1rem;
+        color: #fff;
+        font-size: 1.25rem;
+    }
+    
+    .profile-card-title {
+        margin: 0;
+        font-weight: 600;
+        color: #212529;
+        font-size: 1.25rem;
+    }
+    
+    .profile-card-body {
+        padding: 1.5rem;
+    }
+    
+    .form-label {
+        font-weight: 600;
+        color: #212529;
+        margin-bottom: 0.5rem;
+    }
+    
+    .form-control {
+        padding: 0.75rem 1rem;
+        border-radius: 10px;
+        border: 1px solid #ced4da;
+        transition: all 0.3s ease;
+        font-size: 1rem;
+    }
+    
+    .form-control:focus {
+        border-color: #0d47a1;
+        box-shadow: 0 0 0 0.25rem rgba(13, 71, 161, 0.25);
+    }
+    
+    .readonly-field {
+        background-color: #f8f9fa;
+        font-weight: 500;
+        color: #495057;
+        cursor: default;
+    }
+    
+    .form-text {
+        color: #6c757d;
+        font-size: 0.875rem;
+        margin-top: 0.5rem;
+    }
+    
+    .password-input-group {
+        display: flex;
+        align-items: center;
+        position: relative;
+    }
+    
+    .password-input-group .form-control {
+        width: 100%;
+        padding-right: 3rem;
+    }
+    
+    .toggle-password {
+        position: absolute;
+        right: 0.75rem;
+        top: 50%;
+        transform: translateY(-50%);
+        background: none;
+        border: none;
+        color: #6c757d;
+        cursor: pointer;
+        z-index: 5;
+        transition: color 0.3s ease;
+    }
+    
+    .toggle-password:hover {
+        color: #0d47a1;
+    }
+    
+    .profile-submit-wrapper {
+        display: flex;
+        justify-content: flex-end;
+        margin-top: 2rem;
+    }
+    
+    .btn-primary {
+        background: linear-gradient(135deg, #0d47a1 0%, #283593 100%);
+        border: none;
+        padding: 0.75rem 2rem;
+        font-weight: 500;
+        border-radius: 10px;
+        transition: all 0.3s ease;
+    }
+    
+    .btn-primary:hover {
+        background: linear-gradient(135deg, #083378 0%, #1a237e 100%);
+        transform: translateY(-2px);
+        box-shadow: 0 4px 8px rgba(13, 71, 161, 0.3);
+    }
+    
+    .alert-info {
+        background-color: #e3f2fd;
+        border-color: #bbdefb;
+        color: #0d47a1;
+        border-radius: 10px;
+        padding: 1rem;
+    }
+    
+    /* Responsive Adjustments */
+    @media (max-width: 767.98px) {
+        .profile-header {
+            padding: 1.5rem;
+        }
+        
+        .profile-avatar {
+            width: 60px;
+            height: 60px;
+            margin-right: 1rem;
+        }
+        
+        .profile-info h2 {
+            font-size: 1.5rem;
+        }
+        
+        .high-contrast-tabs {
+            padding: 0.75rem;
+        }
+        
+        .profile-nav {
+            width: 100%;
+            display: flex;
+        }
+        
+        .profile-nav .nav-item {
+            flex: 1;
+            margin-right: 4px;
+        }
+        
+        .profile-nav .nav-link {
+            text-align: center;
+            padding: 0.75rem 0.5rem;
+            font-size: 0.9rem;
+            min-width: auto;
+        }
+        
+        .profile-nav .nav-link.active::after {
+            display: none;
+        }
+        
+        .profile-card-header {
+            padding: 1.25rem;
+        }
+        
+        .profile-card-body {
+            padding: 1.25rem;
+        }
+        
+        .profile-card-icon {
+            width: 40px;
+            height: 40px;
+            font-size: 1.1rem;
+        }
+        
+        .profile-card-title {
+            font-size: 1.1rem;
+        }
+        
+        .form-control {
+            padding: 0.6rem 0.75rem;
+        }
+        
+        .btn-primary {
+            padding: 0.6rem 1.5rem;
+        }
+    }
+</style>
+
+{% block extra_js %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Password visibility toggle
+        const toggleButtons = document.querySelectorAll('.toggle-password');
+        
+        toggleButtons.forEach(button => {
+            button.addEventListener('click', function() {
+                const targetId = this.getAttribute('data-target');
+                const passwordInput = document.getElementById(targetId);
+                
+                // Toggle password visibility
+                if (passwordInput.type === 'password') {
+                    passwordInput.type = 'text';
+                    this.innerHTML = '<i class="fas fa-eye-slash"></i>';
+                } else {
+                    passwordInput.type = 'password';
+                    this.innerHTML = '<i class="fas fa-eye"></i>';
+                }
+            });
+        });
+        
+        // Password confirmation validation
+        const passwordForm = document.getElementById('password-form');
+        if (passwordForm) {
+            passwordForm.addEventListener('submit', function(event) {
+                const newPassword = document.getElementById('new_password').value;
+                const confirmPassword = document.getElementById('confirm_password').value;
+                
+                if (newPassword !== confirmPassword) {
+                    event.preventDefault();
+                    
+                    Swal.fire({
+                        title: 'Passwords Do Not Match',
+                        text: 'Please make sure your passwords match.',
+                        icon: 'error',
+                        confirmButtonColor: '#0d47a1'
+                    });
+                }
+            });
+        }
+        
+        // Card hover effects
+        const profileCards = document.querySelectorAll('.profile-card');
+        
+        profileCards.forEach(card => {
+            card.addEventListener('mouseenter', function() {
+                this.style.transform = 'translateY(-5px)';
+                this.style.boxShadow = '0 10px 20px rgba(0, 0, 0, 0.12)';
+            });
+            
+            card.addEventListener('mouseleave', function() {
+                this.style.transform = 'translateY(0)';
+                this.style.boxShadow = '0 6px 15px rgba(0, 0, 0, 0.08)';
+            });
+        });
+    });
+</script>
+{% endblock %}
+{% endblock %} 

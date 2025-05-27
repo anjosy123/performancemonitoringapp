@@ -4,8 +4,8 @@ from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required, user_passes_test
 from django.contrib.admin.views.decorators import staff_member_required
 from django.contrib import messages
-from .models import Staff, PerformanceReport, DepartmentHead, Department, SubDepartment, HRPrivileges
-from .forms import PerformanceReportForm, DepartmentHeadForm, StaffForm, DepartmentForm, SubDepartmentFormSet
+from .models import Staff, PerformanceReport, DepartmentHead, Department, SubDepartment, HRPrivileges, IncidentReport
+from .forms import PerformanceReportForm, DepartmentHeadForm, StaffForm, DepartmentForm, SubDepartmentFormSet, IncidentReportForm
 from django import forms
 import random
 import string
@@ -14,6 +14,8 @@ from django.db.utils import IntegrityError
 from django.http import JsonResponse
 from datetime import date
 from django.db.models import ProtectedError
+from django.contrib.auth.hashers import make_password
+from django.contrib.auth import update_session_auth_hash
 
 # Helper function to check if user is admin or HR head with appropriate privilege
 def has_privilege(user, privilege_name=None):
@@ -337,6 +339,8 @@ def incident_report_list(request):
         if request.user.is_staff:
             # Admin sees all reports
             is_authorized = True
+            # Get all incident reports
+            reports = IncidentReport.objects.all().order_by('-incident_date', '-incident_time')
         else:
             try:
                 # Check if the user is a department head
@@ -345,20 +349,33 @@ def incident_report_list(request):
                 # Check if HR head with all-reports privilege
                 if department_head.is_hr_head and hasattr(department_head, 'privileges') and department_head.privileges.can_view_all_reports:
                     is_authorized = True
+                    reports = IncidentReport.objects.all().order_by('-incident_date', '-incident_time')
                 elif department_head.department.name.lower() == "hr":
                     is_authorized = True
+                    reports = IncidentReport.objects.all().order_by('-incident_date', '-incident_time')
                 else:
                     # Regular department head is authorized to see their department's reports
                     is_authorized = True
+                    reports = IncidentReport.objects.filter(
+                        staff__department=department_head.department
+                    ).order_by('-incident_date', '-incident_time')
             except DepartmentHead.DoesNotExist:
                 is_authorized = False
+                reports = IncidentReport.objects.none()
         
         if not is_authorized:
             messages.error(request, "You do not have permission to view incident reports.")
             return redirect('dashboard')
+        
+        # Get departments for filter
+        departments = Department.objects.all().order_by('name')
             
-        # For now, just render the template (no actual data yet)
-        return render(request, 'staff_monitor/incident_report_list.html')
+        # Pass the reports to the template
+        return render(request, 'staff_monitor/incident_report_list.html', {
+            'reports': reports,
+            'departments': departments,
+            'status_choices': IncidentReport.STATUS_CHOICES
+        })
         
     except Exception as e:
         messages.error(request, f"Error loading incident reports: {str(e)}")
@@ -996,15 +1013,113 @@ def feedback_form(request, staff_id):
             messages.error(request, 'You do not have permission to evaluate staff.')
             return redirect('dashboard')
 
+    # Initialize form with user data
+    initial_data = {'prepared_by': request.user.get_full_name()}
+    
     if request.method == 'POST':
-        # For now, just show a message - the actual form handling will be implemented later
-        messages.success(request, 'Feedback form submitted successfully (sample implementation).')
-        return redirect('dashboard')
+        form = IncidentReportForm(request.POST, initial={'user': request.user})
+        
+        if form.is_valid():
+            try:
+                # Get incident types and related parties (not in the form)
+                incident_types = request.POST.getlist('incident_type')
+                other_incident_type = request.POST.get('other_incident_type', '')
+                related_parties = request.POST.getlist('related_party')
+                
+                # Process individuals involved
+                individual_names = request.POST.getlist('individual_name[]')
+                individual_departments = request.POST.getlist('individual_department[]')
+                individual_positions = request.POST.getlist('individual_position[]')
+                individual_roles = request.POST.getlist('individual_role[]')
+                
+                # Create a list of individual dictionaries
+                individuals = []
+                for i in range(len(individual_names)):
+                    if individual_names[i]:  # Only add if name is provided
+                        individuals.append({
+                            'name': individual_names[i],
+                            'department': individual_departments[i] if i < len(individual_departments) else '',
+                            'position': individual_positions[i] if i < len(individual_positions) else '',
+                            'role': individual_roles[i] if i < len(individual_roles) else ''
+                        })
+                
+                # Create incident report from form data but don't save yet
+                incident_report = form.save(commit=False)
+                incident_report.staff = staff
+                incident_report.reporter = request.user
+                
+                # Set reporter position based on user role
+                if request.user.is_staff:
+                    reporter_position = "HR Director"
+                else:
+                    try:
+                        department_head = DepartmentHead.objects.get(user=request.user)
+                        if department_head.is_hr_head:
+                            reporter_position = f"HR Head - {department_head.department.name}"
+                        else:
+                            reporter_position = f"Department Head - {department_head.department.name}"
+                    except DepartmentHead.DoesNotExist:
+                        reporter_position = staff.position
+                
+                incident_report.reporter_position = reporter_position
+                
+                # Generate a report number if not provided
+                if not incident_report.report_number:
+                    # Format: IR-YYYYMMDD-StaffID-Count
+                    date_str = incident_report.incident_date.strftime('%Y%m%d')
+                    
+                    # Get the count of reports for this staff member on this date
+                    existing_count = IncidentReport.objects.filter(
+                        staff=staff,
+                        incident_date=incident_report.incident_date
+                    ).count()
+                    
+                    # Create the report number
+                    incident_report.report_number = f"IR-{date_str}-{staff.id}-{existing_count + 1:03d}"
+                
+                # Set status
+                incident_report.status = 'reported'
+                
+                # Save the report to get an ID
+                incident_report.save()
+                
+                # Set JSON fields using helper methods
+                incident_report.set_incident_types(incident_types)
+                incident_report.set_related_parties(related_parties)
+                incident_report.set_individuals_involved(individuals)
+                
+                # Save again with the JSON fields
+                incident_report.save()
+                
+                messages.success(request, 'Incident report submitted successfully.')
+                return redirect('dashboard')
+            except Exception as e:
+                messages.error(request, f'Error submitting incident report: {str(e)}')
+        else:
+            # Form validation failed
+            for field, errors in form.errors.items():
+                for error in errors:
+                    messages.error(request, f"{field}: {error}")
+    else:
+        # GET request, initialize empty form
+        form = IncidentReportForm(initial={'user': request.user})
 
-    return render(request, 'staff_monitor/feedback_form.html', {
+    # Prepare context for template
+    context = {
         'staff': staff,
         'today': date.today(),
-    })
+        'form': form,
+    }
+    
+    # Add department head to context if applicable
+    if not request.user.is_staff:
+        try:
+            department_head = DepartmentHead.objects.get(user=request.user)
+            context['department_head'] = department_head
+        except DepartmentHead.DoesNotExist:
+            pass
+
+    return render(request, 'staff_monitor/feedback_form.html', context)
 
 # New view for department heads to manage subdepartment staff assignments
 @login_required
@@ -1172,3 +1287,173 @@ def toggle_hr_status(request, head_id):
                 messages.error(request, f'Error setting up privileges: {str(e)}')
     
     return redirect('hr_privileges_list')
+
+@login_required
+@user_passes_test(lambda u: can_perform_action(u, 'can_delete_reports') or u.is_staff)
+def delete_incident_report(request, report_id):
+    try:
+        report = get_object_or_404(IncidentReport, id=report_id)
+        report_info = f"Incident report #{report.report_number} for {report.staff.user.get_full_name()}"
+        report.delete()
+        messages.success(request, f'{report_info} deleted successfully.')
+    except IncidentReport.DoesNotExist:
+        messages.error(request, 'Report not found.')
+    except Exception as e:
+        messages.error(request, f'Error deleting report: {str(e)}')
+    return redirect('incident_report_list')
+
+@login_required
+def view_incident_report(request, report_id):
+    report = get_object_or_404(IncidentReport, id=report_id)
+    
+    # Check permissions
+    if not request.user.is_staff:
+        try:
+            department_head = DepartmentHead.objects.get(user=request.user)
+            
+            # HR heads can view any report
+            if department_head.is_hr_head or department_head.department.name.lower() == "hr":
+                # Continue with viewing the report
+                pass
+            # Regular department heads can only view reports from their department
+            elif report.staff.department != department_head.department:
+                messages.error(request, 'You do not have permission to view this report.')
+                return redirect('incident_report_list')
+        except DepartmentHead.DoesNotExist:
+            messages.error(request, 'You do not have permission to view reports.')
+            return redirect('dashboard')
+
+    return render(request, 'staff_monitor/print_incident_report.html', {
+        'report': report,
+        'incident_types': report.get_incident_types(),
+        'related_parties': report.get_related_parties(),
+        'individuals_involved': report.get_individuals_involved(),
+    })
+
+@login_required
+def print_incident_report(request, report_id):
+    # Reuse the view_incident_report logic but with print parameter
+    report = get_object_or_404(IncidentReport, id=report_id)
+    
+    # Check permissions
+    if not request.user.is_staff:
+        try:
+            department_head = DepartmentHead.objects.get(user=request.user)
+            
+            # HR heads can view any report
+            if department_head.is_hr_head or department_head.department.name.lower() == "hr":
+                # Continue with viewing the report
+                pass
+            # Regular department heads can only view reports from their department
+            elif report.staff.department != department_head.department:
+                messages.error(request, 'You do not have permission to view this report.')
+                return redirect('incident_report_list')
+        except DepartmentHead.DoesNotExist:
+            messages.error(request, 'You do not have permission to view reports.')
+            return redirect('dashboard')
+
+    return render(request, 'staff_monitor/print_incident_report.html', {
+        'report': report,
+        'incident_types': report.get_incident_types(),
+        'related_parties': report.get_related_parties(),
+        'individuals_involved': report.get_individuals_involved(),
+        'print_mode': True
+    })
+
+@login_required
+def profile(request):
+    """View function to display the user's profile page."""
+    user = request.user
+    context = {'user': user}
+    
+    # Add different context data based on user type
+    if user.is_staff:
+        context['is_staff'] = True
+    else:
+        try:
+            # Check if user is a department head
+            department_head = DepartmentHead.objects.get(user=user)
+            context['is_department_head'] = True
+            context['position'] = department_head.designation
+            context['department_name'] = department_head.department.name
+            context['contact_number'] = department_head.contact_number
+            
+            if department_head.subdepartment:
+                context['subdepartment_name'] = department_head.subdepartment.name
+        except DepartmentHead.DoesNotExist:
+            try:
+                # Check if user is a staff member
+                staff = Staff.objects.get(user=user)
+                context['is_staff_member'] = True
+                context['employee_id'] = staff.employee_id
+                context['position'] = staff.position
+                context['department_name'] = staff.department.name
+                
+                if staff.subdepartment:
+                    context['subdepartment_name'] = staff.subdepartment.name
+            except Staff.DoesNotExist:
+                # User is neither admin, department head, nor staff
+                pass
+    
+    return render(request, 'staff_monitor/profile.html', context)
+
+@login_required
+def update_profile(request):
+    """View function to handle profile updates."""
+    if request.method == 'POST':
+        form_type = request.POST.get('form_type')
+        
+        if form_type == 'personal':
+            # Handle personal details update
+            first_name = request.POST.get('first_name')
+            last_name = request.POST.get('last_name')
+            
+            # Update user basic info
+            request.user.first_name = first_name
+            request.user.last_name = last_name
+            request.user.save()
+            
+            # Update additional info if applicable
+            if not request.user.is_staff:
+                try:
+                    department_head = DepartmentHead.objects.get(user=request.user)
+                    contact_number = request.POST.get('contact_number')
+                    if contact_number:
+                        department_head.contact_number = contact_number
+                        department_head.save()
+                except DepartmentHead.DoesNotExist:
+                    pass
+            
+            messages.success(request, 'Profile updated successfully.')
+            
+        elif form_type == 'password':
+            # Handle password change
+            current_password = request.POST.get('current_password')
+            new_password = request.POST.get('new_password')
+            confirm_password = request.POST.get('confirm_password')
+            
+            # Validate current password
+            if not request.user.check_password(current_password):
+                messages.error(request, 'Current password is incorrect.')
+                return redirect('profile')
+            
+            # Validate new password
+            if len(new_password) < 8:
+                messages.error(request, 'Password must be at least 8 characters long.')
+                return redirect('profile')
+            
+            # Validate password confirmation
+            if new_password != confirm_password:
+                messages.error(request, 'New passwords do not match.')
+                return redirect('profile')
+            
+            # Change password
+            request.user.set_password(new_password)
+            request.user.save()
+            
+            # Update session to prevent logout
+            update_session_auth_hash(request, request.user)
+            
+            messages.success(request, 'Password changed successfully.')
+    
+    return redirect('profile')

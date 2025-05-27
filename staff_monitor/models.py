@@ -267,3 +267,75 @@ class PerformanceReport(models.Model):
             return "Satisfactory performance but under observation"
         else:
             return "Good performance"
+
+class IncidentReport(models.Model):
+    # Basic Information
+    staff = models.ForeignKey(Staff, on_delete=models.CASCADE, related_name='incident_reports')
+    reporter = models.ForeignKey(User, on_delete=models.CASCADE, related_name='reported_incidents')
+    report_number = models.CharField(max_length=50, unique=True)
+    
+    # Incident Details
+    incident_date = models.DateField()
+    incident_time = models.TimeField()
+    incident_location = models.CharField(max_length=255)
+    
+    # Nature of Incident (stored as JSON)
+    incident_types = models.TextField(default="[]")  # JSON string of list
+    other_incident_type = models.CharField(max_length=255, blank=True, null=True)
+    
+    # Related Parties (stored as JSON)
+    related_parties = models.TextField(default="[]")  # JSON string of list
+    
+    # Individuals Involved (stored as JSON)
+    individuals_involved = models.TextField(default="[]")  # JSON string containing individual names, departments, positions, roles
+    
+    # Action Taken
+    immediate_action = models.TextField(blank=True)
+    follow_up_actions = models.TextField(blank=True)
+    
+    # Report Preparation
+    prepared_by = models.CharField(max_length=255)
+    reporter_position = models.CharField(max_length=255, blank=True)
+    
+    # Status
+    STATUS_CHOICES = [
+        ('reported', 'Reported'),
+        ('under_investigation', 'Under Investigation'),
+        ('resolved', 'Resolved'),
+        ('closed', 'Closed')
+    ]
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='reported')
+    
+    # Timestamps
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    
+    class Meta:
+        ordering = ['-incident_date', '-incident_time']
+        
+    def __str__(self):
+        return f"Incident Report #{self.report_number} - {self.staff.user.get_full_name()} - {self.incident_date}"
+        
+    def set_incident_types(self, types_list):
+        import json
+        self.incident_types = json.dumps(types_list)
+        
+    def get_incident_types(self):
+        import json
+        return json.loads(self.incident_types)
+        
+    def set_related_parties(self, parties_list):
+        import json
+        self.related_parties = json.dumps(parties_list)
+        
+    def get_related_parties(self):
+        import json
+        return json.loads(self.related_parties)
+        
+    def set_individuals_involved(self, individuals_list):
+        import json
+        self.individuals_involved = json.dumps(individuals_list)
+        
+    def get_individuals_involved(self):
+        import json
+        return json.loads(self.individuals_involved)

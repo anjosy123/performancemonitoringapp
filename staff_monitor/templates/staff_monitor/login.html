@@ -227,6 +227,14 @@ window.onpopstate = function() {
                             {% endfor %}
                         </div>
                         {% endif %}
+                        
+                        <!-- Session Timeout Message -->
+                        {% if request.GET.timeout %}
+                        <div class="alert alert-warning alert-dismissible fade show" role="alert">
+                            <i class="fas fa-clock me-2"></i>Your session has expired due to inactivity. Please log in again.
+                            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                        </div>
+                        {% endif %}
 
                         <!-- Login Form -->
                         <form method="post" class="needs-validation" novalidate>

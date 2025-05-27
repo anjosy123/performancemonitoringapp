@@ -10,7 +10,7 @@
     <div class="card mb-4 form-card main-card">
         <div class="card-header bg-danger text-white py-3">
             <h2 class="text-center mb-0">MARIAMPUR HOSPITAL</h2>
-            <h4 class="text-center mb-0">STAFF PERFORMANCE APPRAISAL FORM</h4>
+            <h4 class="text-center mb-0">STAFF INCIDENT REPORT FORM</h4>
         </div>
         
         <div class="card-body p-4">
@@ -73,7 +73,7 @@
                                 <label class="form-label fw-semibold">DATE OF INCIDENT:</label>
                                 <input type="date" name="incident_date" id="incident_date" class="form-control form-input" required
                                     max="{{ today|date:'Y-m-d' }}"
-                                    value="{{ today|date:'Y-m-d' }}" onchange="generateReportNumber()">
+                                    value="{{ today|date:'Y-m-d' }}">
                             </div>
                             <div class="col-md-3">
                                 <label class="form-label fw-semibold">TIME:</label>
@@ -85,9 +85,9 @@
                             </div>
                             <div class="col-md-3">
                                 <label class="form-label fw-semibold">INCIDENT REPORT NO.:</label>
-                                <input type="text" name="report_number" id="report_number" class="form-control form-input bg-light" 
-                                    readonly>
-                                <small class="form-text text-muted">(Auto generated)</small>
+                                <input type="text" name="report_number" id="report_number" class="form-control form-input bg-light fw-bold" 
+                                    readonly style="border: 2px solid #dc3545; color: #dc3545;">
+                                <small class="form-text text-muted">(Auto generated unique identifier)</small>
                             </div>
                         </div>
                     </div>
@@ -343,10 +343,17 @@
                             <span>Report Preparation</span>
                         </div>
                         <div class="row">
-                            <div class="col-md-6">
+                            <div class="col-md-6 mb-3">
                                 <label class="form-label fw-semibold">Report Prepared by:</label>
                                 <input type="text" name="prepared_by" class="form-control form-input bg-light" 
                                     value="{{ request.user.get_full_name }}" readonly>
+                                <small class="text-muted">Auto-populated with your name</small>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label fw-semibold">Position/Role:</label>
+                                <input type="text" name="reporter_position" class="form-control form-input bg-light" 
+                                    value="{% if request.user.is_staff %}HR Director{% else %}{% if department_head %}Department Head - {{ department_head.department.name }}{% else %}{{ staff.position }}{% endif %}{% endif %}" readonly>
+                                <small class="text-muted">Auto-populated with your role in the organization</small>
                             </div>
                         </div>
                     </div>
@@ -527,6 +534,9 @@ document.addEventListener('DOMContentLoaded', function() {
     // Initialize the report number on page load
     generateReportNumber();
     
+    // Re-generate report number when date changes
+    document.getElementById('incident_date').addEventListener('change', generateReportNumber);
+    
     // Show/hide other incident type details
     document.getElementById('otherIncident').addEventListener('change', function() {
         const otherIncidentDetails = document.querySelector('.other-incident-details');
@@ -635,8 +645,8 @@ document.addEventListener('DOMContentLoaded', function() {
     const form = document.getElementById('incidentForm');
     if (form) {
         form.addEventListener('submit', function(e) {
-            e.preventDefault();
-
+            e.preventDefault(); // Always prevent default form submission first
+            
             // Check required fields
             const requiredInputs = form.querySelectorAll('input[required]');
             let allFilled = true;
@@ -674,18 +684,41 @@ document.addEventListener('DOMContentLoaded', function() {
                 });
                 return;
             }
-
-            // This would be replaced with actual form submission when backend is implemented
+            
+            // All validations passed, show confirmation dialog
             Swal.fire({
-                title: 'Report Submitted',
-                text: 'The incident report has been submitted successfully.',
-                icon: 'success',
-                confirmButtonText: 'OK',
-                confirmButtonColor: '#dc3545'
+                title: 'Confirm Submission',
+                html: `
+                    <div class="text-start">
+                        <p>Are you sure you want to submit this incident report for:</p>
+                        <p><strong>Staff:</strong> {{ staff.user.get_full_name }}</p>
+                        <p><strong>Incident Date:</strong> ${document.getElementById('incident_date').value}</p>
+                        <p><strong>Report Number:</strong> ${document.getElementById('report_number').value}</p>
+                    </div>
+                `,
+                icon: 'question',
+                showCancelButton: true,
+                confirmButtonText: 'Yes, Submit',
+                cancelButtonText: 'No, Review',
+                confirmButtonColor: '#dc3545',
+                cancelButtonColor: '#6c757d',
+                reverseButtons: true
             }).then((result) => {
                 if (result.isConfirmed) {
-                    // Redirect to dashboard or reload form based on preference
-                    window.location.href = "{% url 'dashboard' %}";
+                    // Show loading state
+                    Swal.fire({
+                        title: 'Submitting...',
+                        text: 'Please wait while we process your report.',
+                        allowOutsideClick: false,
+                        allowEscapeKey: false,
+                        showConfirmButton: false,
+                        didOpen: () => {
+                            Swal.showLoading();
+                        }
+                    });
+                    
+                    // Submit the form
+                    form.submit();
                 }
             });
         });
@@ -699,33 +732,40 @@ function generateReportNumber() {
     
     if (dateInput && reportNumberField) {
         const selectedDate = new Date(dateInput.value);
-        const year = selectedDate.getFullYear();
-        const month = String(selectedDate.getMonth() + 1).padStart(2, '0');
+        // Use 2-digit year and 1-letter month code (A-L for Jan-Dec)
+        const year = selectedDate.getFullYear().toString().slice(-2);
+        const monthCode = "ABCDEFGHIJKL".charAt(selectedDate.getMonth());
         const day = String(selectedDate.getDate()).padStart(2, '0');
-        const dateString = `${year}${month}${day}`;
         
-        // Since we don't have direct access to the database count, 
-        // we'll simulate by using localStorage to keep count of reports for the day
+        // Extract department code (first letter) and last 2 digits of staff ID
+        const departmentCode = "{{ staff.department.name|slice:":1"|upper }}";
+        const staffId = "{{ staff.id }}".slice(-2).padStart(2, '0');
+        
+        // Get or initialize a counter from sessionStorage
+        let counterKey = `IR_${year}${monthCode}${day}_${staffId}`;
         let reportCounter = 1;
         
-        // Get stored counters from localStorage
-        const storedCounters = localStorage.getItem('incidentReportCounters');
-        let counters = storedCounters ? JSON.parse(storedCounters) : {};
-        
-        // Check if there's a counter for today's date
-        if (counters[dateString]) {
-            reportCounter = counters[dateString] + 1;
+        if (sessionStorage.getItem(counterKey)) {
+            reportCounter = parseInt(sessionStorage.getItem(counterKey)) + 1;
         }
         
-        // Update the counter for this date
-        counters[dateString] = reportCounter;
-        localStorage.setItem('incidentReportCounters', JSON.stringify(counters));
+        // Store the updated counter
+        sessionStorage.setItem(counterKey, reportCounter);
         
-        // Format the serial number as two digits (01, 02, etc.)
+        // Format the serial number
         const serialNumber = String(reportCounter).padStart(2, '0');
         
-        // Set the report number in the format IR-YYYYMMDD-XX
-        reportNumberField.value = `IR-${dateString}-${serialNumber}`;
+        // Create the shortest practical incident report number: IRYYMD-CSS
+        // Example: IR23A05-H42 (2023 Jan 5, HR dept, staff ID 42)
+        const reportNumber = `IR${year}${monthCode}${day}-${departmentCode}${staffId}${serialNumber}`;
+        
+        // Set the report number field value
+        reportNumberField.value = reportNumber;
+        
+        // Also store this report number in sessionStorage to track it
+        let generatedReports = JSON.parse(sessionStorage.getItem('GENERATED_INCIDENT_REPORTS') || '[]');
+        generatedReports.push(reportNumber);
+        sessionStorage.setItem('GENERATED_INCIDENT_REPORTS', JSON.stringify(generatedReports));
     }
 }
 </script>

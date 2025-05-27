@@ -1,0 +1,352 @@
+<!-- staff_monitor/templates/staff_monitor/print_incident_report.html -->
+{% extends 'staff_monitor/base.html' %}
+
+{% block content %}
+<div class="container mb-4" id="printArea">
+    <div class="card">
+        <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+            <h3 class="mb-0">
+                <i class="fas fa-exclamation-triangle me-2"></i>Incident Report
+            </h3>
+            <div class="non-printable">
+                <div class="btn-group">
+                    <button type="button" class="btn btn-primary" onclick="printReport()">
+                        <i class="fas fa-print me-2"></i>Print
+                    </button>
+                    <a href="{% url 'incident_report_list' %}" class="btn btn-secondary">
+                        <i class="fas fa-arrow-left me-2"></i>Back
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <div class="card-body">
+            <div class="report-header mb-4">
+                <div class="text-center mb-4">
+                    <h2 class="report-title">MARIAMPUR HOSPITAL</h2>
+                    <h4 class="report-subtitle">INCIDENT REPORT</h4>
+                </div>
+                
+                <div class="report-meta">
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <div class="report-field">
+                                <span class="report-label">Report Number:</span>
+                                <span class="report-value">{{ report.report_number }}</span>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="report-field">
+                                <span class="report-label">Date Generated:</span>
+                                <span class="report-value">{{ report.created_at|date:"F d, Y" }}</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="report-section mb-4">
+                <h5 class="section-title">Staff Information</h5>
+                <div class="table-responsive">
+                    <table class="table table-bordered">
+                        <tr>
+                            <th width="30%">Name</th>
+                            <td>{{ report.staff.user.get_full_name }}</td>
+                        </tr>
+                        <tr>
+                            <th>Employee ID</th>
+                            <td>{{ report.staff.employee_id }}</td>
+                        </tr>
+                        <tr>
+                            <th>Department</th>
+                            <td>{{ report.staff.department.name }}</td>
+                        </tr>
+                        <tr>
+                            <th>Position</th>
+                            <td>{{ report.staff.position }}</td>
+                        </tr>
+                    </table>
+                </div>
+            </div>
+
+            <div class="report-section mb-4">
+                <h5 class="section-title">Incident Details</h5>
+                <div class="table-responsive">
+                    <table class="table table-bordered">
+                        <tr>
+                            <th width="30%">Incident Date</th>
+                            <td>{{ report.incident_date|date:"F d, Y" }}</td>
+                        </tr>
+                        <tr>
+                            <th>Incident Time</th>
+                            <td>{{ report.incident_time }}</td>
+                        </tr>
+                        <tr>
+                            <th>Location</th>
+                            <td>{{ report.incident_location }}</td>
+                        </tr>
+                        <tr>
+                            <th>Status</th>
+                            <td>
+                                <span class="badge {% if report.status == 'reported' %}bg-warning{% elif report.status == 'under_investigation' %}bg-info{% elif report.status == 'resolved' %}bg-success{% else %}bg-secondary{% endif %}">
+                                    {{ report.get_status_display }}
+                                </span>
+                            </td>
+                        </tr>
+                    </table>
+                </div>
+            </div>
+
+            <div class="report-section mb-4">
+                <h5 class="section-title">Nature of Incident</h5>
+                <div class="incident-types mb-3">
+                    <ul class="list-unstyled row">
+                        {% for incident_type in incident_types %}
+                        <li class="col-md-6">
+                            <i class="fas fa-check-circle text-success me-2"></i>{{ incident_type }}
+                        </li>
+                        {% empty %}
+                        <li class="col-12">No incident types specified</li>
+                        {% endfor %}
+                    </ul>
+                </div>
+                
+                {% if report.other_incident_type %}
+                <div class="other-incident mb-3">
+                    <strong>Other Incident Type:</strong>
+                    <p class="mb-0">{{ report.other_incident_type }}</p>
+                </div>
+                {% endif %}
+            </div>
+
+            <div class="report-section mb-4">
+                <h5 class="section-title">Related Parties</h5>
+                <div class="related-parties mb-3">
+                    <ul class="list-unstyled row">
+                        {% for party in related_parties %}
+                        <li class="col-md-6">
+                            <i class="fas fa-user-circle text-primary me-2"></i>{{ party }}
+                        </li>
+                        {% empty %}
+                        <li class="col-12">No related parties specified</li>
+                        {% endfor %}
+                    </ul>
+                </div>
+            </div>
+
+            <div class="report-section mb-4">
+                <h5 class="section-title">Individuals Involved</h5>
+                <div class="table-responsive">
+                    <table class="table table-bordered">
+                        <thead>
+                            <tr>
+                                <th>Name</th>
+                                <th>Department</th>
+                                <th>Position</th>
+                                <th>Role</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for individual in individuals_involved %}
+                            <tr>
+                                <td>{{ individual.name }}</td>
+                                <td>{{ individual.department }}</td>
+                                <td>{{ individual.position }}</td>
+                                <td>{{ individual.role }}</td>
+                            </tr>
+                            {% empty %}
+                            <tr>
+                                <td colspan="4" class="text-center">No individuals specified</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div class="report-section mb-4">
+                <h5 class="section-title">Actions Taken</h5>
+                <div class="table-responsive">
+                    <table class="table table-bordered">
+                        <tr>
+                            <th width="30%">Immediate Action</th>
+                            <td>{{ report.immediate_action|default:"No immediate action specified" }}</td>
+                        </tr>
+                        <tr>
+                            <th>Follow-up Actions</th>
+                            <td>{{ report.follow_up_actions|default:"No follow-up actions specified" }}</td>
+                        </tr>
+                    </table>
+                </div>
+            </div>
+
+            <div class="report-section mb-4">
+                <h5 class="section-title">Report Preparation</h5>
+                <div class="table-responsive">
+                    <table class="table table-bordered">
+                        <tr>
+                            <th width="30%">Prepared By</th>
+                            <td>{{ report.prepared_by }}</td>
+                        </tr>
+                        <tr>
+                            <th>Position/Role</th>
+                            <td>{{ report.reporter_position }}</td>
+                        </tr>
+                        <tr>
+                            <th>Reporter</th>
+                            <td>{{ report.reporter.get_full_name }}</td>
+                        </tr>
+                        <tr>
+                            <th>Reported On</th>
+                            <td>{{ report.created_at|date:"F d, Y" }} at {{ report.created_at|time:"H:i" }}</td>
+                        </tr>
+                        {% if report.updated_at != report.created_at %}
+                        <tr>
+                            <th>Last Updated</th>
+                            <td>{{ report.updated_at|date:"F d, Y" }} at {{ report.updated_at|time:"H:i" }}</td>
+                        </tr>
+                        {% endif %}
+                    </table>
+                </div>
+            </div>
+
+            <div class="report-footer mt-5">
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="signature-line">
+                            <div class="line"></div>
+                            <div class="text-center">Signature of Reporter</div>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="signature-line">
+                            <div class="line"></div>
+                            <div class="text-center">Signature of Department Head</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .report-title {
+        font-weight: bold;
+        color: #212529;
+        margin-bottom: 0.5rem;
+    }
+    
+    .report-subtitle {
+        font-weight: 600;
+        color: #495057;
+        margin-bottom: 1.5rem;
+    }
+    
+    .report-meta {
+        background-color: #f8f9fa;
+        padding: 1rem;
+        border-radius: 0.5rem;
+        border: 1px solid #dee2e6;
+    }
+    
+    .report-field {
+        margin-bottom: 0.5rem;
+    }
+    
+    .report-label {
+        font-weight: 600;
+        margin-right: 0.5rem;
+        color: #495057;
+    }
+    
+    .report-value {
+        color: #212529;
+    }
+    
+    .section-title {
+        background-color: #f8f9fa;
+        padding: 0.75rem 1rem;
+        border-radius: 0.5rem;
+        border-left: 4px solid #0d6efd;
+        margin-bottom: 1rem;
+        font-weight: 600;
+        color: #212529;
+    }
+    
+    .signature-line {
+        margin-top: 3rem;
+    }
+    
+    .line {
+        height: 1px;
+        background-color: #000;
+        margin-bottom: 0.5rem;
+    }
+    
+    @media print {
+        body {
+            background-color: white;
+            font-size: 12pt;
+        }
+        
+        .container {
+            width: 100%;
+            max-width: 100%;
+            padding: 0;
+            margin: 0;
+        }
+        
+        .card {
+            border: none;
+            box-shadow: none;
+        }
+        
+        .card-header {
+            background: none !important;
+            color: #000 !important;
+            padding: 0;
+            margin-bottom: 1rem;
+        }
+        
+        .non-printable {
+            display: none !important;
+        }
+        
+        .table {
+            border-collapse: collapse;
+        }
+        
+        .table th, .table td {
+            border: 1px solid #000 !important;
+        }
+        
+        .section-title {
+            background: none;
+            border-left: 2px solid #000;
+            padding: 0.25rem 0.5rem;
+        }
+        
+        .badge {
+            border: 1px solid #000;
+            color: #000 !important;
+            background: none !important;
+        }
+    }
+</style>
+
+<script>
+    function printReport() {
+        window.print();
+    }
+    
+    {% if print_mode %}
+    // Automatically trigger printing when in print mode
+    window.addEventListener('DOMContentLoaded', function() {
+        setTimeout(function() {
+            printReport();
+        }, 500); // Small delay to ensure the page is fully rendered
+    });
+    {% endif %}
+</script>
+{% endblock %} 

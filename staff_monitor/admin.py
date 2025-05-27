@@ -3,7 +3,7 @@
 from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin
 from django.contrib.auth.models import User
-from .models import Department, DepartmentHead, Staff, PerformanceReport, SubDepartment, HRPrivileges
+from .models import Department, DepartmentHead, Staff, PerformanceReport, SubDepartment, HRPrivileges, IncidentReport
 
 @admin.register(Department)
 class DepartmentAdmin(admin.ModelAdmin):
@@ -73,3 +73,10 @@ class PerformanceReportAdmin(admin.ModelAdmin):
 class HRPrivilegesAdmin(admin.ModelAdmin):
     list_display = ('hr_head', 'can_add_staff', 'can_edit_staff', 'can_delete_staff', 'can_view_all_reports')
     list_filter = ('can_add_staff', 'can_edit_staff', 'can_delete_staff', 'can_manage_departments')
+
+@admin.register(IncidentReport)
+class IncidentReportAdmin(admin.ModelAdmin):
+    list_display = ('report_number', 'staff', 'incident_date', 'incident_location', 'status')
+    list_filter = ('incident_date', 'status', 'staff__department')
+    search_fields = ('report_number', 'staff__user__username', 'staff__user__first_name', 'staff__user__last_name', 'incident_location')
+    readonly_fields = ('created_at', 'updated_at')

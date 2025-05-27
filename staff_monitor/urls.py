@@ -48,7 +48,7 @@ urlpatterns = [
     
     # Authentication
     path('login/', auth_views.LoginView.as_view(template_name='staff_monitor/login.html'), name='login'),
-    path('logout/', LogoutView.as_view(next_page='login'), name='logout'),
+    path('logout/', auth_views.LogoutView.as_view(next_page='login'), name='logout'),
     
     # Password reset
     path('password_reset/', 
@@ -73,4 +73,15 @@ urlpatterns = [
              template_name='staff_monitor/password_reset_complete.html'
          ),
          name='password_reset_complete'),
+    path('delete_incident_report/<int:report_id>/', views.delete_incident_report, name='delete_incident_report'),
+    path('view_incident_report/<int:report_id>/', views.view_incident_report, name='view_incident_report'),
+    path('print_incident_report/<int:report_id>/', views.print_incident_report, name='print_incident_report'),
+    
+    # User profile management
+    path('profile/', views.profile, name='profile'),
+    path('profile/update/', views.update_profile, name='update_profile'),
+    path('password-change/', auth_views.PasswordChangeView.as_view(
+        template_name='staff_monitor/password_change.html',
+        success_url='/profile/'
+    ), name='password_change'),
 ]

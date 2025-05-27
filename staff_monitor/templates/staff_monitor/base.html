@@ -44,32 +44,53 @@
         /* Navbar Styling */
         .navbar {
             height: var(--navbar-height);
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-            background: linear-gradient(135deg, #1a237e 0%, #0d47a1 100%) !important;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            background: linear-gradient(135deg, #0d47a1 0%, #283593 100%) !important;
             padding: 0.5rem 1rem;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
         }
 
         .navbar-brand {
-            font-weight: 600;
-            font-size: 1.25rem;
+            font-weight: 700;
+            font-size: 1.35rem;
             display: flex;
             align-items: center;
             gap: 0.75rem;
-            margin-right: 0;
+            margin-right: 2rem;
+            padding: 0.5rem 1rem;
+            border-right: 1px solid rgba(255, 255, 255, 0.2);
+            position: relative;
+        }
+
+        .navbar-brand:after {
+            content: '';
+            position: absolute;
+            right: 0;
+            top: 20%;
+            height: 60%;
+            width: 1px;
+            background: rgba(255, 255, 255, 0.3);
         }
 
         .navbar-brand img {
-            height: 40px;
+            height: 42px;
             width: auto;
             border-radius: 50%;
             background-color: white;
-            padding: 2px;
+            padding: 3px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.15);
         }
 
-        .navbar-brand span {
+        .navbar-brand .hospital-name {
             color: #fff;
-            font-size: 1.1rem;
+            font-size: 1.15rem;
             text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.2);
+            letter-spacing: 0.5px;
+            background-color: rgba(0, 0, 0, 0.15);
+            padding: 0.3rem 0.75rem;
+            border-radius: 4px;
+            font-weight: 600;
+            border-left: 3px solid #64b5f6;
         }
 
         .navbar-toggler {
@@ -129,11 +150,12 @@
         /* Footer Styling */
         .footer {
             flex-shrink: 0;
-            background: linear-gradient(135deg, #1a237e 0%, #0d47a1 100%);
+            background: linear-gradient(135deg, #0d47a1 0%, #283593 100%);
             color: #ffffff;
             padding: 1.5rem 0;
             margin-top: 2rem;
             box-shadow: 0 -2px 4px rgba(0,0,0,0.1);
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
         }
 
         .footer-content {
@@ -161,7 +183,7 @@
         }
 
         .card-header {
-            background: linear-gradient(135deg, #1a237e 0%, #0d47a1 100%);
+            background: linear-gradient(135deg, #0d47a1 0%, #283593 100%);
             color: white;
             border-top-left-radius: 1rem !important;
             border-top-right-radius: 1rem !important;
@@ -194,12 +216,32 @@
 
         /* Responsive Adjustments */
         @media (max-width: 991px) {
-            .navbar-brand span {
-                font-size: 1rem;
+            .navbar-brand {
+                border-right: none;
+                margin-right: 0;
+                padding: 0.25rem 0.5rem;
+            }
+            
+            .navbar-brand:after {
+                display: none;
+            }
+            
+            .navbar-brand .hospital-name {
+                font-size: 0.9rem;
+                white-space: nowrap;
+                overflow: hidden;
+                text-overflow: ellipsis;
+                max-width: 180px;
+                padding: 0.25rem 0.5rem;
+                border-left: 2px solid #64b5f6;
+            }
+            
+            .navbar-brand img {
+                height: 38px;
             }
 
             .navbar-collapse {
-                background: rgba(26, 35, 126, 0.95);
+                background: rgba(13, 71, 161, 0.95);
                 border-radius: 0.5rem;
                 padding: 1rem;
                 margin-top: 0.5rem;
@@ -209,6 +251,8 @@
                 right: 0;
                 z-index: 1000;
                 backdrop-filter: blur(10px);
+                border: 1px solid rgba(255, 255, 255, 0.1);
+                box-shadow: 0 10px 15px rgba(0, 0, 0, 0.2);
             }
 
             .navbar-nav {
@@ -324,6 +368,61 @@
             text-align: center;
         }
 
+        /* Professional Navbar Styling */
+        .navbar-nav.me-auto {
+            margin-left: 1rem;
+            position: relative;
+        }
+        
+        .nav-btn {
+            padding: 0.6rem 1rem;
+            margin: 0 0.5rem;
+            border-radius: 5px;
+            font-weight: 500;
+            transition: all 0.2s ease;
+            color: rgba(255, 255, 255, 0.85);
+            position: relative;
+            letter-spacing: 0.2px;
+        }
+        
+        .nav-btn:hover, .nav-btn:focus {
+            color: #ffffff;
+            background-color: rgba(255, 255, 255, 0.1);
+        }
+        
+        .nav-btn.active {
+            color: #ffffff;
+            background-color: rgba(255, 255, 255, 0.15);
+            font-weight: 600;
+        }
+        
+        .nav-btn.active:after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 30px;
+            height: 3px;
+            background-color: #ffffff;
+            border-radius: 3px;
+        }
+        
+        .user-dropdown-btn {
+            background-color: rgba(255, 255, 255, 0.15);
+            border-radius: 30px;
+            padding: 0.5rem 1.25rem;
+            margin-left: 1rem;
+            font-weight: 500;
+            transition: all 0.2s ease;
+            color: #ffffff;
+        }
+        
+        .user-dropdown-btn:hover, .user-dropdown-btn:focus {
+            background-color: rgba(255, 255, 255, 0.25);
+            color: #ffffff;
+        }
+        
         /* Mobile Responsive Dropdown */
         @media (max-width: 991px) {
             .dropdown-menu {
@@ -342,6 +441,22 @@
                 background-color: rgba(255, 255, 255, 0.1);
                 color: #fff;
             }
+            
+            .nav-btn {
+                margin: 0.25rem 0;
+            }
+            
+            .user-dropdown-btn {
+                margin: 0.5rem 0;
+                text-align: center;
+                border-radius: 5px;
+            }
+            
+            .navbar-nav.ms-auto {
+                margin-top: 1rem;
+                border-top: 1px solid rgba(255, 255, 255, 0.2);
+                padding-top: 0.5rem;
+            }
         }
     </style>
 </head>
@@ -350,7 +465,7 @@
         <div class="container">
             <a class="navbar-brand" href="{% url 'dashboard' %}">
                 <img src="{% static 'images/hospital-logo.png' %}" alt="Hospital Logo">
-                <span>Mariampur Hospital, Kanpur</span>
+                <span class="hospital-name">Mariampur Hospital, Kanpur</span>
             </a>
             {% if request.path != '/login/' %}
             <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
@@ -359,16 +474,17 @@
             
             {% if user.is_authenticated %}
             <div class="collapse navbar-collapse" id="navbarNav">
-                <ul class="navbar-nav ms-auto">
+                <!-- Main navigation items on the left -->
+                <ul class="navbar-nav me-auto">
                     <li class="nav-item">
-                        <a class="nav-link" href="{% url 'dashboard' %}">
-                            <i class="fas fa-home"></i>Dashboard
+                        <a class="nav-link nav-btn" href="{% url 'dashboard' %}">
+                            <i class="fas fa-home me-1"></i>Dashboard
                         </a>
                     </li>
                 {% if user.is_staff %}
                     <li class="nav-item dropdown">
-                        <a class="nav-link dropdown-toggle" href="#" id="centerManagementDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
-                            <i class="fas fa-cogs"></i>Centre Management
+                        <a class="nav-link dropdown-toggle nav-btn" href="#" id="centerManagementDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                            <i class="fas fa-cogs me-1"></i>Centre Management
                         </a>
                         <ul class="dropdown-menu" aria-labelledby="centerManagementDropdown">
                             <li>
@@ -394,8 +510,8 @@
                         </ul>
                     </li>
                     <li class="nav-item dropdown">
-                        <a class="nav-link dropdown-toggle" href="#" id="viewDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
-                            <i class="fas fa-eye"></i>View
+                        <a class="nav-link dropdown-toggle nav-btn" href="#" id="viewDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                            <i class="fas fa-eye me-1"></i>View
                         </a>
                         <ul class="dropdown-menu" aria-labelledby="viewDropdown">
                             <li>
@@ -410,19 +526,14 @@
                             </li>
                             <li>
                                 <a class="dropdown-item" href="{% url 'department_list' %}">
-                                    <i class="fas fa-users me-2"></i>Departments
+                                    <i class="fas fa-hospital-alt me-2"></i>Departments
                                 </a>
                             </li>
                         </ul>
                     </li>
-                    {% comment %} <li class="nav-item">
-                        <a class="nav-link" href="{% url 'department_list' %}">
-                            <i class="fas fa-list-alt"></i>Departments
-                        </a>
-                    </li> {% endcomment %}
                     <li class="nav-item dropdown">
-                        <a class="nav-link dropdown-toggle" href="#" id="reportsDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
-                            <i class="fas fa-clipboard-list"></i>Reports
+                        <a class="nav-link dropdown-toggle nav-btn" href="#" id="reportsDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                            <i class="fas fa-clipboard-list me-1"></i>Reports
                         </a>
                         <ul class="dropdown-menu" aria-labelledby="reportsDropdown">
                             <li>
@@ -438,14 +549,33 @@
                         </ul>
                     </li>
                 {% endif %}
-                    <li class="nav-item">
-                        <form method="post" action="{% url 'logout' %}" id="logoutForm">
-                            {% csrf_token %}
-                            <input type="hidden" name="next" value="{% url 'login' %}">
-                            <button type="button" class="nav-link logout-btn">
-                                <i class="fas fa-sign-out-alt"></i>Logout
-                            </button>
-                        </form>
+                </ul>
+                
+                <!-- User profile dropdown on the right -->
+                <ul class="navbar-nav ms-auto">
+                    <li class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle user-dropdown-btn" href="#" id="userDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                            <i class="fas fa-user-circle me-1"></i>
+                            {{ user.get_full_name|default:user.username }}
+                        </a>
+                        <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="userDropdown">
+                            <li>
+                                <a class="dropdown-item" href="{% url 'profile' %}">
+                                    <i class="fas fa-id-card me-2"></i>My Profile
+                                </a>
+                            </li>
+                            {% comment %} <li>
+                                <a class="dropdown-item" href="{% url 'password_change' %}">
+                                    <i class="fas fa-key me-2"></i>Change Password
+                                </a>
+                            </li> {% endcomment %}
+                            <li><hr class="dropdown-divider"></li>
+                            <li>
+                                <a class="dropdown-item logout-confirm" href="{% url 'logout' %}">
+                                    <i class="fas fa-sign-out-alt me-2"></i>Logout
+                                </a>
+                            </li>
+                        </ul>
                     </li>
                 </ul>
             </div>
@@ -532,88 +662,43 @@
             }
         });
 
-        // Enhanced logout functionality
-        const logoutBtn = document.querySelector('.logout-btn');
-        const logoutForm = document.getElementById('logoutForm');
+        // Logout confirmation using SweetAlert
+        const logoutLinks = document.querySelectorAll('.logout-confirm');
         
-        if (logoutBtn && logoutForm) {
-            logoutBtn.addEventListener('click', function(e) {
-                e.preventDefault();
-                
-                // Show confirmation dialog
-                Swal.fire({
-                    title: 'Confirm Logout',
-                    text: 'Are you sure you want to logout?',
-                    icon: 'question',
-                    showCancelButton: true,
-                    confirmButtonText: 'Yes, Logout',
-                    cancelButtonText: 'No, Stay',
-                    confirmButtonColor: '#dc3545',
-                    cancelButtonColor: '#6c757d'
-                }).then((result) => {
-                    if (result.isConfirmed) {
-                        // Show loading state
-                        Swal.fire({
-                            title: 'Logging out...',
-                            text: 'Please wait while we clear your session',
-                            allowOutsideClick: false,
-                            allowEscapeKey: false,
-                            showConfirmButton: false,
-                            didOpen: () => {
-                                Swal.showLoading();
-                            }
-                        });
-
-                        // Function to clear all browser data
-                        function clearBrowserData() {
-                            return new Promise((resolve) => {
-                                // Clear session storage
-                                sessionStorage.clear();
-                                
-                                // Clear local storage
-                                localStorage.clear();
-                                
-                                // Clear cookies except CSRF token
-                                const cookies = document.cookie.split(";");
-                                for (let i = 0; i < cookies.length; i++) {
-                                    const cookie = cookies[i];
-                                    const eqPos = cookie.indexOf("=");
-                                    const name = eqPos > -1 ? cookie.substr(0, eqPos).trim() : cookie.trim();
-                                    if (name !== 'csrftoken') {
-                                        document.cookie = name + "=;expires=Thu, 01 Jan 1970 00:00:00 GMT;path=/";
-                                    }
+        if (logoutLinks.length > 0) {
+            logoutLinks.forEach(link => {
+                link.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    const logoutUrl = this.getAttribute('href');
+                    
+                    // Show confirmation dialog
+                    Swal.fire({
+                        title: 'Confirm Logout',
+                        text: 'Are you sure you want to logout?',
+                        icon: 'question',
+                        showCancelButton: true,
+                        confirmButtonText: 'Yes, Logout',
+                        cancelButtonText: 'No, Stay',
+                        confirmButtonColor: '#dc3545',
+                        cancelButtonColor: '#6c757d'
+                    }).then((result) => {
+                        if (result.isConfirmed) {
+                            // Show loading state
+                            Swal.fire({
+                                title: 'Logging out...',
+                                text: 'Please wait while we clear your session',
+                                allowOutsideClick: false,
+                                allowEscapeKey: false,
+                                showConfirmButton: false,
+                                didOpen: () => {
+                                    Swal.showLoading();
                                 }
-
-                                // Clear cache if available
-                                if ('caches' in window) {
-                                    caches.keys().then(function(names) {
-                                        for (let name of names) {
-                                            caches.delete(name);
-                                        }
-                                    });
-                                }
-
-                                resolve();
                             });
+                            
+                            // Redirect to logout URL
+                            window.location.href = logoutUrl;
                         }
-
-                        // Clear data and submit form
-                        clearBrowserData().then(() => {
-                            // Clear browser history
-                            window.history.pushState(null, '', window.location.href);
-                            window.onpopstate = function() {
-                                window.history.pushState(null, '', window.location.href);
-                            };
-
-                            // Disable back button
-                            window.addEventListener('popstate', function() {
-                                window.history.pushState(null, '', window.location.href);
-                            });
-
-                            // Submit the form
-                            logoutForm.submit();
-                        });
-                    }
+                    });
                 });
             });
         }
@@ -635,6 +720,36 @@
     window.addEventListener('beforeunload', function() {
         sessionStorage.setItem('lastPage', window.location.href);
     });
+
+    // Session timeout tracking (1 hour = 3600000 milliseconds)
+    {% if user.is_authenticated %}
+    const SESSION_TIMEOUT = 3600000; // 1 hour in milliseconds
+    let sessionTimeoutTimer;
+
+    // Function to reset the session timeout timer
+    function resetSessionTimeout() {
+        // Clear the existing timer
+        clearTimeout(sessionTimeoutTimer);
+        
+        // Set a new timer
+        sessionTimeoutTimer = setTimeout(function() {
+            // Redirect to login page with timeout parameter
+            window.location.href = "{% url 'login' %}?timeout=1";
+        }, SESSION_TIMEOUT);
+        
+        // Send a request to update the last_activity timestamp on the server
+        fetch("{% url 'dashboard' %}", { method: "HEAD" }).catch(() => {});
+    }
+
+    // Reset timer on page load
+    resetSessionTimeout();
+
+    // Reset timer on user activity
+    const activityEvents = ['mousedown', 'mousemove', 'keypress', 'scroll', 'touchstart'];
+    activityEvents.forEach(function(eventName) {
+        document.addEventListener(eventName, resetSessionTimeout, true);
+    });
+    {% endif %}
     </script>
     {% block extra_js %}{% endblock %}
 </body>

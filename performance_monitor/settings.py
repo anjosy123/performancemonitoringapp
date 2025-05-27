@@ -63,6 +63,8 @@ MIDDLEWARE = [
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
     'whitenoise.middleware.WhiteNoiseMiddleware',
+    'staff_monitor.middleware.SessionTimeoutMiddleware',  # Custom session timeout middleware
+    'staff_monitor.middleware.AllowLogoutViaGetMiddleware',  # Allow logout via GET requests
 ]
 
 ROOT_URLCONF = 'performance_monitor.urls'
@@ -151,3 +153,8 @@ DEFAULT_FROM_EMAIL = f'Mariampur Hospital IT Team <{os.getenv("EMAIL_HOST_USER")
 
 # Add whitenoise for static files
 STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
+
+# Session settings
+SESSION_COOKIE_AGE = 3600  # 1 hour in seconds
+SESSION_SAVE_EVERY_REQUEST = True
+SESSION_EXPIRE_AT_BROWSER_CLOSE = True
