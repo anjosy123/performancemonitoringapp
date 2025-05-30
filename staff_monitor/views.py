@@ -5,17 +5,18 @@ from django.contrib.auth.decorators import login_required, user_passes_test
 from django.contrib.admin.views.decorators import staff_member_required
 from django.contrib import messages
 from .models import Staff, PerformanceReport, DepartmentHead, Department, SubDepartment, HRPrivileges, IncidentReport
-from .forms import PerformanceReportForm, DepartmentHeadForm, StaffForm, DepartmentForm, SubDepartmentFormSet, IncidentReportForm
+from .forms import PerformanceReportForm, DepartmentHeadForm, StaffForm, DepartmentForm, SubDepartmentFormSet, IncidentReportForm, StaffBulkUploadForm
 from django import forms
 import random
 import string
 from django.contrib.auth.models import User
 from django.db.utils import IntegrityError
 from django.http import JsonResponse
-from datetime import date
+from datetime import date, datetime
 from django.db.models import ProtectedError
 from django.contrib.auth.hashers import make_password
 from django.contrib.auth import update_session_auth_hash
+import pandas as pd
 
 # Helper function to check if user is admin or HR head with appropriate privilege
 def has_privilege(user, privilege_name=None):
@@ -1024,6 +1025,7 @@ def feedback_form(request, staff_id):
                 # Get incident types and related parties (not in the form)
                 incident_types = request.POST.getlist('incident_type')
                 other_incident_type = request.POST.get('other_incident_type', '')
+                incident_description = request.POST.get('incident_description', '')
                 related_parties = request.POST.getlist('related_party')
                 
                 # Process individuals involved
@@ -1047,6 +1049,7 @@ def feedback_form(request, staff_id):
                 incident_report = form.save(commit=False)
                 incident_report.staff = staff
                 incident_report.reporter = request.user
+                incident_report.incident_description = incident_description
                 
                 # Set reporter position based on user role
                 if request.user.is_staff:
@@ -1457,3 +1460,129 @@ def update_profile(request):
             messages.success(request, 'Password changed successfully.')
     
     return redirect('profile')
+
+@login_required
+@user_passes_test(lambda u: can_perform_action(u, 'can_add_staff') or u.is_staff)
+def bulk_upload_staff(request):
+    if request.method == 'POST':
+        form = StaffBulkUploadForm(request.POST, request.FILES)
+        if form.is_valid():
+            excel_file = request.FILES['excel_file']
+            
+            # Track success and error counts
+            success_count = 0
+            error_count = 0
+            errors = []
+            
+            try:
+                # Read Excel file
+                df = pd.read_excel(excel_file)
+                
+                # Get all departments for mapping
+                departments = {dept.name.lower(): dept for dept in Department.objects.all()}
+                
+                # Process each row in the Excel file
+                for index, row in df.iterrows():
+                    try:
+                        # Extract data from row
+                        first_name = str(row['First name']).strip()
+                        last_name = str(row['Last name']).strip()
+                        email = str(row['Email']).strip()
+                        employee_id = str(row['Employee ID']).strip()
+                        position = str(row['Designation']).strip()
+                        department_name = str(row['Department']).strip().lower()
+                        
+                        # Parse dates - handle various formats
+                        try:
+                            joining_date = pd.to_datetime(row['Joining date']).date()
+                        except:
+                            joining_date = datetime.now().date()
+                            
+                        # Parse appointment date if available
+                        appointment_date = None
+                        if 'Date of appointment' in row and pd.notna(row['Date of appointment']):
+                            try:
+                                appointment_date = pd.to_datetime(row['Date of appointment']).date()
+                            except:
+                                pass
+                        
+                        # Validate email and employee ID (must be unique)
+                        if User.objects.filter(email=email).exists():
+                            raise ValueError(f"Email '{email}' is already registered")
+                            
+                        if Staff.objects.filter(employee_id=employee_id).exists():
+                            raise ValueError(f"Employee ID '{employee_id}' is already in use")
+                        
+                        # Find department or raise error
+                        if department_name not in departments:
+                            # Try partial match
+                            matched_dept = None
+                            for dept_name, dept in departments.items():
+                                if dept_name in department_name or department_name in dept_name:
+                                    matched_dept = dept
+                                    break
+                                    
+                            if not matched_dept:
+                                raise ValueError(f"Department '{row['Department']}' not found in the system")
+                            department = matched_dept
+                        else:
+                            department = departments[department_name]
+                        
+                        # Create User
+                        user = User.objects.create_user(
+                            username=email,
+                            email=email,
+                            password=None,  # No password set
+                            first_name=first_name,
+                            last_name=last_name,
+                            is_active=False  # Account inactive
+                        )
+                        
+                        # Create Staff
+                        staff = Staff.objects.create(
+                            user=user,
+                            employee_id=employee_id,
+                            department=department,
+                            position=position,
+                            joining_date=joining_date,
+                            appointment_date=appointment_date
+                        )
+                        
+                        success_count += 1
+                        
+                    except Exception as e:
+                        error_count += 1
+                        errors.append(f"Row {index+2}: {str(e)}")
+                
+                # Prepare result message
+                if success_count > 0:
+                    messages.success(request, f"Successfully added {success_count} staff members.")
+                
+                if error_count > 0:
+                    error_message = f"Failed to add {error_count} staff members. Errors: "
+                    for i, error in enumerate(errors[:5]):  # Show only first 5 errors
+                        error_message += f"<br>{error}"
+                    
+                    if len(errors) > 5:
+                        error_message += f"<br>...and {len(errors) - 5} more errors."
+                        
+                    messages.error(request, error_message)
+                    
+                return redirect('staff_list')
+                
+            except Exception as e:
+                messages.error(request, f"Error processing the file: {str(e)}")
+        else:
+            for field, errors in form.errors.items():
+                for error in errors:
+                    messages.error(request, f"{field}: {error}")
+    else:
+        form = StaffBulkUploadForm()
+        
+    # Get all departments for displaying as reference
+    departments = Department.objects.all().order_by('name')
+    
+    return render(request, 'staff_monitor/bulk_upload_staff.html', {
+        'form': form,
+        'departments': departments
+    })

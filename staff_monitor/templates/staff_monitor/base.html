@@ -60,6 +60,8 @@
             padding: 0.5rem 1rem;
             border-right: 1px solid rgba(255, 255, 255, 0.2);
             position: relative;
+            flex-wrap: nowrap;
+            min-width: 180px;
         }
 
         .navbar-brand:after {
@@ -79,6 +81,7 @@
             background-color: white;
             padding: 3px;
             box-shadow: 0 0 10px rgba(0, 0, 0, 0.15);
+            flex-shrink: 0;
         }
 
         .navbar-brand .hospital-name {
@@ -91,6 +94,8 @@
             border-radius: 4px;
             font-weight: 600;
             border-left: 3px solid #64b5f6;
+            display: block;
+            line-height: 1.2;
         }
 
         .navbar-toggler {
@@ -220,6 +225,9 @@
                 border-right: none;
                 margin-right: 0;
                 padding: 0.25rem 0.5rem;
+                min-width: unset;
+                max-width: none;
+                width: auto;
             }
             
             .navbar-brand:after {
@@ -228,12 +236,11 @@
             
             .navbar-brand .hospital-name {
                 font-size: 0.9rem;
-                white-space: nowrap;
-                overflow: hidden;
-                text-overflow: ellipsis;
-                max-width: 180px;
+                max-width: none;
                 padding: 0.25rem 0.5rem;
                 border-left: 2px solid #64b5f6;
+                word-break: normal;
+                hyphens: none;
             }
             
             .navbar-brand img {
@@ -269,16 +276,82 @@
         }
 
         @media (max-width: 576px) {
+            .navbar {
+                padding: 0.25rem 0.5rem;
+            }
+            
             .navbar-brand {
                 font-size: 1rem;
+                padding: 0.25rem;
+                gap: 0.5rem;
+                width: auto;
+                max-width: 70%;
             }
 
             .navbar-brand img {
                 height: 35px;
             }
 
-            .navbar-brand span {
+            .navbar-brand .hospital-name {
+                font-size: 0.85rem;
+                max-width: none;
+                width: auto;
+                padding: 0.2rem 0.4rem;
+                line-height: 1.2;
+            }
+            
+            .navbar-toggler {
+                padding: 0.4rem;
+            }
+        }
+        
+        @media (max-width: 400px) {
+            .navbar {
+                padding: 0.25rem 0.5rem;
+            }
+            
+            .navbar-brand {
                 font-size: 0.9rem;
+                padding: 0.2rem;
+                gap: 0.3rem;
+                flex-direction: row;
+                align-items: center;
+            }
+            
+            .navbar-brand img {
+                height: 32px;
+            }
+            
+            .navbar-brand .hospital-name {
+                font-size: 0.75rem;
+                width: auto;
+                max-width: none;
+                padding: 0.15rem 0.3rem;
+                line-height: 1.2;
+            }
+            
+            .navbar-toggler {
+                padding: 0.25rem 0.4rem;
+            }
+        }
+        
+        @media (max-width: 320px) {
+            .navbar-brand {
+                max-width: none;
+                width: auto;
+            }
+            
+            .navbar-brand img {
+                height: 28px;
+            }
+            
+            .navbar-brand .hospital-name {
+                font-size: 0.7rem;
+                width: auto;
+                max-width: none;
+                padding: 0.1rem 0.25rem;
+                line-height: 1.1;
+                word-break: normal;
             }
         }
 
@@ -465,7 +538,7 @@
         <div class="container">
             <a class="navbar-brand" href="{% url 'dashboard' %}">
                 <img src="{% static 'images/hospital-logo.png' %}" alt="Hospital Logo">
-                <span class="hospital-name">Mariampur Hospital, Kanpur</span>
+                <div class="hospital-name">Mariampur Hospital, Kanpur</div>
             </a>
             {% if request.path != '/login/' %}
             <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">

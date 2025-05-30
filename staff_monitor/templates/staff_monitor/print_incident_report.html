@@ -117,6 +117,19 @@
                     <p class="mb-0">{{ report.other_incident_type }}</p>
                 </div>
                 {% endif %}
+                
+                {% if report.incident_description %}
+                <div class="incident-description mb-3">
+                    <div class="card">
+                        <div class="card-header bg-light">
+                            <strong>Detailed Description of Incident</strong>
+                        </div>
+                        <div class="card-body">
+                            <p class="mb-0">{{ report.incident_description|linebreaks }}</p>
+                        </div>
+                    </div>
+                </div>
+                {% endif %}
             </div>
 
             <div class="report-section mb-4">

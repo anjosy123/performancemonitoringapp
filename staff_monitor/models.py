@@ -282,6 +282,7 @@ class IncidentReport(models.Model):
     # Nature of Incident (stored as JSON)
     incident_types = models.TextField(default="[]")  # JSON string of list
     other_incident_type = models.CharField(max_length=255, blank=True, null=True)
+    incident_description = models.TextField(blank=True)  # New field for describing selected incidents
     
     # Related Parties (stored as JSON)
     related_parties = models.TextField(default="[]")  # JSON string of list

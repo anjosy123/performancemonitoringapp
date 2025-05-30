@@ -4,6 +4,7 @@
 {% block content %}
 <link href="https://cdn.jsdelivr.net/npm/sweetalert2@11.7.32/dist/sweetalert2.min.css" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11.7.32/dist/sweetalert2.all.min.js"></script>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 
 <div class="container-fluid">
     <!-- Header Section -->
@@ -25,8 +26,8 @@
                             <span>Staff Information</span>
                         </div>
                         <div class="row">
-                            <div class="col-md-6">
-                                <table class="table table-bordered">
+                            <div class="col-lg-6 mb-3 mb-lg-0">
+                                <table class="table table-bordered table-responsive">
                                     <tr>
                                         <th class="bg-light" width="40%">Name:</th>
                                         <td>{{ staff.user.get_full_name }}</td>
@@ -41,8 +42,8 @@
                                     </tr>
                                 </table>
                             </div>
-                            <div class="col-md-6">
-                                <table class="table table-bordered">
+                            <div class="col-lg-6">
+                                <table class="table table-bordered table-responsive">
                                     <tr>
                                         <th class="bg-light" width="40%">Department:</th>
                                         <td>{{ staff.department }}</td>
@@ -69,21 +70,21 @@
                             <span>Incident Information</span>
                         </div>
                         <div class="row mb-3">
-                            <div class="col-md-3">
+                            <div class="col-md-6 col-lg-3 mb-3 mb-md-0">
                                 <label class="form-label fw-semibold">DATE OF INCIDENT:</label>
                                 <input type="date" name="incident_date" id="incident_date" class="form-control form-input" required
                                     max="{{ today|date:'Y-m-d' }}"
                                     value="{{ today|date:'Y-m-d' }}">
                             </div>
-                            <div class="col-md-3">
+                            <div class="col-md-6 col-lg-3 mb-3 mb-md-0">
                                 <label class="form-label fw-semibold">TIME:</label>
                                 <input type="time" name="incident_time" class="form-control form-input" required>
                             </div>
-                            <div class="col-md-3">
+                            <div class="col-md-6 col-lg-3 mb-3 mb-lg-0">
                                 <label class="form-label fw-semibold">LOCATION:</label>
                                 <input type="text" name="incident_location" class="form-control form-input" required>
                             </div>
-                            <div class="col-md-3">
+                            <div class="col-md-6 col-lg-3">
                                 <label class="form-label fw-semibold">INCIDENT REPORT NO.:</label>
                                 <input type="text" name="report_number" id="report_number" class="form-control form-input bg-light fw-bold" 
                                     readonly style="border: 2px solid #dc3545; color: #dc3545;">
@@ -101,7 +102,7 @@
                             <span>Nature of incident</span>
                         </div>
                         <div class="row">
-                            <div class="col-md-4">
+                            <div class="col-md-6 col-lg-4 mb-3">
                                 <div class="form-check custom-checkbox mb-2">
                                     <input class="form-check-input incident-type" type="checkbox" name="incident_type" 
                                         value="negligence" id="negligence">
@@ -131,7 +132,7 @@
                                     </label>
                                 </div>
                             </div>
-                            <div class="col-md-4">
+                            <div class="col-md-6 col-lg-4 mb-3">
                                 <div class="form-check custom-checkbox mb-2">
                                     <input class="form-check-input incident-type" type="checkbox" name="incident_type" 
                                         value="reporting_error" id="reportingError">
@@ -161,7 +162,7 @@
                                     </label>
                                 </div>
                             </div>
-                            <div class="col-md-4">
+                            <div class="col-md-6 col-lg-4">
                                 <div class="form-check custom-checkbox mb-2">
                                     <input class="form-check-input incident-type" type="checkbox" name="incident_type" 
                                         value="collaborative_work_issue" id="collaborativeWorkIssue">
@@ -191,6 +192,35 @@
                                     placeholder="Please specify the incident type">
                             </div>
                         </div>
+                        
+                        <!-- New description box for selected incidents -->
+                        <div class="row mt-4 incident-description-container" style="display: none;">
+                            <div class="col-12">
+                                <div class="card border-danger">
+                                    <div class="card-header bg-danger text-white py-2">
+                                        <h5 class="mb-0 selected-incidents-heading">
+                                            <i class="fas fa-exclamation-triangle me-2"></i>
+                                            Description of Selected Incidents
+                                        </h5>
+                                    </div>
+                                    <div class="card-body">
+                                        <div class="mb-3">
+                                            <label class="form-label fw-semibold">
+                                                Selected incidents:
+                                            </label>
+                                            <div id="selected-incidents-list" class="mb-3"></div>
+                                        </div>
+                                        <div class="mb-2">
+                                            <label class="form-label fw-semibold">
+                                                Please provide a detailed description of the incident(s):
+                                            </label>
+                                            <textarea name="incident_description" class="form-control" rows="4" 
+                                                placeholder="Describe what happened, who was involved, and any relevant details about the selected incident types."></textarea>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 </div>
 
@@ -202,7 +232,7 @@
                             <span>Related to</span>
                         </div>
                         <div class="row">
-                            <div class="col-md-4">
+                            <div class="col-md-6 col-lg-4 mb-3 mb-lg-0">
                                 <div class="form-check custom-checkbox mb-2">
                                     <input class="form-check-input related-party" type="checkbox" name="related_party" 
                                         value="colleagues" id="colleagues">
@@ -218,7 +248,7 @@
                                     </label>
                                 </div>
                             </div>
-                            <div class="col-md-4">
+                            <div class="col-md-6 col-lg-4 mb-3 mb-lg-0">
                                 <div class="form-check custom-checkbox mb-2">
                                     <input class="form-check-input related-party" type="checkbox" name="related_party" 
                                         value="attender" id="attender">
@@ -234,7 +264,7 @@
                                     </label>
                                 </div>
                             </div>
-                            <div class="col-md-4">
+                            <div class="col-md-6 col-lg-4">
                                 <div class="form-check custom-checkbox">
                                     <input class="form-check-input related-party" type="checkbox" name="related_party" 
                                         value="policies" id="policies">
@@ -263,24 +293,24 @@
                         <div id="individuals-container">
                             <!-- Template row for individuals involved -->
                             <div class="individual-row row mb-3">
-                                <div class="col-md-3">
+                                <div class="col-md-6 col-lg-3 mb-2 mb-lg-0">
                                     <label class="form-label fw-semibold">1. Name of Employee('s)</label>
                                     <input type="text" name="individual_name[]" class="form-control form-input">
                                 </div>
-                                <div class="col-md-3">
+                                <div class="col-md-6 col-lg-3 mb-2 mb-lg-0">
                                     <label class="form-label fw-semibold">2. Department</label>
                                     <input type="text" name="individual_department[]" class="form-control form-input">
                                 </div>
-                                <div class="col-md-3">
+                                <div class="col-md-6 col-lg-3 mb-2 mb-lg-0">
                                     <label class="form-label fw-semibold">3. Position of Employee</label>
                                     <input type="text" name="individual_position[]" class="form-control form-input">
                                 </div>
-                                <div class="col-md-2">
+                                <div class="col-md-5 col-lg-2 mb-2 mb-lg-0">
                                     <label class="form-label fw-semibold">4. Role in Incident</label>
                                     <input type="text" name="individual_role[]" class="form-control form-input">
                                 </div>
-                                <div class="col-md-1">
-                                    <label class="form-label text-white d-block">Remove</label>
+                                <div class="col-md-1 col-lg-1 d-flex align-items-end mb-2 mb-lg-0">
+                                    <label class="form-label text-white d-none d-md-block">Remove</label>
                                     <button type="button" class="btn btn-outline-secondary remove-individual-btn" disabled>
                                         <i class="fas fa-times"></i>
                                     </button>
@@ -298,7 +328,7 @@
                             <span>Action taken</span>
                         </div>
                         <div class="row">
-                            <div class="col-md-6">
+                            <div class="col-md-6 mb-2 mb-md-0">
                                 <div class="form-check custom-checkbox mb-2">
                                     <input class="form-check-input action-taken" type="checkbox" name="action_type" 
                                         value="immediate_action" id="immediateAction">
@@ -347,21 +377,21 @@
                                 <label class="form-label fw-semibold">Report Prepared by:</label>
                                 <input type="text" name="prepared_by" class="form-control form-input bg-light" 
                                     value="{{ request.user.get_full_name }}" readonly>
-                                <small class="text-muted">Auto-populated with your name</small>
+                                <small class="text-muted d-block mt-1">Auto-populated with your name</small>
                             </div>
                             <div class="col-md-6 mb-3">
                                 <label class="form-label fw-semibold">Position/Role:</label>
                                 <input type="text" name="reporter_position" class="form-control form-input bg-light" 
                                     value="{% if request.user.is_staff %}HR Director{% else %}{% if department_head %}Department Head - {{ department_head.department.name }}{% else %}{{ staff.position }}{% endif %}{% endif %}" readonly>
-                                <small class="text-muted">Auto-populated with your role in the organization</small>
+                                <small class="text-muted d-block mt-1">Auto-populated with your role in the organization</small>
                             </div>
                         </div>
                     </div>
                 </div>
 
                 <!-- Submit Buttons -->
-                <div class="d-flex justify-content-end gap-2">
-                    <a href="{% url 'dashboard' %}" class="btn btn-outline-secondary btn-lg">
+                <div class="d-flex flex-column flex-md-row justify-content-end gap-2">
+                    <a href="{% url 'dashboard' %}" class="btn btn-outline-secondary btn-lg mb-2 mb-md-0">
                         <i class="fas fa-times me-2"></i>Cancel
                     </a>
                     <button type="submit" class="btn btn-danger btn-lg">
@@ -523,6 +553,168 @@
     font-weight: 500;
 }
 
+/* Styles for incident description section */
+.incident-description-container {
+    animation: fadeIn 0.3s ease-in-out;
+}
+
+.selected-incidents-heading {
+    font-size: 1.1rem;
+}
+
+#selected-incidents-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+}
+
+#selected-incidents-list .badge {
+    font-size: 0.9rem;
+    font-weight: 500;
+    border-radius: 0.4rem;
+}
+
+textarea[name="incident_description"] {
+    resize: vertical;
+    min-height: 100px;
+    transition: all 0.3s ease;
+}
+
+textarea[name="incident_description"]:focus {
+    min-height: 150px;
+}
+
+/* Responsive styling */
+@media (max-width: 767.98px) {
+    .container-fluid {
+        padding: 0.5rem;
+    }
+    
+    .card-body {
+        padding: 1rem;
+    }
+    
+    .section-title {
+        font-size: 1.1rem;
+    }
+    
+    .form-section-card {
+        margin-bottom: 1rem;
+    }
+    
+    .form-label {
+        font-size: 0.9rem;
+        margin-bottom: 0.25rem;
+    }
+    
+    .form-input {
+        padding: 0.5rem;
+        font-size: 0.9rem;
+    }
+    
+    .table {
+        font-size: 0.9rem;
+    }
+    
+    .table th, .table td {
+        padding: 0.5rem;
+    }
+    
+    .individual-row {
+        margin-bottom: 0.5rem;
+        padding-bottom: 0.5rem;
+    }
+    
+    .col-md-1, .col-md-2, .col-md-3, .col-md-4, .col-md-6 {
+        margin-bottom: 0.5rem;
+    }
+    
+    .btn-lg {
+        padding: 0.5rem 1rem;
+        font-size: 1rem;
+    }
+    
+    #selected-incidents-list .badge {
+        font-size: 0.8rem;
+    }
+}
+
+/* Small mobile devices */
+@media (max-width: 575.98px) {
+    .card-header {
+        padding: 0.75rem;
+    }
+    
+    .card-header h2 {
+        font-size: 1.5rem;
+    }
+    
+    .card-header h4 {
+        font-size: 1.1rem;
+    }
+    
+    .form-check-label {
+        font-size: 0.9rem;
+    }
+    
+    .table th, .table td {
+        padding: 0.4rem;
+        font-size: 0.8rem;
+    }
+    
+    .table-bordered {
+        border: none;
+    }
+    
+    .remove-individual-btn {
+        width: 30px;
+        height: 30px;
+        padding: 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .add-individual-btn {
+        font-size: 0.8rem;
+        padding: 0.25rem 0.5rem;
+        width: 100%;
+        margin-top: 0.5rem;
+    }
+    
+    .btn-lg {
+        width: 100%;
+        margin-top: 0.5rem;
+    }
+    
+    .d-flex.justify-content-end {
+        flex-direction: column;
+    }
+    
+    .d-flex.justify-content-end .btn {
+        width: 100%;
+    }
+    
+    .d-flex.justify-content-end .gap-2 {
+        gap: 0.5rem !important;
+    }
+    
+    .section-title {
+        font-size: 1rem;
+    }
+
+    /* Increase checkbox tap target size */
+    .form-check {
+        padding-left: 1.8rem;
+    }
+    
+    .form-check-input {
+        width: 1.2rem;
+        height: 1.2rem;
+        margin-left: -1.8rem;
+    }
+}
+
 @keyframes fadeIn {
     from { opacity: 0; transform: translateY(10px); }
     to { opacity: 1; transform: translateY(0); }
@@ -541,6 +733,42 @@ document.addEventListener('DOMContentLoaded', function() {
     document.getElementById('otherIncident').addEventListener('change', function() {
         const otherIncidentDetails = document.querySelector('.other-incident-details');
         otherIncidentDetails.style.display = this.checked ? 'flex' : 'none';
+    });
+    
+    // Handle incident type checkboxes
+    const incidentTypeCheckboxes = document.querySelectorAll('.incident-type');
+    const incidentDescriptionContainer = document.querySelector('.incident-description-container');
+    const selectedIncidentsList = document.getElementById('selected-incidents-list');
+    
+    // Function to update incident description section
+    function updateIncidentDescriptionSection() {
+        // Get all checked incident types
+        const checkedIncidents = Array.from(document.querySelectorAll('.incident-type:checked'));
+        
+        // Show/hide the description container based on selection
+        if (checkedIncidents.length > 0) {
+            incidentDescriptionContainer.style.display = 'flex';
+            incidentDescriptionContainer.style.animation = 'fadeIn 0.3s ease-in-out';
+            
+            // Clear the selected incidents list
+            selectedIncidentsList.innerHTML = '';
+            
+            // Add each selected incident as a badge
+            checkedIncidents.forEach(checkbox => {
+                const incidentLabel = checkbox.nextElementSibling.textContent.trim();
+                const badge = document.createElement('span');
+                badge.className = 'badge bg-danger me-2 mb-2 p-2';
+                badge.textContent = incidentLabel;
+                selectedIncidentsList.appendChild(badge);
+            });
+        } else {
+            incidentDescriptionContainer.style.display = 'none';
+        }
+    }
+    
+    // Add event listeners to all incident type checkboxes
+    incidentTypeCheckboxes.forEach(checkbox => {
+        checkbox.addEventListener('change', updateIncidentDescriptionSection);
     });
     
     // Show/hide immediate action details
@@ -573,71 +801,59 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Function to add a new individual row
     addIndividualBtn.addEventListener('click', function() {
-        // Get all existing rows
-        const existingRows = document.querySelectorAll('.individual-row');
-        
-        // Enable remove button on the first row if it was disabled
-        if (existingRows.length === 1) {
-            existingRows[0].querySelector('.remove-individual-btn').disabled = false;
-        }
+        const container = document.getElementById('individuals-container');
+        const individualRows = container.querySelectorAll('.individual-row');
         
         // Clone the first row
-        const newRow = existingRows[0].cloneNode(true);
+        const newRow = individualRows[0].cloneNode(true);
         
         // Clear input values
         newRow.querySelectorAll('input').forEach(input => {
             input.value = '';
         });
         
-        // Enable remove button
+        // Enable the remove button
         const removeBtn = newRow.querySelector('.remove-individual-btn');
         removeBtn.disabled = false;
         
         // Add event listener to remove button
         removeBtn.addEventListener('click', function() {
-            removeIndividualRow(this);
+            const individualRows = container.querySelectorAll('.individual-row');
+            if (individualRows.length > 1) {
+                newRow.remove();
+            }
         });
         
         // Append the new row
-        individualsContainer.appendChild(newRow);
+        container.appendChild(newRow);
         
-        // Update numbering
-        updateIndividualRowNumbers();
+        // On mobile, scroll to the new row
+        if (window.innerWidth < 768) {
+            setTimeout(() => {
+                newRow.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            }, 100);
+        }
     });
     
-    // Function to remove an individual row
-    function removeIndividualRow(button) {
-        const row = button.closest('.individual-row');
-        row.style.opacity = '0';
-        row.style.transform = 'translateY(10px)';
-        
-        setTimeout(() => {
-            row.remove();
-            
-            // If only one row remains, disable its remove button
-            const remainingRows = document.querySelectorAll('.individual-row');
-            if (remainingRows.length === 1) {
-                remainingRows[0].querySelector('.remove-individual-btn').disabled = true;
-            }
-            
-            // Update numbering
-            updateIndividualRowNumbers();
-        }, 300);
-    }
-    
-    // Add event listener to existing remove buttons
-    document.querySelectorAll('.remove-individual-btn').forEach(button => {
-        button.addEventListener('click', function() {
-            removeIndividualRow(this);
-        });
-    });
-    
-    // Function to update row numbers
-    function updateIndividualRowNumbers() {
-        const rows = document.querySelectorAll('.individual-row');
-        rows.forEach((row, index) => {
-            const rowNumber = index + 1;
-            row.dataset.rowNumber = rowNumber;
+    // Make checkboxes more touch-friendly on mobile
+    if ('ontouchstart' in window || navigator.maxTouchPoints > 0) {
+        document.querySelectorAll('.form-check-label').forEach(label => {
+            label.addEventListener('click', function(e) {
+                e.preventDefault();
+                const checkbox = document.getElementById(this.getAttribute('for'));
+                checkbox.checked = !checkbox.checked;
+                
+                // Trigger change event for incident type checkboxes
+                if (checkbox.classList.contains('incident-type')) {
+                    updateIncidentDescriptionSection();
+                }
+                
+                // Trigger change event for action taken checkboxes
+                if (checkbox.classList.contains('action-taken')) {
+                    const actionType = checkbox.value;
+                    toggleActionDetailBox(actionType, checkbox.checked);
+                }
+            });
         });
     }
 
@@ -672,6 +888,23 @@ document.addEventListener('DOMContentLoaded', function() {
                     confirmButtonColor: '#dc3545'
                 });
                 return;
+            }
+            
+            // Check if incident description is filled when incidents are selected
+            const incidentDescription = document.querySelector('textarea[name="incident_description"]');
+            if (incidentTypes.length > 0 && (!incidentDescription.value || incidentDescription.value.trim() === '')) {
+                allFilled = false;
+                Swal.fire({
+                    title: 'Incomplete Form',
+                    text: 'Please provide a description for the selected incident(s).',
+                    icon: 'warning',
+                    confirmButtonText: 'OK',
+                    confirmButtonColor: '#dc3545'
+                });
+                incidentDescription.classList.add('is-invalid');
+                return;
+            } else {
+                incidentDescription.classList.remove('is-invalid');
             }
 
             if (!allFilled) {

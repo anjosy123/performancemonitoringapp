@@ -32,6 +32,7 @@ urlpatterns = [
     path('add-staff/', views.add_staff, name='add_staff'),
     path('edit-staff/<int:staff_id>/', views.edit_staff, name='edit_staff'),
     path('delete-staff/<int:staff_id>/', views.delete_staff, name='delete_staff'),
+    path('bulk-upload-staff/', views.bulk_upload_staff, name='bulk_upload_staff'),
     
     # Department head management
     path('add-department-head/', views.add_superintendent, name='add_superintendent'),

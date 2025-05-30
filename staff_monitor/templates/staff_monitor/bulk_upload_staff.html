@@ -1,0 +1,156 @@
+<!-- staff_monitor/templates/staff_monitor/bulk_upload_staff.html -->
+{% extends 'staff_monitor/base.html' %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-10">
+        <div class="card">
+            <div class="card-header bg-primary text-white">
+                <h3 class="mb-0">
+                    <i class="fas fa-upload me-2"></i>Bulk Upload Staff
+                </h3>
+            </div>
+            <div class="card-body">
+                <div class="row mb-4">
+                    <div class="col-md-12">
+                        <div class="alert alert-info">
+                            <h5><i class="fas fa-info-circle me-2"></i>Instructions</h5>
+                            <p>Upload an Excel file with staff details to add multiple staff members at once. The file should contain the following columns:</p>
+                            <ul>
+                                <li><strong>First name</strong> - Staff member's first name</li>
+                                <li><strong>Last name</strong> - Staff member's last name</li>
+                                <li><strong>Email</strong> - Staff member's email address (must be unique)</li>
+                                <li><strong>Employee ID</strong> - Staff member's employee ID (must be unique)</li>
+                                <li><strong>Designation</strong> - Staff member's position/designation</li>
+                                <li><strong>Department</strong> - Department name (must match existing departments)</li>
+                                <li><strong>Joining date</strong> - Date when the staff member joined (YYYY-MM-DD format)</li>
+                                <li><strong>Date of appointment</strong> - Optional: Date of appointment (YYYY-MM-DD format)</li>
+                            </ul>
+                            <p class="mb-0">
+                                <a href="#" class="btn btn-sm btn-success download-template-btn">
+                                    <i class="fas fa-download me-1"></i>Download Template
+                                </a>
+                            </p>
+                        </div>
+                    </div>
+                </div>
+
+                <form method="post" enctype="multipart/form-data" class="needs-validation" novalidate>
+                    {% csrf_token %}
+                    <div class="mb-4">
+                        <label class="form-label">Excel File</label>
+                        {{ form.excel_file }}
+                        <div class="form-text">{{ form.excel_file.help_text }}</div>
+                        {% if form.excel_file.errors %}
+                            <div class="invalid-feedback d-block">{{ form.excel_file.errors.0 }}</div>
+                        {% endif %}
+                    </div>
+
+                    <div class="card mb-4">
+                        <div class="card-header bg-light">
+                            <h5 class="mb-0">
+                                <i class="fas fa-hospital me-2"></i>Available Departments
+                            </h5>
+                        </div>
+                        <div class="card-body">
+                            <p class="text-muted mb-2">The Department column in your Excel file must match one of these existing departments:</p>
+                            <div class="row">
+                                {% for department in departments %}
+                                <div class="col-md-4 col-sm-6 mb-2">
+                                    <span class="badge bg-light text-dark border">{{ department.name }}</span>
+                                </div>
+                                {% endfor %}
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                        <a href="{% url 'staff_list' %}" class="btn btn-secondary me-2">
+                            <i class="fas fa-times me-1"></i>Cancel
+                        </a>
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-upload me-1"></i>Upload Staff
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .form-control {
+        padding: 0.75rem;
+        border-radius: 0.5rem;
+        border: 1px solid #dee2e6;
+    }
+    .form-control:focus {
+        border-color: #86b7fe;
+        box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.25);
+    }
+    .card {
+        border-radius: 1rem;
+        border: none;
+        box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15);
+        margin-bottom: 2rem;
+    }
+    .card-header {
+        border-top-left-radius: 1rem !important;
+        border-top-right-radius: 1rem !important;
+        padding: 1.5rem;
+    }
+    .btn {
+        padding: 0.75rem 1.5rem;
+        border-radius: 0.5rem;
+    }
+    .alert-info {
+        background-color: #e8f4f8;
+        border-color: #b8e2ef;
+        color: #0c5460;
+        border-radius: 0.5rem;
+    }
+    .badge {
+        font-size: 0.875rem;
+        font-weight: 500;
+        padding: 0.5rem 0.75rem;
+        border-radius: 0.25rem;
+    }
+    .download-template-btn {
+        background-color: #28a745;
+        color: white;
+        padding: 0.5rem 1rem;
+    }
+    .download-template-btn:hover {
+        background-color: #218838;
+        color: white;
+    }
+</style>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Handle template download
+    document.querySelector('.download-template-btn').addEventListener('click', function(e) {
+        e.preventDefault();
+        
+        // Create workbook with headers
+        const headers = ['First name', 'Last name', 'Email', 'Employee ID', 'Designation', 'Department', 'Joining date', 'Date of appointment'];
+        
+        // Sample data (first row as example)
+        const sampleData = ['John', 'Doe', 'john.doe@example.com', 'EMP001', 'Staff Nurse', 'Nursing', '2023-01-15', '2023-02-01'];
+        
+        // Create CSV content
+        let csvContent = headers.join(',') + '\n' + sampleData.join(',');
+        
+        // Create download link
+        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.setAttribute('download', 'staff_upload_template.csv');
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+    });
+});
+</script>
+{% endblock %} 

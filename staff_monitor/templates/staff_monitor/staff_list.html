@@ -18,14 +18,24 @@
             {% endif %}
         </h3>
         {% if is_admin %}
-        <a href="{% url 'add_staff' %}" class="btn btn-light">
-            <i class="fas fa-user-plus me-1"></i>Add Staff
-        </a>
+        <div class="d-flex gap-2">
+            <a href="{% url 'add_staff' %}" class="btn btn-light">
+                <i class="fas fa-user-plus me-1"></i>Add Staff
+            </a>
+            <a href="{% url 'bulk_upload_staff' %}" class="btn btn-success">
+                <i class="fas fa-file-upload me-1"></i>Bulk Upload
+            </a>
+        </div>
         {% endif %}
         {% if is_hr_head and department_head.privileges.can_add_staff %}
-        <a href="{% url 'add_staff' %}" class="btn btn-light">
-            <i class="fas fa-user-plus me-1"></i>Add Staff
-        </a>
+        <div class="d-flex gap-2">
+            <a href="{% url 'add_staff' %}" class="btn btn-light">
+                <i class="fas fa-user-plus me-1"></i>Add Staff
+            </a>
+            <a href="{% url 'bulk_upload_staff' %}" class="btn btn-success">
+                <i class="fas fa-file-upload me-1"></i>Bulk Upload
+            </a>
+        </div>
         {% endif %}
     </div>
     <div class="card-body">
