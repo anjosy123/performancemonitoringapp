@@ -1,6 +1,7 @@
 {% extends 'staff_monitor/base.html' %}
 
 {% block content %}
+{% csrf_token %}
 <div class="card">
     <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
         <h3 class="mb-0">
@@ -155,7 +156,7 @@
                                         <td>{{ staff.employee_id }}</td>
                                         <td>
                                             {% if staff.subdepartment %}
-                                                {{ staff.subdepartment }}
+                                                {{ staff.subdepartment.name }}
                                             {% else %}
                                                 <span class="text-muted">N/A</span>
                                             {% endif %}
@@ -175,7 +176,13 @@
                                                     <i class="fas fa-edit me-1"></i>Edit
                                                 </a>
                                                 {% endif %}
-                                                {% if is_hr_head and department_head.privileges.can_delete_staff %}
+                                                {% if is_admin %}
+                                                <button class="btn btn-danger btn-sm delete-staff" 
+                                                        data-staff-id="{{ staff.id }}"
+                                                        data-staff-name="{{ staff.user.get_full_name }}">
+                                                    <i class="fas fa-trash me-1"></i>Delete
+                                                </button>
+                                                {% elif is_hr_head and department_head.privileges.can_delete_staff %}
                                                 <button class="btn btn-danger btn-sm delete-staff" 
                                                         data-staff-id="{{ staff.id }}"
                                                         data-staff-name="{{ staff.user.get_full_name }}">
@@ -209,9 +216,7 @@
                         <th>Name</th>
                         <th>Employee ID</th>
                         <th>Department</th>
-                        {% if is_admin or is_main_department_head %}
                         <th>Subdepartment</th>
-                        {% endif %}
                         <th>Position</th>
                         <th>Contact</th>
                         <th>Actions</th>
@@ -223,15 +228,13 @@
                         <td>{{ staff.user.get_full_name }}</td>
                         <td>{{ staff.employee_id }}</td>
                         <td>{{ staff.department }}</td>
-                        {% if is_admin or is_main_department_head %}
                         <td>
                             {% if staff.subdepartment %}
-                                {{ staff.subdepartment }}
+                                {{ staff.subdepartment.name }}
                             {% else %}
                                 <span class="text-muted">N/A</span>
                             {% endif %}
                         </td>
-                        {% endif %}
                         <td>{{ staff.position }}</td>
                         <td>{{ staff.user.email }}</td>
                         <td>
@@ -247,7 +250,13 @@
                                     <i class="fas fa-edit me-1"></i>Edit
                                 </a>
                                 {% endif %}
-                                {% if is_admin or is_hr_head and department_head.privileges.can_delete_staff %}
+                                {% if is_admin %}
+                                <button class="btn btn-danger btn-sm delete-staff" 
+                                        data-staff-id="{{ staff.id }}"
+                                        data-staff-name="{{ staff.user.get_full_name }}">
+                                    <i class="fas fa-trash me-1"></i>Delete
+                                </button>
+                                {% elif is_hr_head and department_head.privileges.can_delete_staff %}
                                 <button class="btn btn-danger btn-sm delete-staff" 
                                         data-staff-id="{{ staff.id }}"
                                         data-staff-name="{{ staff.user.get_full_name }}">
@@ -259,7 +268,7 @@
                     </tr>
                     {% empty %}
                     <tr>
-                        <td colspan="{% if is_admin or is_main_department_head %}7{% else %}6{% endif %}" class="text-center py-4">
+                        <td colspan="7" class="text-center py-4">
                             <i class="fas fa-users text-muted me-2"></i>No staff members found
                         </td>
                     </tr>
@@ -429,11 +438,23 @@ document.addEventListener('DOMContentLoaded', function() {
                 const name = row.querySelector('td:first-child').textContent.toLowerCase();
                 const id = row.querySelector('td:nth-child(2)').textContent.toLowerCase();
                 const department = row.querySelector('td:nth-child(3)').textContent.toLowerCase();
-                const position = row.cells.length > 5 ? row.querySelector('td:nth-child(5)').textContent.toLowerCase() : 
-                                                      row.querySelector('td:nth-child(4)').textContent.toLowerCase();
+                const subdepartment = row.querySelector('td:nth-child(4)').textContent.toLowerCase();
+                const position = row.querySelector('td:nth-child(5)').textContent.toLowerCase();
+                const contact = row.querySelector('td:nth-child(6)').textContent.toLowerCase();
                 
-                if ((searchTerm === '' || name.includes(searchTerm) || id.includes(searchTerm) || position.includes(searchTerm)) &&
-                    (selectedDepartment === '' || department.includes(selectedDepartment))) {
+                const searchMatches = 
+                    searchTerm === '' || 
+                    name.includes(searchTerm) || 
+                    id.includes(searchTerm) || 
+                    subdepartment.includes(searchTerm) ||
+                    position.includes(searchTerm) ||
+                    contact.includes(searchTerm);
+                    
+                const departmentMatches = 
+                    selectedDepartment === '' || 
+                    department.includes(selectedDepartment);
+                
+                if (searchMatches && departmentMatches) {
                     row.style.display = '';
                 } else {
                     row.style.display = 'none';
@@ -480,12 +501,12 @@ document.addEventListener('DOMContentLoaded', function() {
                     // Create and submit form for deletion
                     const form = document.createElement('form');
                     form.method = 'POST';
-                    form.action = `/delete_staff/${staffId}/`;
+                    form.action = `{% url 'delete_staff' 999 %}`.replace('999', staffId);
                     
                     const csrfInput = document.createElement('input');
                     csrfInput.type = 'hidden';
                     csrfInput.name = 'csrfmiddlewaretoken';
-                    csrfInput.value = document.querySelector('[name=csrfmiddlewaretoken]').value;
+                    csrfInput.value = document.querySelector('input[name="csrfmiddlewaretoken"]').value;
                     
                     form.appendChild(csrfInput);
                     document.body.appendChild(form);

@@ -4,12 +4,13 @@ from .models import DepartmentHead, Staff, PerformanceReport, Department, SubDep
 from django.forms import inlineformset_factory
 import random
 import string
-from datetime import date
+from datetime import date, datetime
 
 # Add required imports for bulk upload functionality
 import pandas as pd
 from django.core.exceptions import ValidationError
 import openpyxl
+import uuid
 
 class PerformanceReportForm(forms.ModelForm):
     date = forms.DateField(
@@ -182,7 +183,11 @@ class DepartmentHeadForm(forms.ModelForm):
     def clean_email(self):
         email = self.cleaned_data.get('email')
         
-        # If we're editing an existing user
+        # If no email is provided, that's okay since it's optional now
+        if not email:
+            return email
+        
+        # If we're editing an existing user with the same email
         if self.instance_user and self.instance_user.email == email:
             return email
             
@@ -204,6 +209,12 @@ class DepartmentHeadForm(forms.ModelForm):
             self.instance_user.first_name = self.cleaned_data['first_name']
             self.instance_user.last_name = self.cleaned_data['last_name']
             
+            # Update email if provided and different from current
+            new_email = self.cleaned_data.get('email')
+            if new_email and new_email != self.instance_user.email:
+                self.instance_user.email = new_email
+                self.instance_user.username = new_email  # Also update username as it's based on email
+            
             if commit:
                 self.instance_user.save()
                 
@@ -212,12 +223,12 @@ class DepartmentHeadForm(forms.ModelForm):
             
             if commit:
                 department_head.save()
-                
+            
             return department_head
         else:
             # Create new user for a new department head
             password = ''.join(random.choices(string.ascii_letters + string.digits, k=8))
-        
+            
             # Create User instance
             user = User.objects.create_user(
                 username=self.cleaned_data['email'],
@@ -236,6 +247,138 @@ class DepartmentHeadForm(forms.ModelForm):
                 
                 # Store the password as an attribute so the view can access it
                 head.user_password = password
+                
+                try:
+                    # Send email with credentials
+                    from django.core.mail import EmailMultiAlternatives
+                    from django.conf import settings
+                    from django.template.loader import render_to_string
+                    
+                    # Create subject with hospital name
+                    email_subject = 'Your Mariampur Hospital Account Information'
+                    
+                    # Create context for the email templates
+                    context = {
+                        'full_name': user.get_full_name(),
+                        'username': user.username,
+                        'password': password,
+                        'login_url': 'http://performance-monitoring.onrender.com/login/',
+                        'hospital_name': 'Mariampur Hospital',
+                        'department': self.cleaned_data['department'].name,
+                        'position': self.cleaned_data['designation'],
+                    }
+                    
+                    # Plain text version of the email
+                    text_content = f"""
+Dear {user.get_full_name()},
+
+Welcome to Mariampur Hospital Performance Monitoring System!
+
+Your account has been created in the system with the following details:
+
+Login Details:
+Username: {user.username}
+Password: {password}
+
+Please login at: http://performance-monitoring.onrender.com/login/
+We recommend changing your password after your first login.
+
+Department: {self.cleaned_data['department'].name}
+Position: {self.cleaned_data['designation']}
+
+If you have any questions, please contact the HR department.
+
+Best regards,
+Mariampur Hospital IT Team
+                    """
+                    
+                    # HTML version of the email with styling and logo
+                    html_content = f"""
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Welcome to Mariampur Hospital</title>
+    <style>
+        body {{ font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; }}
+        .header {{ background-color: #0d6efd; padding: 20px; text-align: center; color: white; }}
+        .content {{ padding: 20px; background-color: #f9f9f9; }}
+        .footer {{ padding: 15px; text-align: center; background-color: #f1f1f1; font-size: 12px; color: #666; }}
+        .logo {{ width: 150px; height: auto; }}
+        .credentials {{ background-color: #fff; border-left: 4px solid #0d6efd; padding: 15px; margin: 20px 0; }}
+        .button {{ display: inline-block; background-color: #0d6efd; color: white; padding: 10px 20px; 
+                   text-decoration: none; border-radius: 4px; margin-top: 15px; }}
+    </style>
+</head>
+<body>
+    <div class="header">
+        <img src="cid:hospital_logo" alt="Mariampur Hospital Logo" class="logo">
+        <h1>Mariampur Hospital</h1>
+    </div>
+    <div class="content">
+        <h2>Welcome, {user.get_full_name()}!</h2>
+        <p>Your account has been created in the Mariampur Hospital Performance Monitoring System.</p>
+        
+        <div class="credentials">
+            <h3>Your Login Details</h3>
+            <p><strong>Username:</strong> {user.username}</p>
+            <p><strong>Password:</strong> {password}</p>
+            <p><strong>Department:</strong> {self.cleaned_data['department'].name}</p>
+            <p><strong>Position:</strong> {self.cleaned_data['designation']}</p>
+        </div>
+        
+        <p>Please use these credentials to login to the system. We recommend changing your password after your first login.</p>
+        
+        <a href="http://performance-monitoring.onrender.com/login/" class="button">Login to Your Account</a>
+        
+        <p>If you have any questions or need assistance, please contact the HR department.</p>
+    </div>
+    <div class="footer">
+        <p>&copy; {datetime.now().year} Mariampur Hospital. All rights reserved.</p>
+        <p>This email was sent automatically. Please do not reply to this email.</p>
+    </div>
+</body>
+</html>
+                    """
+                    
+                    # Create the email message
+                    email = EmailMultiAlternatives(
+                        subject=email_subject,
+                        body=text_content,
+                        from_email=settings.DEFAULT_FROM_EMAIL,
+                        to=[user.email]
+                    )
+                    
+                    # Attach the HTML version
+                    email.attach_alternative(html_content, "text/html")
+                    
+                    # Attach the hospital logo
+                    import os
+                    from django.contrib.staticfiles import finders
+                    
+                    # Get the path to the logo
+                    logo_path = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 
+                                             'static', 'images', 'hospital-logo.png')
+                    
+                    # Check if the file exists
+                    if os.path.exists(logo_path):
+                        # Attach the logo as an inline image
+                        from email.mime.image import MIMEImage
+                        with open(logo_path, 'rb') as img:
+                            logo = MIMEImage(img.read())
+                            logo.add_header('Content-ID', '<hospital_logo>')
+                            logo.add_header('Content-Disposition', 'inline', filename='hospital-logo.png')
+                            email.attach(logo)
+                    
+                    # Send the email
+                    email.send(fail_silently=True)
+                    
+                    # Mark successful email sending
+                    head.email_sent = True
+                except Exception as e:
+                    # Just mark that email wasn't sent, but don't raise an exception
+                    head.email_sent = False
+                    print(f"Email sending failed: {str(e)}")
             
             return head
 
@@ -255,10 +398,10 @@ class StaffForm(forms.ModelForm):
         })
     )
     email = forms.EmailField(
-        required=True,
+        required=False,
         widget=forms.EmailInput(attrs={
             'class': 'form-control',
-            'placeholder': 'Enter email address'
+            'placeholder': 'Enter email address (or leave blank if not available)'
         })
     )
     
@@ -309,6 +452,14 @@ class StaffForm(forms.ModelForm):
         else:
             self.fields['subdepartment'].queryset = SubDepartment.objects.none()
         
+        # If editing an existing staff member, disable employee_id field
+        if self.instance and self.instance.pk:
+            self.fields['employee_id'].widget.attrs['readonly'] = True
+            self.fields['employee_id'].widget.attrs['disabled'] = True
+            self.fields['employee_id'].required = False
+            # Store the original employee_id to use in save method
+            self.initial['employee_id'] = self.instance.employee_id
+        
         # If we have form data and 'department' in it
         if 'department' in self.data:
             try:
@@ -316,12 +467,6 @@ class StaffForm(forms.ModelForm):
                 self.fields['subdepartment'].queryset = SubDepartment.objects.filter(department_id=department_id)
             except (ValueError, TypeError):
                 pass
-                
-        # If this is an edit form (instance_user exists), disable the email field
-        if self.instance_user:
-            self.fields['email'].widget.attrs['readonly'] = True
-            self.fields['email'].widget.attrs['disabled'] = True
-            self.fields['email'].help_text = "Email cannot be changed once account is created."
 
     def clean(self):
         cleaned_data = super().clean()
@@ -341,7 +486,11 @@ class StaffForm(forms.ModelForm):
     def clean_email(self):
         email = self.cleaned_data.get('email')
         
-        # If we're editing an existing user
+        # If no email is provided, that's okay since it's optional now
+        if not email:
+            return email
+        
+        # If we're editing an existing user with the same email
         if self.instance_user and self.instance_user.email == email:
             return email
             
@@ -353,8 +502,16 @@ class StaffForm(forms.ModelForm):
 
     def clean_employee_id(self):
         employee_id = self.cleaned_data.get('employee_id')
+        
+        # Skip validation if editing an existing staff member
+        if self.instance and self.instance.pk:
+            # Return the original employee_id since the field might be disabled in the form
+            return self.instance.employee_id
+            
+        # For new staff members, check if employee_id is unique
         if Staff.objects.filter(employee_id=employee_id).exists():
             raise forms.ValidationError("This Employee ID is already in use.")
+            
         return employee_id
 
     def save(self, commit=True):
@@ -364,26 +521,52 @@ class StaffForm(forms.ModelForm):
             self.instance_user.first_name = self.cleaned_data['first_name']
             self.instance_user.last_name = self.cleaned_data['last_name']
             
+            # Update email if provided and different from current
+            new_email = self.cleaned_data.get('email')
+            if new_email and new_email != self.instance_user.email:
+                self.instance_user.email = new_email
+                self.instance_user.username = new_email  # Also update username as it's based on email
+            
             if commit:
                 self.instance_user.save()
                 
             # Update Staff instance
             staff = super().save(commit=False)
             
+            # Ensure employee_id remains unchanged when editing
+            if self.instance and self.instance.pk:
+                staff.employee_id = self.instance.employee_id
+                
             if commit:
                 staff.save()
                 
             return staff
         else:
-            # Create user without login credentials (no password)
-            user = User.objects.create_user(
-                username=self.cleaned_data['email'],
-                email=self.cleaned_data['email'],
-                password=None,  # No password set, user cannot login
-                first_name=self.cleaned_data['first_name'],
-                last_name=self.cleaned_data['last_name'],
-                is_active=False  # User account is inactive
-            )
+            # Create new user with or without login credentials based on email availability
+            email = self.cleaned_data.get('email')
+            
+            # Create a User instance
+            if email:
+                # Create user with email and username (email is available)
+                user = User.objects.create_user(
+                    username=email,
+                    email=email,
+                    password=None,  # No password set, user cannot login until password reset
+                    first_name=self.cleaned_data['first_name'],
+                    last_name=self.cleaned_data['last_name'],
+                    is_active=False  # User account is inactive
+                )
+            else:
+                # Create user with generated username (no email available)
+                username = f"staff_{uuid.uuid4().hex[:8]}"  # Generate a unique username
+                user = User.objects.create_user(
+                    username=username,
+                    email=None,  # No email
+                    password=None,  # No password
+                    first_name=self.cleaned_data['first_name'],
+                    last_name=self.cleaned_data['last_name'],
+                    is_active=False  # User account is inactive
+                )
             
             # Create Staff instance
             staff = super().save(commit=False)
@@ -550,13 +733,22 @@ class StaffBulkUploadForm(forms.Form):
             
             # Check if required columns are present
             required_columns = [
-                'First name', 'Last name', 'Email', 'Employee ID', 
+                'First name', 'Last name', 'Employee ID', 
                 'Designation', 'Department', 'Joining date'
             ]
+            
+            # Email is now optional
+            recommended_columns = ['Email']
             
             missing_columns = [col for col in required_columns if col not in df.columns]
             if missing_columns:
                 raise ValidationError(f"Missing required columns: {', '.join(missing_columns)}")
+                
+            # Warn about missing optional columns
+            missing_recommended = [col for col in recommended_columns if col not in df.columns]
+            if missing_recommended:
+                # This doesn't raise an error, just logs a warning
+                print(f"Warning: Missing recommended columns: {', '.join(missing_recommended)}")
                 
             # Reset file pointer for further processing
             excel_file.seek(0)

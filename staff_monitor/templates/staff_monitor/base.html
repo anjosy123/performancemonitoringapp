@@ -798,6 +798,9 @@
     {% if user.is_authenticated %}
     const SESSION_TIMEOUT = 3600000; // 1 hour in milliseconds
     let sessionTimeoutTimer;
+    let lastHeartbeat = Date.now();
+    let heartbeatThrottleTime = 10000; // Throttle heartbeat requests to every 10 seconds
+    let heartbeatInProgress = false;
 
     // Function to reset the session timeout timer
     function resetSessionTimeout() {
@@ -810,17 +813,53 @@
             window.location.href = "{% url 'login' %}?timeout=1";
         }, SESSION_TIMEOUT);
         
-        // Send a request to update the last_activity timestamp on the server
-        fetch("{% url 'dashboard' %}", { method: "HEAD" }).catch(() => {});
+        // Send a heartbeat request to the server (throttled)
+        const now = Date.now();
+        if (now - lastHeartbeat > heartbeatThrottleTime && !heartbeatInProgress) {
+            lastHeartbeat = now;
+            heartbeatInProgress = true;
+            
+            fetch("{% url 'heartbeat' %}", { 
+                method: "HEAD",
+                cache: "no-store",
+                headers: {
+                    "X-Requested-With": "XMLHttpRequest",
+                    "Cache-Control": "no-cache"
+                }
+            })
+            .then(() => {
+                heartbeatInProgress = false;
+            })
+            .catch(() => {
+                heartbeatInProgress = false;
+            });
+        }
     }
 
     // Reset timer on page load
     resetSessionTimeout();
 
-    // Reset timer on user activity
-    const activityEvents = ['mousedown', 'mousemove', 'keypress', 'scroll', 'touchstart'];
+    // Reset timer on user activity - throttled to reduce excessive calls
+    let activityTimeout;
+    function handleActivity() {
+        clearTimeout(activityTimeout);
+        activityTimeout = setTimeout(resetSessionTimeout, 1000);
+    }
+
+    const activityEvents = ['mousedown', 'keypress', 'scroll', 'touchstart'];
     activityEvents.forEach(function(eventName) {
-        document.addEventListener(eventName, resetSessionTimeout, true);
+        document.addEventListener(eventName, handleActivity, { passive: true });
+    });
+
+    // Cleanup session tracking on page unload
+    window.addEventListener('beforeunload', function() {
+        clearTimeout(sessionTimeoutTimer);
+        clearTimeout(activityTimeout);
+        // Cancel any in-progress fetch requests
+        if (heartbeatInProgress) {
+            // Unfortunately we can't cancel fetch directly, but we can set the flag
+            heartbeatInProgress = false;
+        }
     });
     {% endif %}
     </script>

@@ -28,11 +28,13 @@
                     <div class="mb-3">
                         <label class="form-label">Email</label>
                         {{ form.email }}
-                        {% if edit_mode %}
-                            <small class="text-muted">Email address cannot be changed once account is created.</small>
-                        {% else %}
-                            <small class="text-muted">Login credentials will be sent to this email address</small>
-                        {% endif %}
+                        <small class="text-muted">
+                            {% if edit_mode %}
+                                You can update the email address if needed.
+                            {% else %}
+                                Login credentials will be sent to this email address if provided.
+                            {% endif %}
+                        </small>
                         {% if form.email.errors %}
                             <div class="invalid-feedback d-block">{{ form.email.errors.0 }}</div>
                         {% endif %}
@@ -42,6 +44,11 @@
                         <div class="col-md-6 mb-3">
                             <label class="form-label">Employee ID</label>
                             {{ form.employee_id }}
+                            {% if edit_mode %}
+                            <small class="text-muted">
+                                Employee ID cannot be changed after creation.
+                            </small>
+                            {% endif %}
                         </div>
                         <div class="col-md-6 mb-3">
                             <label class="form-label">Designation</label>

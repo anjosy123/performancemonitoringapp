@@ -85,4 +85,7 @@ urlpatterns = [
         template_name='staff_monitor/password_change.html',
         success_url='/profile/'
     ), name='password_change'),
+    
+    # Session management
+    path('heartbeat/', views.heartbeat, name='heartbeat'),
 ]

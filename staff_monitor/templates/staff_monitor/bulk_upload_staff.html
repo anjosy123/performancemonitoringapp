@@ -19,13 +19,23 @@
                             <ul>
                                 <li><strong>First name</strong> - Staff member's first name</li>
                                 <li><strong>Last name</strong> - Staff member's last name</li>
-                                <li><strong>Email</strong> - Staff member's email address (must be unique)</li>
+                                <li><strong>Email</strong> - <em>Optional:</em> Staff member's email address (leave blank, "nil", or "N/A" if not available)</li>
                                 <li><strong>Employee ID</strong> - Staff member's employee ID (must be unique)</li>
                                 <li><strong>Designation</strong> - Staff member's position/designation</li>
-                                <li><strong>Department</strong> - Department name (must match existing departments)</li>
+                                <li><strong>Department</strong> - Department name or subdepartment name (see formats below)</li>
                                 <li><strong>Joining date</strong> - Date when the staff member joined (YYYY-MM-DD format)</li>
-                                <li><strong>Date of appointment</strong> - Optional: Date of appointment (YYYY-MM-DD format)</li>
+                                <li><strong>Date of appointment</strong> - <em>Optional:</em> Date of appointment (YYYY-MM-DD format)</li>
                             </ul>
+                            <div class="alert alert-warning mt-3">
+                                <h6><i class="fas fa-exclamation-triangle me-2"></i>Department/Subdepartment Formats</h6>
+                                <p>For the <strong>Department</strong> column, you can use any of these formats:</p>
+                                <ol>
+                                    <li><strong>Main department name</strong> (e.g., "MATERNITY") - assigns to main department only</li>
+                                    <li><strong>Subdepartment name only</strong> (e.g., "NURSERY") - system will try to identify which department it belongs to</li>
+                                    <li><strong>Subdepartment with parent department</strong>: "<strong>SUBDEPARTMENT - DEPARTMENT</strong>" (e.g., "NURSERY - MATERNITY") - most reliable for subdepartment assignment</li>
+                                </ol>
+                                <p>The system will attempt to match to existing departments and subdepartments. If a subdepartment is specified with its parent department (format #3), and the subdepartment doesn't exist, it will be created automatically.</p>
+                            </div>
                             <p class="mb-0">
                                 <a href="#" class="btn btn-sm btn-success download-template-btn">
                                     <i class="fas fa-download me-1"></i>Download Template
@@ -44,24 +54,6 @@
                         {% if form.excel_file.errors %}
                             <div class="invalid-feedback d-block">{{ form.excel_file.errors.0 }}</div>
                         {% endif %}
-                    </div>
-
-                    <div class="card mb-4">
-                        <div class="card-header bg-light">
-                            <h5 class="mb-0">
-                                <i class="fas fa-hospital me-2"></i>Available Departments
-                            </h5>
-                        </div>
-                        <div class="card-body">
-                            <p class="text-muted mb-2">The Department column in your Excel file must match one of these existing departments:</p>
-                            <div class="row">
-                                {% for department in departments %}
-                                <div class="col-md-4 col-sm-6 mb-2">
-                                    <span class="badge bg-light text-dark border">{{ department.name }}</span>
-                                </div>
-                                {% endfor %}
-                            </div>
-                        </div>
                     </div>
 
                     <div class="d-grid gap-2 d-md-flex justify-content-md-end">
@@ -135,11 +127,22 @@ document.addEventListener('DOMContentLoaded', function() {
         // Create workbook with headers
         const headers = ['First name', 'Last name', 'Email', 'Employee ID', 'Designation', 'Department', 'Joining date', 'Date of appointment'];
         
-        // Sample data (first row as example)
-        const sampleData = ['John', 'Doe', 'john.doe@example.com', 'EMP001', 'Staff Nurse', 'Nursing', '2023-01-15', '2023-02-01'];
+        // Sample data rows showing different department format options
+        const sampleData = [
+            ['John', 'Doe', 'john.doe@example.com', 'EMP001', 'Staff Nurse', 'Nursing', '2023-01-15', '2023-02-01'],
+            ['Jane', 'Smith', 'jane.smith@example.com', 'EMP002', 'Nurse', 'NURSERY', '2023-02-10', '2023-03-01'],
+            ['Robert', 'Johnson', 'robert@example.com', 'EMP003', 'Doctor', 'NURSERY - MATERNITY', '2023-03-05', '2023-04-01'],
+            ['Maria', 'Garcia', 'maria@example.com', 'EMP004', 'Technician', 'Radiology', '2023-04-15', ''],
+            ['David', 'Lee', '', 'EMP005', 'Assistant', 'Administration', '2023-05-20', ''],
+            ['Emma', 'Wilson', 'emma@example.com', 'EMP006', 'Senior Nurse', 'ICU - EMERGENCY', '2023-06-01', '2023-06-15'],
+            ['Michael', 'Brown', '', 'EMP007', 'Receptionist', 'RECEPTION - ADMINISTRATION', '2023-07-10', '']
+        ];
         
         // Create CSV content
-        let csvContent = headers.join(',') + '\n' + sampleData.join(',');
+        let csvContent = headers.join(',') + '\n';
+        sampleData.forEach(row => {
+            csvContent += row.join(',') + '\n';
+        });
         
         // Create download link
         const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });

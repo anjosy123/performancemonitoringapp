@@ -101,91 +101,163 @@
                             <i class="fas fa-exclamation-circle me-2 text-danger"></i>
                             <span>Nature of incident</span>
                         </div>
-                        <div class="row">
-                            <div class="col-md-6 col-lg-4 mb-3">
-                                <div class="form-check custom-checkbox mb-2">
-                                    <input class="form-check-input incident-type" type="checkbox" name="incident_type" 
-                                        value="negligence" id="negligence">
-                                    <label class="form-check-label" for="negligence">
-                                        1. Negligence
-                                    </label>
+
+                        <!-- Positive nature of incident -->
+                        <div class="mb-4">
+                            <h5 class="text-success fw-bold mb-3">
+                                <i class="fas fa-thumbs-up me-2"></i>Positive nature of incident
+                            </h5>
+                            <div class="row">
+                                <div class="col-md-6 col-lg-4 mb-3">
+                                    <div class="form-check custom-checkbox mb-2">
+                                        <input class="form-check-input incident-type" type="checkbox" name="incident_type" 
+                                            value="good_conduct" id="goodConduct">
+                                        <label class="form-check-label" for="goodConduct">
+                                            Good conduct
+                                        </label>
+                                    </div>
+                                    <div class="form-check custom-checkbox mb-2">
+                                        <input class="form-check-input incident-type" type="checkbox" name="incident_type" 
+                                            value="good_procedure_services" id="goodProcedure">
+                                        <label class="form-check-label" for="goodProcedure">
+                                            Good procedure / Services
+                                        </label>
+                                    </div>
                                 </div>
-                                <div class="form-check custom-checkbox mb-2">
-                                    <input class="form-check-input incident-type" type="checkbox" name="incident_type" 
-                                        value="rude_behavior" id="rudeBehavior">
-                                    <label class="form-check-label" for="rudeBehavior">
-                                        2. Rude behavior / Attitude
-                                    </label>
+                                <div class="col-md-6 col-lg-4 mb-3">
+                                    <div class="form-check custom-checkbox mb-2">
+                                        <input class="form-check-input incident-type" type="checkbox" name="incident_type" 
+                                            value="good_communication" id="goodCommunication">
+                                        <label class="form-check-label" for="goodCommunication">
+                                            Good communication
+                                        </label>
+                                    </div>
+                                    <div class="form-check custom-checkbox mb-2">
+                                        <input class="form-check-input incident-type" type="checkbox" name="incident_type" 
+                                            value="efficient_problem_solving" id="efficientProblemSolving">
+                                        <label class="form-check-label" for="efficientProblemSolving">
+                                            Efficient problem solving
+                                        </label>
+                                    </div>
                                 </div>
-                                <div class="form-check custom-checkbox mb-2">
-                                    <input class="form-check-input incident-type" type="checkbox" name="incident_type" 
-                                        value="communication_error" id="communicationError">
-                                    <label class="form-check-label" for="communicationError">
-                                        3. Communication error / issue
-                                    </label>
-                                </div>
-                                <div class="form-check custom-checkbox">
-                                    <input class="form-check-input incident-type" type="checkbox" name="incident_type" 
-                                        value="documentation_issue" id="documentationIssue">
-                                    <label class="form-check-label" for="documentationIssue">
-                                        4. Documentation issue / error
-                                    </label>
-                                </div>
-                            </div>
-                            <div class="col-md-6 col-lg-4 mb-3">
-                                <div class="form-check custom-checkbox mb-2">
-                                    <input class="form-check-input incident-type" type="checkbox" name="incident_type" 
-                                        value="reporting_error" id="reportingError">
-                                    <label class="form-check-label" for="reportingError">
-                                        5. Reporting error / issue
-                                    </label>
-                                </div>
-                                <div class="form-check custom-checkbox mb-2">
-                                    <input class="form-check-input incident-type" type="checkbox" name="incident_type" 
-                                        value="medication_error" id="medicationError">
-                                    <label class="form-check-label" for="medicationError">
-                                        6. Medication error
-                                    </label>
-                                </div>
-                                <div class="form-check custom-checkbox mb-2">
-                                    <input class="form-check-input incident-type" type="checkbox" name="incident_type" 
-                                        value="assault" id="assault">
-                                    <label class="form-check-label" for="assault">
-                                        7. Assault
-                                    </label>
-                                </div>
-                                <div class="form-check custom-checkbox">
-                                    <input class="form-check-input incident-type" type="checkbox" name="incident_type" 
-                                        value="policy_violation" id="policyViolation">
-                                    <label class="form-check-label" for="policyViolation">
-                                        8. Policy violation
-                                    </label>
-                                </div>
-                            </div>
-                            <div class="col-md-6 col-lg-4">
-                                <div class="form-check custom-checkbox mb-2">
-                                    <input class="form-check-input incident-type" type="checkbox" name="incident_type" 
-                                        value="collaborative_work_issue" id="collaborativeWorkIssue">
-                                    <label class="form-check-label" for="collaborativeWorkIssue">
-                                        9. Collaborative work issue / Error
-                                    </label>
-                                </div>
-                                <div class="form-check custom-checkbox mb-2">
-                                    <input class="form-check-input incident-type" type="checkbox" name="incident_type" 
-                                        value="procedure_failure" id="procedureFailure">
-                                    <label class="form-check-label" for="procedureFailure">
-                                        10. Failure to carry out procedure well
-                                    </label>
-                                </div>
-                                <div class="form-check custom-checkbox">
-                                    <input class="form-check-input incident-type" type="checkbox" name="incident_type" 
-                                        value="other" id="otherIncident">
-                                    <label class="form-check-label" for="otherIncident">
-                                        11. Others (Specify)
-                                    </label>
+                                <div class="col-md-6 col-lg-4">
+                                    <div class="form-check custom-checkbox mb-2">
+                                        <input class="form-check-input incident-type" type="checkbox" name="incident_type" 
+                                            value="good_qualities_observed" id="goodQualities">
+                                        <label class="form-check-label" for="goodQualities">
+                                            Good qualities observed
+                                        </label>
+                                    </div>
                                 </div>
                             </div>
                         </div>
+
+                        <!-- Non compliance/Undesirable nature of incident -->
+                        <div>
+                            <h5 class="text-danger fw-bold mb-3">
+                                <i class="fas fa-thumbs-down me-2"></i>Non compliance/ Undesirable nature of incident
+                            </h5>
+                            <div class="row">
+                                <div class="col-md-6 col-lg-4 mb-3">
+                                    <div class="form-check custom-checkbox mb-2">
+                                        <input class="form-check-input incident-type" type="checkbox" name="incident_type" 
+                                            value="negligence" id="negligence">
+                                        <label class="form-check-label" for="negligence">
+                                            Negligence
+                                        </label>
+                                    </div>
+                                    <div class="form-check custom-checkbox mb-2">
+                                        <input class="form-check-input incident-type" type="checkbox" name="incident_type" 
+                                            value="rude_behavior" id="rudeBehavior">
+                                        <label class="form-check-label" for="rudeBehavior">
+                                            Rude behavior / Attitude
+                                        </label>
+                                    </div>
+                                    <div class="form-check custom-checkbox mb-2">
+                                        <input class="form-check-input incident-type" type="checkbox" name="incident_type" 
+                                            value="communication_error" id="communicationError">
+                                        <label class="form-check-label" for="communicationError">
+                                            Communication error / issue
+                                        </label>
+                                    </div>
+                                    <div class="form-check custom-checkbox mb-2">
+                                        <input class="form-check-input incident-type" type="checkbox" name="incident_type" 
+                                            value="documentation_issue" id="documentationIssue">
+                                        <label class="form-check-label" for="documentationIssue">
+                                            Documentation issue / error
+                                        </label>
+                                    </div>
+                                </div>
+                                <div class="col-md-6 col-lg-4 mb-3">
+                                    <div class="form-check custom-checkbox mb-2">
+                                        <input class="form-check-input incident-type" type="checkbox" name="incident_type" 
+                                            value="reporting_error" id="reportingError">
+                                        <label class="form-check-label" for="reportingError">
+                                            Reporting error / issue
+                                        </label>
+                                    </div>
+                                    <div class="form-check custom-checkbox mb-2">
+                                        <input class="form-check-input incident-type" type="checkbox" name="incident_type" 
+                                            value="medication_error" id="medicationError">
+                                        <label class="form-check-label" for="medicationError">
+                                            Medication error
+                                        </label>
+                                    </div>
+                                    <div class="form-check custom-checkbox mb-2">
+                                        <input class="form-check-input incident-type" type="checkbox" name="incident_type" 
+                                            value="assault" id="assault">
+                                        <label class="form-check-label" for="assault">
+                                            Assault
+                                        </label>
+                                    </div>
+                                    <div class="form-check custom-checkbox mb-2">
+                                        <input class="form-check-input incident-type" type="checkbox" name="incident_type" 
+                                            value="policy_violation" id="policyViolation">
+                                        <label class="form-check-label" for="policyViolation">
+                                            Policy violation
+                                        </label>
+                                    </div>
+                                </div>
+                                <div class="col-md-6 col-lg-4">
+                                    <div class="form-check custom-checkbox mb-2">
+                                        <input class="form-check-input incident-type" type="checkbox" name="incident_type" 
+                                            value="collaborative_work_issue" id="collaborativeWorkIssue">
+                                        <label class="form-check-label" for="collaborativeWorkIssue">
+                                            Collaborative work issue / Error
+                                        </label>
+                                    </div>
+                                    <div class="form-check custom-checkbox mb-2">
+                                        <input class="form-check-input incident-type" type="checkbox" name="incident_type" 
+                                            value="procedure_failure" id="procedureFailure">
+                                        <label class="form-check-label" for="procedureFailure">
+                                            Failure to carry out procedure well
+                                        </label>
+                                    </div>
+                                    <div class="form-check custom-checkbox mb-2">
+                                        <input class="form-check-input incident-type" type="checkbox" name="incident_type" 
+                                            value="misconduct" id="misconduct">
+                                        <label class="form-check-label" for="misconduct">
+                                            Mis conduct
+                                        </label>
+                                    </div>
+                                    <div class="form-check custom-checkbox mb-2">
+                                        <input class="form-check-input incident-type" type="checkbox" name="incident_type" 
+                                            value="unfavorable_qualities" id="unfavorableQualities">
+                                        <label class="form-check-label" for="unfavorableQualities">
+                                            Unfavourable/ undesirable qualities observed
+                                        </label>
+                                    </div>
+                                    <div class="form-check custom-checkbox">
+                                        <input class="form-check-input incident-type" type="checkbox" name="incident_type" 
+                                            value="other" id="otherIncident">
+                                        <label class="form-check-label" for="otherIncident">
+                                            Others (Specify)
+                                        </label>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
                         <div class="row mt-3 other-incident-details" style="display: none;">
                             <div class="col-md-12">
                                 <input type="text" name="other_incident_type" class="form-control form-input" 
