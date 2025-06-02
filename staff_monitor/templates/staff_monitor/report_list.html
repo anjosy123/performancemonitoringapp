@@ -27,8 +27,10 @@
                 <select id="departmentFilter" class="form-select">
                     <option value="">All Departments</option>
                     {% for report in reports %}
-                        {% if report.staff.department %}
+                        {% if report.staff and report.staff.department %}
                             <option value="{{ report.staff.department }}">{{ report.staff.department }}</option>
+                        {% elif report.department_head and report.department_head.department %}
+                            <option value="{{ report.department_head.department }}">{{ report.department_head.department }}</option>
                         {% endif %}
                     {% endfor %}
                 </select>
@@ -54,48 +56,68 @@
             <table class="table table-hover" id="reportsTable">
                 <thead class="table-light">
             <tr>
-                <th>Staff Name</th>
-                        <th>Department</th>
+                <th>Name</th>
+                <th>Department</th>
+                <th>Role</th>
                 <th>Date</th>
-                        <th>Score</th>
-                        <th>Performance Status</th>
+                <th>Score</th>
+                <th>Performance Status</th>
                 <th>Actions</th>
             </tr>
         </thead>
         <tbody>
             {% for report in reports %}
                     <tr class="report-row">
-                <td>{{ report.staff.user.get_full_name }}</td>
-                        <td>{{ report.staff.department }}</td>
-                <td>{{ report.date }}</td>
-                        <td>{{ report.percentage|floatformat:2 }}%</td>
-                        <td>
-                            <span class="badge {% if report.percentage >= 76 %}bg-success{% elif report.percentage >= 51 %}bg-warning{% else %}bg-danger{% endif %}">
-                                {{ report.get_performance_status }}
-                            </span>
-                        </td>
                 <td>
-                            <div class="btn-group">
-                                <a href="{% url 'view_report' report.id %}" class="btn btn-info btn-sm">
-                                    <i class="fas fa-eye me-1"></i>View
-                                </a>
-                                <a href="{% url 'print_report' report.id %}" class="btn btn-primary btn-sm" target="_blank">
-                                    <i class="fas fa-print me-1"></i>Print
-                                </a>
-                                {% if user.is_staff %}
-                                <button class="btn btn-danger btn-sm delete-report" 
-                                        data-report-id="{{ report.id }}"
-                                        data-staff-name="{{ report.staff.user.get_full_name }}"
-                                        data-report-date="{{ report.date }}">
-                                    <i class="fas fa-trash me-1"></i>Delete
-                    </button>
-                                {% endif %}
-                            </div>
+                    {% if report.staff %}
+                        {{ report.staff.user.get_full_name }}
+                    {% elif report.department_head %}
+                        {{ report.department_head.user.get_full_name }}
+                    {% endif %}
+                </td>
+                <td>
+                    {% if report.staff %}
+                        {{ report.staff.department }}
+                    {% elif report.department_head %}
+                        {{ report.department_head.department }}
+                    {% endif %}
+                </td>
+                <td>
+                    {% if report.staff %}
+                        {{ report.staff.position }}
+                    {% elif report.department_head %}
+                        {{ report.department_head.designation }}
+                    {% endif %}
+                </td>
+                <td>{{ report.date }}</td>
+                <td>{{ report.percentage|floatformat:2 }}%</td>
+                <td>
+                    <span class="badge {% if report.percentage >= 76 %}bg-success{% elif report.percentage >= 51 %}bg-warning{% else %}bg-danger{% endif %}">
+                        {{ report.get_performance_status }}
+                    </span>
+                </td>
+                <td>
+                    <div class="btn-group">
+                        <a href="{% url 'view_report' report.id %}" class="btn btn-info btn-sm">
+                            <i class="fas fa-eye me-1"></i>View
+                        </a>
+                        <a href="{% url 'print_report' report.id %}" class="btn btn-primary btn-sm" target="_blank">
+                            <i class="fas fa-print me-1"></i>Print
+                        </a>
+                        {% if user.is_staff %}
+                        <button class="btn btn-danger btn-sm delete-report" 
+                                data-report-id="{{ report.id }}"
+                                data-staff-name="{% if report.staff %}{{ report.staff.user.get_full_name }}{% elif report.department_head %}{{ report.department_head.user.get_full_name }}{% endif %}"
+                                data-report-date="{{ report.date }}">
+                            <i class="fas fa-trash me-1"></i>Delete
+                        </button>
+                        {% endif %}
+                    </div>
                 </td>
             </tr>
             {% empty %}
             <tr>
-                        <td colspan="6" class="text-center py-4">
+                        <td colspan="7" class="text-center py-4">
                             <i class="fas fa-clipboard-list text-muted me-2"></i>No reports found
                         </td>
             </tr>
@@ -249,7 +271,7 @@ document.addEventListener('DOMContentLoaded', function() {
     // Remove duplicate department options
     const uniqueDepartments = new Set();
     Array.from(departmentFilter.options).forEach(option => {
-        if (uniqueDepartments.has(option.value)) {
+        if (uniqueDepartments.has(option.value) && option.value !== '') {
             option.remove();
         } else {
             uniqueDepartments.add(option.value);
@@ -265,10 +287,12 @@ document.addEventListener('DOMContentLoaded', function() {
         Array.from(rows).forEach(row => {
             const name = row.cells[0].textContent.toLowerCase();
             const department = row.cells[1].textContent.toLowerCase();
-            const rating = row.cells[3].textContent.toLowerCase();
+            const role = row.cells[2].textContent.toLowerCase();
+            const rating = row.cells[4].textContent.toLowerCase();
             
             const matchesSearch = name.includes(searchTerm) || 
-                                department.includes(searchTerm);
+                                department.includes(searchTerm) ||
+                                role.includes(searchTerm);
             const matchesDepartment = !selectedDepartment || department === selectedDepartment;
             const matchesRating = !selectedRating || rating === selectedRating;
 
@@ -308,7 +332,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 title: 'Confirm Delete',
                 html: `
                     <p>Are you sure you want to delete the performance report for:</p>
-                    <p><strong>Staff:</strong> ${staffName}</p>
+                    <p><strong>Person:</strong> ${staffName}</p>
                     <p><strong>Date:</strong> ${reportDate}</p>
                     <p class="text-danger"><strong>Note:</strong> This action cannot be undone.</p>
                 `,

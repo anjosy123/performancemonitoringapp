@@ -46,24 +46,48 @@
             </div>
 
             <div class="report-section mb-4">
-                <h5 class="section-title">Staff Information</h5>
+                <h5 class="section-title">Person Information</h5>
                 <div class="table-responsive">
                     <table class="table table-bordered">
                         <tr>
                             <th width="30%">Name</th>
-                            <td>{{ report.staff.user.get_full_name }}</td>
+                            <td>
+                                {% if report.staff %}
+                                    {{ report.staff.user.get_full_name }}
+                                {% elif report.department_head %}
+                                    {{ report.department_head.user.get_full_name }}
+                                {% endif %}
+                            </td>
                         </tr>
                         <tr>
-                            <th>Employee ID</th>
-                            <td>{{ report.staff.employee_id }}</td>
+                            <th>ID</th>
+                            <td>
+                                {% if report.staff %}
+                                    {{ report.staff.employee_id }}
+                                {% elif report.department_head %}
+                                    DH-{{ report.department_head.id }}
+                                {% endif %}
+                            </td>
                         </tr>
                         <tr>
                             <th>Department</th>
-                            <td>{{ report.staff.department.name }}</td>
+                            <td>
+                                {% if report.staff %}
+                                    {{ report.staff.department.name }}
+                                {% elif report.department_head %}
+                                    {{ report.department_head.department.name }}
+                                {% endif %}
+                            </td>
                         </tr>
                         <tr>
                             <th>Position</th>
-                            <td>{{ report.staff.position }}</td>
+                            <td>
+                                {% if report.staff %}
+                                    {{ report.staff.position }}
+                                {% elif report.department_head %}
+                                    {{ report.department_head.designation }}
+                                {% endif %}
+                            </td>
                         </tr>
                     </table>
                 </div>
@@ -247,7 +271,13 @@
                     <div class="col-md-6">
                         <div class="signature-line">
                             <div class="line"></div>
-                            <div class="text-center">Signature of Department Head</div>
+                            <div class="text-center">
+                                {% if report.staff %}
+                                    Signature of Staff Member
+                                {% elif report.department_head %}
+                                    Signature of Department Head
+                                {% endif %}
+                            </div>
                         </div>
                     </div>
                 </div>

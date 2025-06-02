@@ -53,8 +53,9 @@
                 <thead class="table-light">
                     <tr>
                         <th>Report Number</th>
-                        <th>Staff Name</th>
+                        <th>Name</th>
                         <th>Department</th>
+                        <th>Role</th>
                         <th>Date</th>
                         <th>Location</th>
                         <th>Status</th>
@@ -65,8 +66,27 @@
                     {% for report in reports %}
                         <tr class="report-row">
                             <td class="fw-bold">{{ report.report_number }}</td>
-                            <td>{{ report.staff.user.get_full_name }}</td>
-                            <td>{{ report.staff.department }}</td>
+                            <td>
+                                {% if report.staff %}
+                                    {{ report.staff.user.get_full_name }}
+                                {% elif report.department_head %}
+                                    {{ report.department_head.user.get_full_name }}
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if report.staff %}
+                                    {{ report.staff.department }}
+                                {% elif report.department_head %}
+                                    {{ report.department_head.department }}
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if report.staff %}
+                                    {{ report.staff.position }}
+                                {% elif report.department_head %}
+                                    {{ report.department_head.designation }}
+                                {% endif %}
+                            </td>
                             <td>{{ report.incident_date }}</td>
                             <td>{{ report.incident_location }}</td>
                             <td>
@@ -85,7 +105,7 @@
                                     {% if user.is_staff %}
                                     <button class="btn btn-danger btn-sm delete-report" 
                                             data-report-id="{{ report.id }}"
-                                            data-staff-name="{{ report.staff.user.get_full_name }}"
+                                            data-staff-name="{% if report.staff %}{{ report.staff.user.get_full_name }}{% elif report.department_head %}{{ report.department_head.user.get_full_name }}{% endif %}"
                                             data-report-number="{{ report.report_number }}">
                                         <i class="fas fa-trash me-1"></i>Delete
                                     </button>
@@ -95,7 +115,7 @@
                         </tr>
                     {% empty %}
                         <tr>
-                            <td colspan="7" class="text-center py-4">
+                            <td colspan="8" class="text-center py-4">
                                 <i class="fas fa-exclamation-triangle text-muted me-2"></i>No incident reports found
                             </td>
                         </tr>
@@ -264,14 +284,16 @@ document.addEventListener('DOMContentLoaded', function() {
 
         Array.from(rows).forEach(row => {
             const reportNumber = row.cells[0].textContent.toLowerCase();
-            const staffName = row.cells[1].textContent.toLowerCase();
+            const name = row.cells[1].textContent.toLowerCase();
             const department = row.cells[2].textContent.toLowerCase();
-            const location = row.cells[4].textContent.toLowerCase();
-            const status = row.cells[5].textContent.toLowerCase();
+            const role = row.cells[3].textContent.toLowerCase();
+            const location = row.cells[5].textContent.toLowerCase();
+            const status = row.cells[6].textContent.toLowerCase();
             
             const matchesSearch = reportNumber.includes(searchTerm) || 
-                                staffName.includes(searchTerm) || 
-                                location.includes(searchTerm);
+                                  name.includes(searchTerm) || 
+                                  location.includes(searchTerm) ||
+                                  role.includes(searchTerm);
             const matchesDepartment = !selectedDepartment || department === selectedDepartment;
             const matchesStatus = !selectedStatus || status === selectedStatus;
 
@@ -312,7 +334,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 html: `
                     <p>Are you sure you want to delete the incident report:</p>
                     <p><strong>Report Number:</strong> ${reportNumber}</p>
-                    <p><strong>Staff:</strong> ${staffName}</p>
+                    <p><strong>Person:</strong> ${staffName}</p>
                     <p class="text-danger"><strong>Note:</strong> This action cannot be undone.</p>
                 `,
                 icon: 'warning',

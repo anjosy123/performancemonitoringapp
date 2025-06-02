@@ -18,6 +18,7 @@ from django.contrib.auth.hashers import make_password
 from django.contrib.auth import update_session_auth_hash
 import pandas as pd
 import uuid
+from django.db import models
 
 # Helper function to check if user is admin or HR head with appropriate privilege
 def has_privilege(user, privilege_name=None):
@@ -439,11 +440,29 @@ def report_list(request):
                 # Check if HR head with all-reports privilege
                 if department_head.is_hr_head and hasattr(department_head, 'privileges') and department_head.privileges.can_view_all_reports:
                     reports = PerformanceReport.objects.all().order_by('-date')
+                elif department_head.department.name.lower() == "hr":
+                    # HR department sees all reports
+                    reports = PerformanceReport.objects.all().order_by('-date')
                 else:
                     # Department head sees only reports from their department
-                    reports = PerformanceReport.objects.filter(
-                        staff__department=department_head.department
-                    ).order_by('-date')
+                    if department_head.subdepartment is None:
+                        # Main department head sees all reports from their department
+                        reports = PerformanceReport.objects.filter(
+                            models.Q(staff__department=department_head.department) |
+                            models.Q(department_head__department=department_head.department)
+                        ).order_by('-date')
+                    else:
+                        # Subdepartment head sees only reports for staff assigned to them
+                        managed_staff_ids = department_head.managed_staff.values_list('id', flat=True)
+                        reports = PerformanceReport.objects.filter(
+                            models.Q(staff_id__in=managed_staff_ids) | 
+                            models.Q(department_head_id=department_head.id)
+                        ).order_by('-date')
+                        
+                        # Add debug message to check if reports are being found
+                        print(f"Found {reports.count()} reports for subdepartment head {department_head.user.get_full_name()}")
+                        print(f"Managed staff IDs: {list(managed_staff_ids)}")
+                        
             except DepartmentHead.DoesNotExist:
                 reports = PerformanceReport.objects.none()
         
@@ -479,9 +498,24 @@ def incident_report_list(request):
                 else:
                     # Regular department head is authorized to see their department's reports
                     is_authorized = True
-                    reports = IncidentReport.objects.filter(
-                        staff__department=department_head.department
-                    ).order_by('-incident_date', '-incident_time')
+                    
+                    if department_head.subdepartment is None:
+                        # Main department head sees all reports from their department
+                        reports = IncidentReport.objects.filter(
+                            models.Q(staff__department=department_head.department) |
+                            models.Q(department_head__department=department_head.department)
+                        ).order_by('-incident_date', '-incident_time')
+                    else:
+                        # Subdepartment head sees only reports for staff assigned to them
+                        managed_staff_ids = department_head.managed_staff.values_list('id', flat=True)
+                        reports = IncidentReport.objects.filter(
+                            models.Q(staff_id__in=managed_staff_ids) | 
+                            models.Q(department_head_id=department_head.id)
+                        ).order_by('-incident_date', '-incident_time')
+                        
+                        # Add debug message to check if reports are being found
+                        print(f"Found {reports.count()} incident reports for subdepartment head {department_head.user.get_full_name()}")
+                        print(f"Managed staff IDs for incidents: {list(managed_staff_ids)}")
             except DepartmentHead.DoesNotExist:
                 is_authorized = False
                 reports = IncidentReport.objects.none()
@@ -827,9 +861,16 @@ def view_report(request, report_id):
                 # Continue with viewing the report
                 pass
             # Regular department heads can only view reports from their department
-            elif report.staff.department != department_head.department:
+            elif (report.staff and report.staff.department != department_head.department) or \
+                 (report.department_head and report.department_head.department != department_head.department):
                 messages.error(request, 'You do not have permission to view this report.')
                 return redirect('report_list')
+            # Subdepartment heads can only view reports for staff assigned to them
+            elif department_head.subdepartment is not None:
+                if report.staff and report.staff not in department_head.managed_staff.all():
+                    if report.department_head != department_head:  # Allow viewing own reports
+                        messages.error(request, 'You do not have permission to view this report.')
+                        return redirect('report_list')
         except DepartmentHead.DoesNotExist:
             messages.error(request, 'You do not have permission to view reports.')
             return redirect('dashboard')
@@ -1553,9 +1594,16 @@ def view_incident_report(request, report_id):
                 # Continue with viewing the report
                 pass
             # Regular department heads can only view reports from their department
-            elif report.staff.department != department_head.department:
+            elif (report.staff and report.staff.department != department_head.department) or \
+                 (report.department_head and report.department_head.department != department_head.department):
                 messages.error(request, 'You do not have permission to view this report.')
                 return redirect('incident_report_list')
+            # Subdepartment heads can only view reports for staff assigned to them
+            elif department_head.subdepartment is not None:
+                if report.staff and report.staff not in department_head.managed_staff.all():
+                    if report.department_head != department_head:  # Allow viewing own reports
+                        messages.error(request, 'You do not have permission to view this report.')
+                        return redirect('incident_report_list')
         except DepartmentHead.DoesNotExist:
             messages.error(request, 'You do not have permission to view reports.')
             return redirect('dashboard')
@@ -1582,9 +1630,16 @@ def print_incident_report(request, report_id):
                 # Continue with viewing the report
                 pass
             # Regular department heads can only view reports from their department
-            elif report.staff.department != department_head.department:
+            elif (report.staff and report.staff.department != department_head.department) or \
+                 (report.department_head and report.department_head.department != department_head.department):
                 messages.error(request, 'You do not have permission to view this report.')
                 return redirect('incident_report_list')
+            # Subdepartment heads can only view reports for staff assigned to them
+            elif department_head.subdepartment is not None:
+                if report.staff and report.staff not in department_head.managed_staff.all():
+                    if report.department_head != department_head:  # Allow viewing own reports
+                        messages.error(request, 'You do not have permission to view this report.')
+                        return redirect('incident_report_list')
         except DepartmentHead.DoesNotExist:
             messages.error(request, 'You do not have permission to view reports.')
             return redirect('dashboard')

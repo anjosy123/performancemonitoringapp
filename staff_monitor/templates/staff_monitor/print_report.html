@@ -21,16 +21,34 @@
         <div class="col-6">
             <table class="table table-bordered">
                 <tr>
-                    <th width="40%">Staff Name:</th>
-                    <td>{{ report.staff.user.get_full_name }}</td>
+                    <th width="40%">Name:</th>
+                    <td>
+                        {% if report.staff %}
+                            {{ report.staff.user.get_full_name }}
+                        {% elif report.department_head %}
+                            {{ report.department_head.user.get_full_name }}
+                        {% endif %}
+                    </td>
                 </tr>
                 <tr>
                     <th>Employee Code:</th>
-                    <td>{{ report.staff.employee_id }}</td>
+                    <td>
+                        {% if report.staff %}
+                            {{ report.staff.employee_id }}
+                        {% elif report.department_head %}
+                            DH-{{ report.department_head.id }}
+                        {% endif %}
+                    </td>
                 </tr>
                 <tr>
                     <th>Department:</th>
-                    <td>{{ report.staff.department }}</td>
+                    <td>
+                        {% if report.staff %}
+                            {{ report.staff.department }}
+                        {% elif report.department_head %}
+                            {{ report.department_head.department }}
+                        {% endif %}
+                    </td>
                 </tr>
             </table>
         </div>
@@ -51,8 +69,14 @@
                     </td>
                 </tr>
                 <tr>
-                    <th>Staff Position:</th>
-                    <td>{{ report.staff.position }}</td>
+                    <th>Position:</th>
+                    <td>
+                        {% if report.staff %}
+                            {{ report.staff.position }}
+                        {% elif report.department_head %}
+                            {{ report.department_head.designation }}
+                        {% endif %}
+                    </td>
                 </tr>
             </table>
         </div>
@@ -135,7 +159,13 @@
         </div>
         <div class="col-md-4 text-center">
             <div class="signature-line"></div>
-            <p>Staff Member's Signature</p>
+            <p>
+                {% if report.staff %}
+                    Staff Member's Signature
+                {% elif report.department_head %}
+                    Department Head's Signature
+                {% endif %}
+            </p>
         </div>
         <div class="col-md-4 text-center">
             <div class="signature-line"></div>
