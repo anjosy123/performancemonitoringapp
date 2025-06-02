@@ -312,9 +312,17 @@
                                                 </span>
                                             </td>
                                             <td>
-                                                <a href="{% url 'manage_subdepartment_staff' subdept_head.id %}" class="btn btn-primary btn-sm">
-                                                    <i class="fas fa-users-cog me-1"></i>Assign Staff
-                                                </a>
+                                                <div class="btn-group">
+                                                    <a href="{% url 'manage_subdepartment_staff' subdept_head.id %}" class="btn btn-primary btn-sm">
+                                                        <i class="fas fa-users-cog me-1"></i>Assign Staff
+                                                    </a>
+                                                    <a href="{% url 'performance_form_department_head' subdept_head.id %}" class="btn btn-primary btn-sm">
+                                                        <i class="fas fa-clipboard-check me-1"></i>Evaluate
+                                                    </a>
+                                                    <a href="{% url 'feedback_form_department_head' subdept_head.id %}" class="btn btn-success btn-sm">
+                                                        <i class="fas fa-comment-dots me-1"></i>Incident
+                                                    </a>
+                                                </div>
                                             </td>
                                         </tr>
                                         {% empty %}

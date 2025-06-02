@@ -10,7 +10,13 @@
     <div class="card mb-4">
             <div class="card-header bg-primary text-white">
             <h2 class="text-center mb-0">MARIAMPUR HOSPITAL</h2>
-            <h4 class="text-center mb-0">PERFORMANCE APPRAISAL FORM</h4>
+            <h4 class="text-center mb-0">
+                {% if is_department_head_evaluation %}
+                DEPARTMENT HEAD PERFORMANCE APPRAISAL FORM
+                {% else %}
+                STAFF PERFORMANCE APPRAISAL FORM
+                {% endif %}
+            </h4>
         </div>
         
         <!-- Basic Information Section -->
@@ -40,11 +46,23 @@
                         </tr>
                         <tr>
                             <th>Department:</th>
-                            <td>{{ staff.department }}</td>
+                            <td>
+                                {% if staff %}
+                                    {{ staff.department }}
+                                {% elif department_head %}
+                                    {{ department_head.department }}
+                                {% endif %}
+                            </td>
                         </tr>
                         <tr>
                             <th>Appraisee Name:</th>
-                            <td>{{ staff.user.get_full_name }}</td>
+                            <td>
+                                {% if staff %}
+                                    {{ staff.user.get_full_name }}
+                                {% elif department_head %}
+                                    {{ department_head.user.get_full_name }}
+                                {% endif %}
+                            </td>
                         </tr>
                     </table>
                 </div>
@@ -52,15 +70,33 @@
                     <table class="table table-bordered">
                         <tr>
                             <th>Designation:</th>
-                            <td>{{ staff.position }}</td>
+                            <td>
+                                {% if staff %}
+                                    {{ staff.position }}
+                                {% elif department_head %}
+                                    {{ department_head.designation }}
+                                {% endif %}
+                            </td>
                         </tr>
                         <tr>
                             <th>Employee Code:</th>
-                            <td>{{ staff.employee_id }}</td>
+                            <td>
+                                {% if staff %}
+                                    {{ staff.employee_id }}
+                                {% elif department_head %}
+                                    DH-{{ department_head.id }}
+                                {% endif %}
+                            </td>
                         </tr>
                         <tr>
                             <th>Date of Joining:</th>
-                            <td>{{ staff.joining_date }}</td>
+                            <td>
+                                {% if staff %}
+                                    {{ staff.joining_date }}
+                                {% elif department_head %}
+                                    {{ department_head.joining_date|default:"Not specified" }}
+                                {% endif %}
+                            </td>
                         </tr>
                     </table>
                 </div>

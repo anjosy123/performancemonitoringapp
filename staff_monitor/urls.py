@@ -15,7 +15,9 @@ urlpatterns = [
     
     # Performance evaluation
     path('evaluate/<int:staff_id>/', views.performance_form, name='performance_form'),
+    path('evaluate-department-head/<int:department_head_id>/', views.performance_form_department_head, name='performance_form_department_head'),
     path('feedback/<int:staff_id>/', views.feedback_form, name='feedback_form'),
+    path('feedback-department-head/<int:department_head_id>/', views.feedback_form_department_head, name='feedback_form_department_head'),
     path('check-report-exists/<int:staff_id>/<str:date>/', views.check_report_exists, name='check_report_exists'),
     path('report/<int:report_id>/view/', views.view_report, name='view_report'),
     path('report/<int:report_id>/print/', views.print_report, name='print_report'),

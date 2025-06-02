@@ -82,7 +82,8 @@ class PerformanceReport(models.Model):
     ]
 
     # Basic Information
-    staff = models.ForeignKey(Staff, on_delete=models.CASCADE)
+    staff = models.ForeignKey(Staff, on_delete=models.CASCADE, null=True, blank=True)
+    department_head = models.ForeignKey(DepartmentHead, on_delete=models.CASCADE, null=True, blank=True, related_name='performance_reports')
     evaluator = models.ForeignKey(User, on_delete=models.CASCADE)
     date = models.DateField()
 
@@ -154,7 +155,25 @@ class PerformanceReport(models.Model):
     percentage = models.DecimalField(max_digits=5, decimal_places=2, default=0)
 
     class Meta:
-        unique_together = ['staff', 'date']
+        constraints = [
+            models.UniqueConstraint(
+                fields=['staff', 'date'],
+                condition=models.Q(staff__isnull=False),
+                name='unique_staff_date'
+            ),
+            models.UniqueConstraint(
+                fields=['department_head', 'date'],
+                condition=models.Q(department_head__isnull=False),
+                name='unique_department_head_date'
+            ),
+            models.CheckConstraint(
+                check=(
+                    models.Q(staff__isnull=False, department_head__isnull=True) | 
+                    models.Q(staff__isnull=True, department_head__isnull=False)
+                ),
+                name='only_staff_or_department_head'
+            )
+        ]
         ordering = ['-date']
 
     def calculate_total_score(self):
@@ -270,7 +289,8 @@ class PerformanceReport(models.Model):
 
 class IncidentReport(models.Model):
     # Basic Information
-    staff = models.ForeignKey(Staff, on_delete=models.CASCADE, related_name='incident_reports')
+    staff = models.ForeignKey(Staff, on_delete=models.CASCADE, related_name='incident_reports', null=True, blank=True)
+    department_head = models.ForeignKey(DepartmentHead, on_delete=models.CASCADE, null=True, blank=True, related_name='incident_reports')
     reporter = models.ForeignKey(User, on_delete=models.CASCADE, related_name='reported_incidents')
     report_number = models.CharField(max_length=50, unique=True)
     
@@ -289,6 +309,9 @@ class IncidentReport(models.Model):
     
     # Individuals Involved (stored as JSON)
     individuals_involved = models.TextField(default="[]")  # JSON string containing individual names, departments, positions, roles
+    
+    # Incident Photo
+    incident_photo = models.ImageField(upload_to='incident_photos/', blank=True, null=True)
     
     # Action Taken
     immediate_action = models.TextField(blank=True)

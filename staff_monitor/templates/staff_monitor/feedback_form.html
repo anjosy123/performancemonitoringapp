@@ -11,11 +11,17 @@
     <div class="card mb-4 form-card main-card">
         <div class="card-header bg-danger text-white py-3">
             <h2 class="text-center mb-0">MARIAMPUR HOSPITAL</h2>
-            <h4 class="text-center mb-0">STAFF INCIDENT REPORT FORM</h4>
+            <h4 class="text-center mb-0">
+                {% if department_head %}
+                DEPARTMENT HEAD INCIDENT REPORT FORM
+                {% else %}
+                STAFF INCIDENT REPORT FORM
+                {% endif %}
+            </h4>
         </div>
         
         <div class="card-body p-4">
-            <form method="post" class="needs-validation" novalidate id="incidentForm">
+            <form method="post" class="needs-validation" novalidate id="incidentForm" enctype="multipart/form-data">
                 {% csrf_token %}
                 
                 <!-- Staff Information Section -->
@@ -23,22 +29,40 @@
                     <div class="card-body">
                         <div class="section-title mb-3">
                             <i class="fas fa-user-tie me-2 text-danger"></i>
-                            <span>Staff Information</span>
+                            <span>{% if department_head %}Department Head{% else %}Staff{% endif %} Information</span>
                         </div>
                         <div class="row">
                             <div class="col-lg-6 mb-3 mb-lg-0">
                                 <table class="table table-bordered table-responsive">
                                     <tr>
                                         <th class="bg-light" width="40%">Name:</th>
-                                        <td>{{ staff.user.get_full_name }}</td>
+                                        <td>
+                                            {% if staff %}
+                                                {{ staff.user.get_full_name }}
+                                            {% elif department_head %}
+                                                {{ department_head.user.get_full_name }}
+                                            {% endif %}
+                                        </td>
                                     </tr>
                                     <tr>
                                         <th class="bg-light">Designation:</th>
-                                        <td>{{ staff.position }}</td>
+                                        <td>
+                                            {% if staff %}
+                                                {{ staff.position }}
+                                            {% elif department_head %}
+                                                {{ department_head.designation }}
+                                            {% endif %}
+                                        </td>
                                     </tr>
                                     <tr>
                                         <th class="bg-light">Employee ID:</th>
-                                        <td>{{ staff.employee_id }}</td>
+                                        <td>
+                                            {% if staff %}
+                                                {{ staff.employee_id }}
+                                            {% elif department_head %}
+                                                DH-{{ department_head.id }}
+                                            {% endif %}
+                                        </td>
                                     </tr>
                                 </table>
                             </div>
@@ -46,15 +70,33 @@
                                 <table class="table table-bordered table-responsive">
                                     <tr>
                                         <th class="bg-light" width="40%">Department:</th>
-                                        <td>{{ staff.department }}</td>
+                                        <td>
+                                            {% if staff %}
+                                                {{ staff.department }}
+                                            {% elif department_head %}
+                                                {{ department_head.department }}
+                                            {% endif %}
+                                        </td>
                                     </tr>
                                     <tr>
                                         <th class="bg-light">Date of Joining:</th>
-                                        <td>{{ staff.joining_date }}</td>
+                                        <td>
+                                            {% if staff %}
+                                                {{ staff.joining_date }}
+                                            {% elif department_head %}
+                                                {{ department_head.joining_date|default:"Not specified" }}
+                                            {% endif %}
+                                        </td>
                                     </tr>
                                     <tr>
                                         <th class="bg-light">Date of Appointment:</th>
-                                        <td>{{ staff.appointment_date|default:"-" }}</td>
+                                        <td>
+                                            {% if staff %}
+                                                {{ staff.appointment_date|default:"-" }}
+                                            {% elif department_head %}
+                                                {{ department_head.appointment_date|default:"-" }}
+                                            {% endif %}
+                                        </td>
                                     </tr>
                                 </table>
                             </div>
@@ -288,6 +330,35 @@
                                             </label>
                                             <textarea name="incident_description" class="form-control" rows="4" 
                                                 placeholder="Describe what happened, who was involved, and any relevant details about the selected incident types."></textarea>
+                                        </div>
+                                        
+                                        <!-- Incident Photo Upload/Capture Section -->
+                                        <div class="mt-3">
+                                            <label class="form-label fw-semibold">
+                                                <i class="fas fa-camera me-1"></i> Photo Evidence (Optional):
+                                            </label>
+                                            <div class="row">
+                                                <div class="col-md-8">
+                                                    <input type="file" name="incident_photo" id="incident_photo" class="form-control" 
+                                                        accept="image/*">
+                                                    <small class="text-muted">Upload a photo related to the incident.</small>
+                                                </div>
+                                                <div class="col-md-4">
+                                                    <button type="button" id="capture-btn" class="btn btn-outline-danger w-100">
+                                                        <i class="fas fa-camera me-1"></i> Capture Photo
+                                                    </button>
+                                                    <!-- Hidden camera input specifically for capture -->
+                                                    <input type="file" id="camera_input" accept="image/*" capture="camera" style="display: none;">
+                                                </div>
+                                            </div>
+                                            <div id="photo-preview" class="mt-2 text-center d-none">
+                                                <img id="preview-image" class="img-fluid img-thumbnail" style="max-height: 200px;">
+                                                <div class="mt-2">
+                                                    <button type="button" id="remove-photo" class="btn btn-sm btn-outline-secondary">
+                                                        <i class="fas fa-times me-1"></i> Remove
+                                                    </button>
+                                                </div>
+                                            </div>
                                         </div>
                                     </div>
                                 </div>
@@ -996,7 +1067,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 html: `
                     <div class="text-start">
                         <p>Are you sure you want to submit this incident report for:</p>
-                        <p><strong>Staff:</strong> {{ staff.user.get_full_name }}</p>
+                        <p><strong>Staff:</strong> {% if staff %}{{ staff.user.get_full_name }}{% elif department_head %}{{ department_head.user.get_full_name }}{% endif %}</p>
                         <p><strong>Incident Date:</strong> ${document.getElementById('incident_date').value}</p>
                         <p><strong>Report Number:</strong> ${document.getElementById('report_number').value}</p>
                     </div>
@@ -1026,6 +1097,126 @@ document.addEventListener('DOMContentLoaded', function() {
                     form.submit();
                 }
             });
+        });
+    }
+    
+    // Photo upload and camera capture functionality
+    const photoInput = document.getElementById('incident_photo');
+    const cameraInput = document.getElementById('camera_input');
+    const captureBtn = document.getElementById('capture-btn');
+    const previewContainer = document.getElementById('photo-preview');
+    const previewImage = document.getElementById('preview-image');
+    const removePhotoBtn = document.getElementById('remove-photo');
+    
+    // Function to handle image preview
+    function handleImagePreview(input) {
+        if (input.files && input.files[0]) {
+            const file = input.files[0];
+            
+            // Check if it's an image
+            if (!file.type.match('image.*')) {
+                Swal.fire({
+                    title: 'Invalid File',
+                    text: 'Please select an image file (JPEG, PNG, etc.)',
+                    icon: 'error',
+                    confirmButtonColor: '#dc3545'
+                });
+                input.value = '';
+                previewContainer.classList.add('d-none');
+                return;
+            }
+            
+            // Display preview
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                previewImage.src = e.target.result;
+                previewContainer.classList.remove('d-none');
+            };
+            reader.readAsDataURL(file);
+        }
+    }
+    
+    // Handle regular file input change
+    if (photoInput) {
+        photoInput.addEventListener('change', function() {
+            handleImagePreview(this);
+        });
+    }
+    
+    // Handle camera input change
+    if (cameraInput) {
+        cameraInput.addEventListener('change', function() {
+            if (this.files && this.files[0]) {
+                // Get the file from camera input
+                const file = this.files[0];
+                
+                // Create a new FileList for the main input
+                // This part is tricky because FileList objects are immutable
+                // For forms to work, we'll copy the file to the main input
+                
+                // Create a blob and make a new file to avoid any potential issues
+                const blob = new Blob([file], { type: file.type });
+                const newFile = new File([blob], file.name || "camera_photo.jpg", { 
+                    type: file.type,
+                    lastModified: new Date().getTime()
+                });
+                
+                // Create a temporary form
+                const tempForm = new FormData();
+                tempForm.append('incident_photo', newFile);
+                
+                // If we can't directly set the files property, at least we have the file in the preview
+                handleImagePreview(this);
+                
+                // Update hidden fields or form data to ensure the image is submitted
+                // In some browsers, we can't directly set files property of an input
+                // So we create a clone of the input with the right properties
+                try {
+                    // Create a new file input
+                    const newInput = photoInput.cloneNode(true);
+                    
+                    // Try to set its files property if possible (may not work in all browsers)
+                    const dt = new DataTransfer();
+                    dt.items.add(file);
+                    newInput.files = dt.files;
+                    
+                    // Replace the old input with the new one
+                    photoInput.parentNode.replaceChild(newInput, photoInput);
+                    
+                    // Update our reference to the input
+                    photoInput = document.getElementById('incident_photo');
+                    
+                    // Attach event listener to the new input
+                    photoInput.addEventListener('change', function() {
+                        handleImagePreview(this);
+                    });
+                } catch (e) {
+                    console.log("Browser doesn't support direct file manipulation:", e);
+                    // For these browsers, we'll rely on the preview image and the form will use the camera input
+                    // Rename the camera input to match the expected name
+                    cameraInput.name = "incident_photo";
+                }
+            }
+        });
+    }
+    
+    // Handle capture button click
+    if (captureBtn) {
+        captureBtn.addEventListener('click', function() {
+            // Trigger the camera input
+            if (cameraInput) {
+                cameraInput.click();
+            }
+        });
+    }
+    
+    // Handle remove photo button
+    if (removePhotoBtn) {
+        removePhotoBtn.addEventListener('click', function() {
+            photoInput.value = '';
+            if (cameraInput) cameraInput.value = '';
+            previewContainer.classList.add('d-none');
+            previewImage.src = '';
         });
     }
 });

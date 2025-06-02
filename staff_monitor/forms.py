@@ -204,27 +204,19 @@ class DepartmentHeadForm(forms.ModelForm):
 
     def save(self, commit=True):
         # Check if we're updating an existing user
-        if self.instance_user:
-            # Update existing user information
-            self.instance_user.first_name = self.cleaned_data['first_name']
-            self.instance_user.last_name = self.cleaned_data['last_name']
+        if self.instance and self.instance.pk and hasattr(self.instance, 'user'):
+            # Update existing user
+            user = self.instance.user
+            user.first_name = self.cleaned_data['first_name']
+            user.last_name = self.cleaned_data['last_name']
             
-            # Update email if provided and different from current
-            new_email = self.cleaned_data.get('email')
-            if new_email and new_email != self.instance_user.email:
-                self.instance_user.email = new_email
-                self.instance_user.username = new_email  # Also update username as it's based on email
-            
-            if commit:
-                self.instance_user.save()
+            # Update email if changed
+            email = self.cleaned_data.get('email')
+            if email and email != user.email:
+                user.email = email
+                user.username = email  # Update username to match email
                 
-            # Update DepartmentHead instance
-            department_head = super().save(commit=False)
-            
-            if commit:
-                department_head.save()
-            
-            return department_head
+            user.save()
         else:
             # Create new user for a new department head
             password = ''.join(random.choices(string.ascii_letters + string.digits, k=8))
@@ -235,150 +227,52 @@ class DepartmentHeadForm(forms.ModelForm):
                 email=self.cleaned_data['email'],
                 password=password,
                 first_name=self.cleaned_data['first_name'],
-                last_name=self.cleaned_data['last_name']
+                last_name=self.cleaned_data['last_name'],
+                is_active=True
             )
             
             # Create DepartmentHead instance
             head = super().save(commit=False)
             head.user = user
+        
+        if commit:
+            head.save()
             
-            if commit:
-                head.save()
+            # Store the generated password to inform the user
+            head.user_password = password
+            
+            # Try to send email with login credentials
+            try:
+                from django.core.mail import send_mail
+                from django.template.loader import render_to_string
+                from django.utils.html import strip_tags
                 
-                # Store the password as an attribute so the view can access it
-                head.user_password = password
+                context = {
+                    'first_name': user.first_name,
+                    'last_name': user.last_name,
+                    'email': user.email,
+                    'password': password,
+                    'login_url': "http://localhost:8000/login/"  # Should be updated to actual URL
+                }
                 
-                try:
-                    # Send email with credentials
-                    from django.core.mail import EmailMultiAlternatives
-                    from django.conf import settings
-                    from django.template.loader import render_to_string
-                    
-                    # Create subject with hospital name
-                    email_subject = 'Your Mariampur Hospital Account Information'
-                    
-                    # Create context for the email templates
-                    context = {
-                        'full_name': user.get_full_name(),
-                        'username': user.username,
-                        'password': password,
-                        'login_url': 'http://performance-monitoring.onrender.com/login/',
-                        'hospital_name': 'Mariampur Hospital',
-                        'department': self.cleaned_data['department'].name,
-                        'position': self.cleaned_data['designation'],
-                    }
-                    
-                    # Plain text version of the email
-                    text_content = f"""
-Dear {user.get_full_name()},
-
-Welcome to Mariampur Hospital Performance Monitoring System!
-
-Your account has been created in the system with the following details:
-
-Login Details:
-Username: {user.username}
-Password: {password}
-
-Please login at: http://performance-monitoring.onrender.com/login/
-We recommend changing your password after your first login.
-
-Department: {self.cleaned_data['department'].name}
-Position: {self.cleaned_data['designation']}
-
-If you have any questions, please contact the HR department.
-
-Best regards,
-Mariampur Hospital IT Team
-                    """
-                    
-                    # HTML version of the email with styling and logo
-                    html_content = f"""
-<!DOCTYPE html>
-<html>
-<head>
-    <meta charset="UTF-8">
-    <title>Welcome to Mariampur Hospital</title>
-    <style>
-        body {{ font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; }}
-        .header {{ background-color: #0d6efd; padding: 20px; text-align: center; color: white; }}
-        .content {{ padding: 20px; background-color: #f9f9f9; }}
-        .footer {{ padding: 15px; text-align: center; background-color: #f1f1f1; font-size: 12px; color: #666; }}
-        .logo {{ width: 150px; height: auto; }}
-        .credentials {{ background-color: #fff; border-left: 4px solid #0d6efd; padding: 15px; margin: 20px 0; }}
-        .button {{ display: inline-block; background-color: #0d6efd; color: white; padding: 10px 20px; 
-                   text-decoration: none; border-radius: 4px; margin-top: 15px; }}
-    </style>
-</head>
-<body>
-    <div class="header">
-        <img src="cid:hospital_logo" alt="Mariampur Hospital Logo" class="logo">
-        <h1>Mariampur Hospital</h1>
-    </div>
-    <div class="content">
-        <h2>Welcome, {user.get_full_name()}!</h2>
-        <p>Your account has been created in the Mariampur Hospital Performance Monitoring System.</p>
-        
-        <div class="credentials">
-            <h3>Your Login Details</h3>
-            <p><strong>Username:</strong> {user.username}</p>
-            <p><strong>Password:</strong> {password}</p>
-            <p><strong>Department:</strong> {self.cleaned_data['department'].name}</p>
-            <p><strong>Position:</strong> {self.cleaned_data['designation']}</p>
-        </div>
-        
-        <p>Please use these credentials to login to the system. We recommend changing your password after your first login.</p>
-        
-        <a href="http://performance-monitoring.onrender.com/login/" class="button">Login to Your Account</a>
-        
-        <p>If you have any questions or need assistance, please contact the HR department.</p>
-    </div>
-    <div class="footer">
-        <p>&copy; {datetime.now().year} Mariampur Hospital. All rights reserved.</p>
-        <p>This email was sent automatically. Please do not reply to this email.</p>
-    </div>
-</body>
-</html>
-                    """
-                    
-                    # Create the email message
-                    email = EmailMultiAlternatives(
-                        subject=email_subject,
-                        body=text_content,
-                        from_email=settings.DEFAULT_FROM_EMAIL,
-                        to=[user.email]
-                    )
-                    
-                    # Attach the HTML version
-                    email.attach_alternative(html_content, "text/html")
-                    
-                    # Attach the hospital logo
-                    import os
-                    from django.contrib.staticfiles import finders
-                    
-                    # Get the path to the logo
-                    logo_path = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 
-                                             'static', 'images', 'hospital-logo.png')
-                    
-                    # Check if the file exists
-                    if os.path.exists(logo_path):
-                        # Attach the logo as an inline image
-                        from email.mime.image import MIMEImage
-                        with open(logo_path, 'rb') as img:
-                            logo = MIMEImage(img.read())
-                            logo.add_header('Content-ID', '<hospital_logo>')
-                            logo.add_header('Content-Disposition', 'inline', filename='hospital-logo.png')
-                            email.attach(logo)
-                    
-                    # Send the email
-                    email.send(fail_silently=True)
-                    
-                    # Mark successful email sending
-                    head.email_sent = True
-                except Exception as e:
-                    # Just mark that email wasn't sent, but don't raise an exception
-                    head.email_sent = False
-                    print(f"Email sending failed: {str(e)}")
+                html_message = render_to_string('staff_monitor/email/welcome_department_head.html', context)
+                plain_message = strip_tags(html_message)
+                
+                send_mail(
+                    'Welcome to Mariampur Hospital Performance Monitoring System',
+                    plain_message,
+                    None,  # Use DEFAULT_FROM_EMAIL from settings
+                    [user.email],
+                    html_message=html_message,
+                    fail_silently=False,
+                )
+                
+                # Flag to indicate email was sent
+                head.email_sent = True
+            except Exception as e:
+                # Flag to indicate email failed
+                head.email_sent = False
+                print(f"Email sending failed: {str(e)}")
             
             return head
 
@@ -658,6 +552,17 @@ class IncidentReportForm(forms.ModelForm):
         })
     )
     
+    # Incident Photo
+    incident_photo = forms.ImageField(
+        required=False,
+        widget=forms.FileInput(attrs={
+            'class': 'form-control form-input',
+            'accept': 'image/*',
+            'id': 'incident_photo',
+            'capture': 'environment'
+        })
+    )
+    
     # Actions
     immediate_action = forms.CharField(
         required=False,
@@ -697,7 +602,8 @@ class IncidentReportForm(forms.ModelForm):
         model = IncidentReport
         fields = [
             'incident_date', 'incident_time', 'incident_location', 'report_number',
-            'immediate_action', 'follow_up_actions', 'prepared_by', 'reporter_position'
+            'incident_photo', 'immediate_action', 'follow_up_actions', 'prepared_by', 
+            'reporter_position'
         ]
         
     def __init__(self, *args, **kwargs):
