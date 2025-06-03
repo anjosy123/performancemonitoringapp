@@ -23,6 +23,27 @@
                 </span>
             </div>
         </div>
+        
+        <!-- Search and Filter Section -->
+        <div class="row mb-4">
+            <div class="col-md-6">
+                <div class="input-group">
+                    <span class="input-group-text bg-light">
+                        <i class="fas fa-search"></i>
+                    </span>
+                    <input type="text" id="staffSearch" class="form-control" placeholder="Search by name, ID, or position...">
+                </div>
+            </div>
+            <div class="col-md-6 text-end">
+                <div class="form-check form-check-inline">
+                    <input class="form-check-input" type="checkbox" id="showAssignedOnly" value="assigned">
+                    <label class="form-check-label" for="showAssignedOnly">Show assigned staff only</label>
+                </div>
+                <button id="resetFilters" class="btn btn-secondary btn-sm ms-2">
+                    <i class="fas fa-undo me-1"></i>Reset
+                </button>
+            </div>
+        </div>
 
         <form method="post" class="needs-validation" novalidate>
             {% csrf_token %}
@@ -39,7 +60,7 @@
                     </thead>
                     <tbody>
                         {% for staff in all_staff %}
-                        <tr>
+                        <tr class="staff-row" data-assigned="{% if staff in assigned_staff %}true{% else %}false{% endif %}">
                             <td>
                                 <div class="form-check">
                                     <input class="form-check-input" type="checkbox" 
@@ -110,6 +131,15 @@
         padding: 0.5rem 1.5rem;
         font-weight: 500;
     }
+    
+    .input-group {
+        box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+    }
+
+    .input-group-text {
+        background-color: #f8f9fa;
+        border: 1px solid #dee2e6;
+    }
 </style>
 
 <script>
@@ -131,6 +161,49 @@
                 }
             });
         });
+        
+        // Search functionality
+        const searchInput = document.getElementById('staffSearch');
+        const assignedFilter = document.getElementById('showAssignedOnly');
+        const resetButton = document.getElementById('resetFilters');
+        const staffRows = document.querySelectorAll('.staff-row');
+        
+        function filterTable() {
+            const searchTerm = searchInput.value.toLowerCase();
+            const showAssignedOnly = assignedFilter.checked;
+            
+            staffRows.forEach(row => {
+                const name = row.cells[1].textContent.toLowerCase();
+                const empId = row.cells[2].textContent.toLowerCase();
+                const position = row.cells[3].textContent.toLowerCase();
+                const isAssigned = row.getAttribute('data-assigned') === 'true';
+                
+                const matchesSearch = name.includes(searchTerm) || 
+                                     empId.includes(searchTerm) || 
+                                     position.includes(searchTerm);
+                                     
+                const matchesFilter = !showAssignedOnly || isAssigned;
+                
+                row.style.display = (matchesSearch && matchesFilter) ? '' : 'none';
+            });
+        }
+        
+        // Set event listeners
+        if (searchInput) {
+            searchInput.addEventListener('input', filterTable);
+        }
+        
+        if (assignedFilter) {
+            assignedFilter.addEventListener('change', filterTable);
+        }
+        
+        if (resetButton) {
+            resetButton.addEventListener('click', function() {
+                searchInput.value = '';
+                assignedFilter.checked = false;
+                filterTable();
+            });
+        }
     });
 </script>
 {% endblock %} 

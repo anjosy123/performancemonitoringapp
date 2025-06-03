@@ -82,10 +82,17 @@
                                         {% if head.department.name|lower != "hr" %}
                                         <form method="post" action="{% url 'toggle_hr_status' head.id %}" class="d-inline">
                                             {% csrf_token %}
-                                            <button type="submit" class="btn btn-danger btn-sm" onclick="return confirm('Are you sure you want to remove HR privileges from this department head?');">
-                                                <i class="fas fa-user-times me-1"></i>Remove HR Status
+                                            <button type="submit" class="btn btn-warning">
+                                                <i class="fas fa-toggle-{% if head.is_hr_head %}on{% else %}off{% endif %} me-1"></i>
+                                                {% if head.is_hr_head %}Disable{% else %}Enable{% endif %} HR Status
                                             </button>
                                         </form>
+                                        <a href="{% url 'performance_form_department_head' head.id %}" class="btn btn-primary">
+                                            <i class="fas fa-clipboard-check me-1"></i>Evaluate
+                                        </a>
+                                        <a href="{% url 'feedback_form_department_head' head.id %}" class="btn btn-success">
+                                            <i class="fas fa-comment-dots me-1"></i>Incident
+                                        </a>
                                         {% else %}
                                         <button class="btn btn-secondary btn-sm" disabled title="HR Department members always have HR privileges">
                                             <i class="fas fa-lock me-1"></i>Required Role

@@ -4,6 +4,8 @@ from django.urls import path
 from . import views
 from django.contrib.auth import views as auth_views
 from django.contrib.auth.views import LogoutView
+from django.urls import reverse
+from django.shortcuts import redirect
 
 urlpatterns = [
     # Dashboard and main views
@@ -42,9 +44,11 @@ urlpatterns = [
     path('delete-department-head/<int:superintendent_id>/', views.delete_superintendent, name='delete_superintendent'),
     
     # HR Privileges management
-    path('hr-privileges/', views.hr_privileges_list, name='hr_privileges_list'),
+    path('hr-privileges/list/', views.hr_privileges_list, name='hr_privileges_list'),
+    path('hr-privileges/view/', views.hr_privileges_view, name='hr_privileges_view'),
     path('hr-privileges/manage/<int:head_id>/', views.manage_hr_privileges, name='manage_hr_privileges'),
     path('hr-privileges/toggle/<int:head_id>/', views.toggle_hr_status, name='toggle_hr_status'),
+    path('hr-privileges/', lambda request: redirect('hr_privileges_view'), name='hr_privileges_redirect'),
     
     # Staff assignment to subdepartment heads
     path('manage-subdepartment-staff/<int:subdepartment_head_id>/', views.manage_subdepartment_staff, name='manage_subdepartment_staff'),

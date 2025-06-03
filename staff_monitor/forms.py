@@ -220,7 +220,7 @@ class DepartmentHeadForm(forms.ModelForm):
         else:
             # Create new user for a new department head
             password = ''.join(random.choices(string.ascii_letters + string.digits, k=8))
-        
+            
             # Create User instance
             user = User.objects.create_user(
                 username=self.cleaned_data['email'],
@@ -230,51 +230,51 @@ class DepartmentHeadForm(forms.ModelForm):
                 last_name=self.cleaned_data['last_name'],
                 is_active=True
             )
-        
+            
             # Create DepartmentHead instance
             head = super().save(commit=False)
             head.user = user
-        
-        if commit:
-            head.save()
             
-            # Store the generated password to inform the user
-            head.user_password = password
-            
-            # Try to send email with login credentials
-            try:
-                from django.core.mail import send_mail
-                from django.template.loader import render_to_string
-                from django.utils.html import strip_tags
+            if commit:
+                head.save()
                 
-                context = {
-                    'first_name': user.first_name,
-                    'last_name': user.last_name,
-                    'email': user.email,
-                    'password': password,
-                    'login_url': "http://localhost:8000/login/"  # Should be updated to actual URL
-                }
+                # Store the generated password to inform the user
+                head.user_password = password
                 
-                html_message = render_to_string('staff_monitor/email/welcome_department_head.html', context)
-                plain_message = strip_tags(html_message)
+                # Try to send email with login credentials
+                try:
+                    from django.core.mail import send_mail
+                    from django.template.loader import render_to_string
+                    from django.utils.html import strip_tags
+                    
+                    context = {
+                        'first_name': user.first_name,
+                        'last_name': user.last_name,
+                        'email': user.email,
+                        'password': password,
+                        'login_url': "http://localhost:8000/login/"  # Should be updated to actual URL
+                    }
+                    
+                    html_message = render_to_string('staff_monitor/email/welcome_department_head.html', context)
+                    plain_message = strip_tags(html_message)
+                    
+                    send_mail(
+                        'Welcome to Mariampur Hospital Performance Monitoring System',
+                        plain_message,
+                        None,  # Use DEFAULT_FROM_EMAIL from settings
+                        [user.email],
+                        html_message=html_message,
+                        fail_silently=False,
+                    )
+                    
+                    # Flag to indicate email was sent
+                    head.email_sent = True
+                except Exception as e:
+                    # Flag to indicate email failed
+                    head.email_sent = False
+                    print(f"Email sending failed: {str(e)}")
                 
-                send_mail(
-                    'Welcome to Mariampur Hospital Performance Monitoring System',
-                    plain_message,
-                    None,  # Use DEFAULT_FROM_EMAIL from settings
-                    [user.email],
-                    html_message=html_message,
-                    fail_silently=False,
-                )
-                
-                # Flag to indicate email was sent
-                head.email_sent = True
-            except Exception as e:
-                # Flag to indicate email failed
-                head.email_sent = False
-                print(f"Email sending failed: {str(e)}")
-            
-            return head
+                return head
 
 class StaffForm(forms.ModelForm):
     first_name = forms.CharField(

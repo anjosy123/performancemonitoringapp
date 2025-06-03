@@ -1,0 +1,97 @@
+{% extends 'staff_monitor/base.html' %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-lg-10">
+        <div class="card">
+            <div class="card-header bg-primary text-white">
+                <h3 class="mb-0">
+                    <i class="fas fa-user-shield me-2"></i>Your HR Privileges
+                </h3>
+            </div>
+            <div class="card-body">
+                <div class="alert alert-info mb-4">
+                    <i class="fas fa-info-circle me-2"></i>You are logged in as <strong>HR Department Head</strong> for <span class="badge bg-primary">{{ department_head.department.name }}</span>
+                    {% if department_head.department.name|lower == "hr" or department_head.subdepartment and department_head.subdepartment.name|lower == "hr" %}
+                    <span class="badge bg-success ms-2">AUTO-ENABLED PRIVILEGES</span>
+                    {% endif %}
+                </div>
+                
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Privilege</th>
+                                <th>Status</th>
+                                <th>Description</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td><i class="fas fa-user-plus me-2"></i>Add Staff Members</td>
+                                <td>{% if privileges.can_add_staff %}<span class="badge bg-success">Enabled</span>{% else %}<span class="badge bg-secondary">Disabled</span>{% endif %}</td>
+                                <td>Create new staff member accounts</td>
+                            </tr>
+                            <tr>
+                                <td><i class="fas fa-user-edit me-2"></i>Edit Staff Members</td>
+                                <td>{% if privileges.can_edit_staff %}<span class="badge bg-success">Enabled</span>{% else %}<span class="badge bg-secondary">Disabled</span>{% endif %}</td>
+                                <td>Modify existing staff member information</td>
+                            </tr>
+                            <tr>
+                                <td><i class="fas fa-user-minus me-2"></i>Delete Staff Members</td>
+                                <td>{% if privileges.can_delete_staff %}<span class="badge bg-success">Enabled</span>{% else %}<span class="badge bg-secondary">Disabled</span>{% endif %}</td>
+                                <td>Remove staff members from the system</td>
+                            </tr>
+                            <tr>
+                                <td><i class="fas fa-user-md me-2"></i>Add Department Heads</td>
+                                <td>{% if privileges.can_add_department_head %}<span class="badge bg-success">Enabled</span>{% else %}<span class="badge bg-secondary">Disabled</span>{% endif %}</td>
+                                <td>Create new department head accounts</td>
+                            </tr>
+                            <tr>
+                                <td><i class="fas fa-user-md me-2"></i>Edit Department Heads</td>
+                                <td>{% if privileges.can_edit_department_head %}<span class="badge bg-success">Enabled</span>{% else %}<span class="badge bg-secondary">Disabled</span>{% endif %}</td>
+                                <td>Modify existing department head information</td>
+                            </tr>
+                            <tr>
+                                <td><i class="fas fa-user-md me-2"></i>Delete Department Heads</td>
+                                <td>{% if privileges.can_delete_department_head %}<span class="badge bg-success">Enabled</span>{% else %}<span class="badge bg-secondary">Disabled</span>{% endif %}</td>
+                                <td>Remove department heads from the system</td>
+                            </tr>
+                            <tr>
+                                <td><i class="fas fa-hospital me-2"></i>Manage Departments</td>
+                                <td>{% if privileges.can_manage_departments %}<span class="badge bg-success">Enabled</span>{% else %}<span class="badge bg-secondary">Disabled</span>{% endif %}</td>
+                                <td>Create, edit, and delete departments</td>
+                            </tr>
+                            <tr>
+                                <td><i class="fas fa-clipboard-list me-2"></i>View All Reports</td>
+                                <td>{% if privileges.can_view_all_reports %}<span class="badge bg-success">Enabled</span>{% else %}<span class="badge bg-secondary">Disabled</span>{% endif %}</td>
+                                <td>Access reports from all departments</td>
+                            </tr>
+                            <tr>
+                                <td><i class="fas fa-trash me-2"></i>Delete Reports</td>
+                                <td>{% if privileges.can_delete_reports %}<span class="badge bg-success">Enabled</span>{% else %}<span class="badge bg-secondary">Disabled</span>{% endif %}</td>
+                                <td>Remove performance and incident reports</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+                
+                <div class="mt-4 text-center">
+                    <a href="{% url 'dashboard' %}" class="btn btn-primary">
+                        <i class="fas fa-arrow-left me-2"></i>Back to Dashboard
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.table th {
+    font-weight: 600;
+}
+.table td {
+    vertical-align: middle;
+}
+</style>
+{% endblock %} 

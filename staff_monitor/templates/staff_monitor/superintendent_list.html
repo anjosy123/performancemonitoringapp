@@ -150,10 +150,18 @@
                         </td>
                         <td>
                             <div class="btn-group">
+                                {% if is_admin %}
+                                <a href="{% url 'performance_form_department_head' superintendent.id %}" class="btn btn-primary btn-sm">
+                                    <i class="fas fa-clipboard-check me-1"></i>Evaluate
+                                </a>
+                                <a href="{% url 'feedback_form_department_head' superintendent.id %}" class="btn btn-success btn-sm">
+                                    <i class="fas fa-comment-dots me-1"></i>Incident
+                                </a>
+                                {% endif %}
                                 <a href="{% url 'edit_superintendent' superintendent.id %}" class="btn btn-warning btn-sm">
                                     <i class="fas fa-edit me-1"></i>Edit
                                 </a>
-                                <button class="btn btn-danger btn-sm delete-department-head" 
+                                <button class="btn btn-danger btn-sm delete-superintendent" 
                                         data-superintendent-id="{{ superintendent.id }}"
                                         data-superintendent-name="{{ superintendent.user.get_full_name }}">
                                     <i class="fas fa-trash me-1"></i>Delete
@@ -398,7 +406,7 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     // Delete confirmation
-    document.querySelectorAll('.delete-department-head').forEach(button => {
+    document.querySelectorAll('.delete-department-head, .delete-superintendent').forEach(button => {
         button.addEventListener('click', function() {
             const superintendentId = this.dataset.superintendentId;
             const superintendentName = this.dataset.superintendentName;

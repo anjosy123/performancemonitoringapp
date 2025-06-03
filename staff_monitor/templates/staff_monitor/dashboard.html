@@ -63,6 +63,95 @@
                     </div>
                 </div>
                 
+                <!-- Department Head Evaluation Section for Admin -->
+                <div class="card mt-4">
+                    <div class="card-header bg-primary text-white">
+                        <h5 class="mb-0">
+                            <i class="fas fa-user-check me-2"></i>Evaluate Department Heads
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <p class="text-muted mb-3">Select a department head to evaluate their performance or record an incident:</p>
+                        
+                        <!-- Search and Filter Section -->
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <div class="input-group">
+                                    <span class="input-group-text bg-light">
+                                        <i class="fas fa-search"></i>
+                                    </span>
+                                    <input type="text" id="deptHeadSearch" class="form-control" placeholder="Search by name, department, or contact...">
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <select id="departmentFilter" class="form-select">
+                                    <option value="">All Departments</option>
+                                    {% for dept in departments %}
+                                        <option value="{{ dept.name }}">{{ dept.name }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            <div class="col-md-2">
+                                <button id="resetDeptHeadFilters" class="btn btn-secondary w-100">
+                                    <i class="fas fa-undo me-1"></i>Reset
+                                </button>
+                            </div>
+                        </div>
+                        
+                        <div class="table-responsive">
+                            <table class="table table-hover" id="deptHeadTable">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th>Name</th>
+                                        <th>Department</th>
+                                        <th>Subdepartment</th>
+                                        <th>Contact</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for head in superintendents %}
+                                    <tr class="dept-head-row">
+                                        <td>{{ head.user.get_full_name }}</td>
+                                        <td>{{ head.department.name }}</td>
+                                        <td>
+                                            {% if head.subdepartment %}
+                                            {{ head.subdepartment.name }}
+                                            {% else %}
+                                            <span class="text-muted">Main</span>
+                                            {% endif %}
+                                        </td>
+                                        <td>{{ head.contact_number }}</td>
+                                        <td>
+                                            <div class="btn-group">
+                                                <a href="{% url 'performance_form_department_head' head.id %}" class="btn btn-primary btn-sm">
+                                                    <i class="fas fa-clipboard-check me-1"></i>Evaluate
+                                                </a>
+                                                <a href="{% url 'feedback_form_department_head' head.id %}" class="btn btn-success btn-sm">
+                                                    <i class="fas fa-comment-dots me-1"></i>Incident
+                                                </a>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                    {% empty %}
+                                    <tr>
+                                        <td colspan="5" class="text-center py-4">
+                                            <i class="fas fa-user-md text-muted me-2"></i>No department heads found
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                        
+                        <!-- No Results Message -->
+                        <div id="noDeptHeadsResults" class="text-center py-4 d-none">
+                            <i class="fas fa-search fa-2x text-muted mb-3"></i>
+                            <p class="text-muted mb-0">No matching department heads found</p>
+                        </div>
+                    </div>
+                </div>
+                
                 <!-- HR Department Head Dashboard -->
                 {% elif is_hr_head %}
                 <div class="alert alert-info mb-4">
@@ -137,6 +226,22 @@
                     </div>
                     {% endif %}
                     
+                    <div class="col-md-4">
+                        <div class="card h-100 border-secondary">
+                            <div class="card-body">
+                                <h5 class="card-title">
+                                    <i class="fas fa-user-shield me-2"></i>HR Settings
+                                </h5>
+                                <p class="card-text text-muted">
+                                    View your HR privileges and settings
+                                </p>
+                                <a href="{% url 'hr_privileges_view' %}" class="btn btn-secondary w-100">
+                                    <i class="fas fa-user-shield me-2"></i>View HR Privileges
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                    
                     {% if privileges.can_manage_departments %}
                     <div class="col-md-4">
                         <div class="card h-100 border-warning">
@@ -164,53 +269,11 @@
                         </h5>
                     </div>
                     <div class="card-body">
-                        <div class="table-responsive">
-                            <table class="table table-hover">
-                                <thead>
-                                    <tr>
-                                        <th>Privilege</th>
-                                        <th>Status</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    <tr>
-                                        <td><i class="fas fa-user-plus me-2"></i>Add Staff Members</td>
-                                        <td>{% if privileges.can_add_staff %}<span class="badge bg-success">Enabled</span>{% else %}<span class="badge bg-secondary">Disabled</span>{% endif %}</td>
-                                    </tr>
-                                    <tr>
-                                        <td><i class="fas fa-user-edit me-2"></i>Edit Staff Members</td>
-                                        <td>{% if privileges.can_edit_staff %}<span class="badge bg-success">Enabled</span>{% else %}<span class="badge bg-secondary">Disabled</span>{% endif %}</td>
-                                    </tr>
-                                    <tr>
-                                        <td><i class="fas fa-user-minus me-2"></i>Delete Staff Members</td>
-                                        <td>{% if privileges.can_delete_staff %}<span class="badge bg-success">Enabled</span>{% else %}<span class="badge bg-secondary">Disabled</span>{% endif %}</td>
-                                    </tr>
-                                    <tr>
-                                        <td><i class="fas fa-user-md me-2"></i>Add Department Heads</td>
-                                        <td>{% if privileges.can_add_department_head %}<span class="badge bg-success">Enabled</span>{% else %}<span class="badge bg-secondary">Disabled</span>{% endif %}</td>
-                                    </tr>
-                                    <tr>
-                                        <td><i class="fas fa-user-md me-2"></i>Edit Department Heads</td>
-                                        <td>{% if privileges.can_edit_department_head %}<span class="badge bg-success">Enabled</span>{% else %}<span class="badge bg-secondary">Disabled</span>{% endif %}</td>
-                                    </tr>
-                                    <tr>
-                                        <td><i class="fas fa-user-md me-2"></i>Delete Department Heads</td>
-                                        <td>{% if privileges.can_delete_department_head %}<span class="badge bg-success">Enabled</span>{% else %}<span class="badge bg-secondary">Disabled</span>{% endif %}</td>
-                                    </tr>
-                                    <tr>
-                                        <td><i class="fas fa-hospital me-2"></i>Manage Departments</td>
-                                        <td>{% if privileges.can_manage_departments %}<span class="badge bg-success">Enabled</span>{% else %}<span class="badge bg-secondary">Disabled</span>{% endif %}</td>
-                                    </tr>
-                                    <tr>
-                                        <td><i class="fas fa-clipboard-list me-2"></i>View All Reports</td>
-                                        <td>{% if privileges.can_view_all_reports %}<span class="badge bg-success">Enabled</span>{% else %}<span class="badge bg-secondary">Disabled</span>{% endif %}</td>
-                                    </tr>
-                                    <tr>
-                                        <td><i class="fas fa-trash me-2"></i>Delete Reports</td>
-                                        <td>{% if privileges.can_delete_reports %}<span class="badge bg-success">Enabled</span>{% else %}<span class="badge bg-secondary">Disabled</span>{% endif %}</td>
-                                    </tr>
-                                </tbody>
-                            </table>
+                        <p class="mb-4 text-muted">View your current HR privileges and their status.</p>
+                        <div class="text-center">
+                            <a href="{% url 'hr_privileges_view' %}" class="btn btn-primary">
+                                <i class="fas fa-user-shield me-2"></i>View Your HR Privileges
+                            </a>
                         </div>
                     </div>
                 </div>
@@ -586,4 +649,107 @@
     }
 }
 </style>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Department Head search functionality
+    const deptHeadSearch = document.getElementById('deptHeadSearch');
+    const departmentFilter = document.getElementById('departmentFilter');
+    const resetButton = document.getElementById('resetDeptHeadFilters');
+    const table = document.getElementById('deptHeadTable');
+    const rows = table ? table.querySelectorAll('.dept-head-row') : [];
+    const noResults = document.getElementById('noDeptHeadsResults');
+    
+    if (deptHeadSearch && rows.length > 0) {
+        function filterDeptHeads() {
+            const searchTerm = deptHeadSearch.value.toLowerCase();
+            const selectedDepartment = departmentFilter.value.toLowerCase();
+            let visibleCount = 0;
+            
+            rows.forEach(row => {
+                const name = row.cells[0].textContent.toLowerCase();
+                const department = row.cells[1].textContent.toLowerCase();
+                const subdepartment = row.cells[2].textContent.toLowerCase();
+                const contact = row.cells[3].textContent.toLowerCase();
+                
+                const matchesSearch = name.includes(searchTerm) || 
+                                     department.includes(searchTerm) || 
+                                     subdepartment.includes(searchTerm) ||
+                                     contact.includes(searchTerm);
+                                     
+                const matchesDepartment = !selectedDepartment || department === selectedDepartment;
+                
+                if (matchesSearch && matchesDepartment) {
+                    row.style.display = '';
+                    visibleCount++;
+                } else {
+                    row.style.display = 'none';
+                }
+            });
+            
+            // Toggle no results message
+            if (noResults) {
+                noResults.classList.toggle('d-none', visibleCount > 0);
+                table.classList.toggle('d-none', visibleCount === 0);
+            }
+        }
+        
+        // Set up event listeners
+        deptHeadSearch.addEventListener('input', filterDeptHeads);
+        
+        if (departmentFilter) {
+            departmentFilter.addEventListener('change', filterDeptHeads);
+        }
+        
+        if (resetButton) {
+            resetButton.addEventListener('click', function() {
+                deptHeadSearch.value = '';
+                if (departmentFilter) departmentFilter.value = '';
+                filterDeptHeads();
+            });
+        }
+    }
+});
+</script>
+
+{% if request.session.show_credentials %}
+<!-- JavaScript to display credentials using SweetAlert -->
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const credentials = {
+        name: "{{ request.session.show_credentials.name }}",
+        username: "{{ request.session.show_credentials.username }}",
+        password: "{{ request.session.show_credentials.password }}",
+        department: "{{ request.session.show_credentials.department }}"
+    };
+    
+    Swal.fire({
+        title: 'Department Head Added Successfully',
+        html: `
+            <div class="text-left">
+                <p>Email delivery failed, please share these login credentials with:</p>
+                <div class="alert alert-info">
+                    <p><strong>Name:</strong> ${credentials.name}</p>
+                    <p><strong>Department:</strong> ${credentials.department}</p>
+                    <p><strong>Username:</strong> ${credentials.username}</p>
+                    <p><strong>Password:</strong> ${credentials.password}</p>
+                </div>
+                <p>Please ask the user to change their password after first login.</p>
+            </div>
+        `,
+        icon: 'info',
+        confirmButtonText: 'I have saved these credentials',
+        confirmButtonColor: '#0d6efd'
+    });
+    
+    // Clear the credentials from the session
+    fetch('{% url "heartbeat" %}', {
+        method: 'HEAD',
+        headers: {
+            'X-Clear-Credentials': 'true'
+        }
+    });
+});
+</script>
+{% endif %}
 {% endblock %}
