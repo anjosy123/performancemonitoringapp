@@ -14,8 +14,9 @@ python manage.py collectstatic --no-input
 
 # Run migrations
 echo "Running database migrations..."
-python manage.py makemigrations
-python manage.py migrate
+python manage.py makemigrations --noinput || echo "Warning: makemigrations command failed, continuing anyway"
+python manage.py showmigrations  # Show migration status for debugging
+python manage.py migrate --noinput || { echo "Error: Database migration failed"; exit 1; }
 
 # Check database connection
 echo "Verifying database connection..."
@@ -26,6 +27,29 @@ try:
     print("✓ Database connection successful")
 except Exception as e:
     print(f"✗ Database connection failed: {e}")
+    raise e
+END
+
+# Check if auth_user table exists
+echo "Checking for auth_user table..."
+python manage.py shell << END
+try:
+    from django.db import connection
+    with connection.cursor() as cursor:
+        cursor.execute("SELECT COUNT(*) FROM information_schema.tables WHERE table_schema='public' AND table_name='auth_user'")
+        row = cursor.fetchone()
+        if row[0] > 0:
+            print("✓ auth_user table exists")
+        else:
+            print("✗ auth_user table DOES NOT exist - migrations may have failed")
+            # Try a more direct approach
+            print("Attempting to create auth tables directly...")
+            from django.core.management import call_command
+            call_command('migrate', 'auth', interactive=False)
+            call_command('migrate', 'contenttypes', interactive=False)
+            print("Auth migrations completed directly")
+except Exception as e:
+    print(f"✗ Error checking auth_user table: {e}")
     raise e
 END
 
@@ -80,7 +104,7 @@ try:
     backup_username = "admin"
     if not User.objects.filter(username=backup_username).exists():
         User.objects.create_superuser(
-            username=Admin
+            username=backup_username,
             email="mhitdeptsw@mail.com",
             password=ADMIN_PASSWORD
         )
