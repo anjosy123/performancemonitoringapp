@@ -33,13 +33,16 @@ DEBUG = os.getenv('DEBUG', 'True') == 'True'  # Default to True for local develo
 
 ALLOWED_HOSTS = [
     'performance-monitoring.onrender.com',
+    'hospital-performance-monitor.onrender.com',  # Add your Render app name
     'localhost',
     '127.0.0.1',
     '*'
 ]
-# RENDER_EXTERNAL_HOSTNAME = os.getenv('RENDER_EXTERNAL_HOSTNAME')
-# if RENDER_EXTERNAL_HOSTNAME:
-#     ALLOWED_HOSTS.append(RENDER_EXTERNAL_HOSTNAME)
+
+# Detect Render external URL and add it to allowed hosts
+RENDER_EXTERNAL_HOSTNAME = os.environ.get('RENDER_EXTERNAL_HOSTNAME')
+if RENDER_EXTERNAL_HOSTNAME:
+    ALLOWED_HOSTS.append(RENDER_EXTERNAL_HOSTNAME)
 
 
 # Application definition

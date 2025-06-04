@@ -11,6 +11,7 @@ import pandas as pd
 from django.core.exceptions import ValidationError
 import openpyxl
 import uuid
+import os
 
 class PerformanceReportForm(forms.ModelForm):
     date = forms.DateField(
@@ -246,13 +247,26 @@ class DepartmentHeadForm(forms.ModelForm):
                     from django.core.mail import send_mail
                     from django.template.loader import render_to_string
                     from django.utils.html import strip_tags
+                    from django.conf import settings
+                    
+                    # Determine the login URL based on environment
+                    from django.contrib.sites.shortcuts import get_current_site
+                    from django.urls import reverse
+                    
+                    # Get base URL - use RENDER_EXTERNAL_URL if on Render, otherwise use a default
+                    if 'RENDER' in os.environ and os.environ.get('RENDER_EXTERNAL_URL'):
+                        base_url = os.environ.get('RENDER_EXTERNAL_URL')
+                    else:
+                        base_url = "http://localhost:8000"
+                        
+                    login_url = f"{base_url}{reverse('login')}"
                     
                     context = {
                         'first_name': user.first_name,
                         'last_name': user.last_name,
                         'email': user.email,
                         'password': password,
-                        'login_url': "http://localhost:8000/login/"  # Should be updated to actual URL
+                        'login_url': login_url  # Use the dynamically determined URL
                     }
                     
                     html_message = render_to_string('staff_monitor/email/welcome_department_head.html', context)
@@ -266,12 +280,14 @@ class DepartmentHeadForm(forms.ModelForm):
                         html_message=html_message,
                         fail_silently=False,
                     )
+                    
                     # Flag to indicate email was sent
                     head.email_sent = True
                 except Exception as e:
                     # Flag to indicate email failed
                     head.email_sent = False
                     print(f"Email sending failed: {str(e)}")
+                
                 return head
 
 class StaffForm(forms.ModelForm):
