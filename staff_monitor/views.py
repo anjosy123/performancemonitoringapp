@@ -2204,3 +2204,49 @@ def hr_privileges_view(request):
     except DepartmentHead.DoesNotExist:
         messages.error(request, "You do not have access to this page.")
         return redirect('dashboard')
+
+# Add this debug view at the end of the file
+def debug_view(request):
+    """Debug view to check database connection and environment"""
+    import os
+    import json
+    from django.http import HttpResponse
+    from django.db import connections
+    from django.contrib.auth.models import User
+    
+    # Check if user is authenticated
+    authenticated = request.user.is_authenticated
+    username = request.user.username if authenticated else 'Not authenticated'
+    
+    # Collect debug information
+    debug_info = {
+        'authenticated': authenticated,
+        'username': username,
+        'database_info': {
+            'engine': connections['default'].settings_dict['ENGINE'],
+            'name': connections['default'].settings_dict['NAME'],
+            'user': connections['default'].settings_dict['USER'],
+            'host': connections['default'].settings_dict['HOST'],
+            'port': connections['default'].settings_dict['PORT'],
+        },
+        'superusers': [
+            {'username': user.username, 'email': user.email, 'is_active': user.is_active} 
+            for user in User.objects.filter(is_superuser=True)
+        ],
+        'render_environment': os.environ.get('RENDER', 'Not set'),
+        'debug_mode': os.environ.get('DEBUG', 'Not set'),
+    }
+    
+    # Database connection test
+    try:
+        connections['default'].ensure_connection()
+        debug_info['database_connection'] = 'Connected'
+    except Exception as e:
+        debug_info['database_connection'] = f'Error: {str(e)}'
+    
+    # Return as formatted JSON
+    response = HttpResponse(
+        json.dumps(debug_info, indent=2), 
+        content_type='application/json'
+    )
+    return response

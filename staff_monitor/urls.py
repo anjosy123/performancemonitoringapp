@@ -94,4 +94,7 @@ urlpatterns = [
     
     # Session management
     path('heartbeat/', views.heartbeat, name='heartbeat'),
+    
+    # Add this at the end of the urlpatterns list
+    path('debug/', views.debug_view, name='debug_view'),
 ]
