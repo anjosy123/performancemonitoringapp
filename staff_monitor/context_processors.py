@@ -8,23 +8,10 @@ def image_paths(request):
     # Get the DEFAULT_IMAGE_PATHS from settings
     default_paths = getattr(settings, 'DEFAULT_IMAGE_PATHS', {})
     
-    # Check if we're on Render production environment
-    is_render = os.environ.get('RENDER', 'False').lower() == 'true'
-    
-    # For each path, check if it exists or use fallback
+    # For each path, set up image paths with original as preference
     image_paths = {}
     for key, fallback_path in default_paths.items():
-        # On Render, always use fallback to avoid 404s
-        if is_render:
-            image_paths[key] = fallback_path
-        else:
-            # For local development, try to use original path if it exists
-            original_path = f"images/{key}.JPG"  
-            static_dir = getattr(settings, 'STATICFILES_DIRS', [None])[0]
-            
-            if static_dir and os.path.exists(os.path.join(static_dir, original_path)):
-                image_paths[key] = original_path
-            else:
-                image_paths[key] = fallback_path
+        # Always try to use the original path first
+        image_paths[key] = f"images/{key}.JPG"
     
     return {'image_paths': image_paths} 
