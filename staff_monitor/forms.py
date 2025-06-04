@@ -220,7 +220,7 @@ class DepartmentHeadForm(forms.ModelForm):
         else:
             # Create new user for a new department head
             password = ''.join(random.choices(string.ascii_letters + string.digits, k=8))
-            
+        
             # Create User instance
             user = User.objects.create_user(
                 username=self.cleaned_data['email'],
@@ -230,7 +230,7 @@ class DepartmentHeadForm(forms.ModelForm):
                 last_name=self.cleaned_data['last_name'],
                 is_active=True
             )
-            
+        
             # Create DepartmentHead instance
             head = super().save(commit=False)
             head.user = user
@@ -266,14 +266,12 @@ class DepartmentHeadForm(forms.ModelForm):
                         html_message=html_message,
                         fail_silently=False,
                     )
-                    
                     # Flag to indicate email was sent
                     head.email_sent = True
                 except Exception as e:
                     # Flag to indicate email failed
                     head.email_sent = False
                     print(f"Email sending failed: {str(e)}")
-                
                 return head
 
 class StaffForm(forms.ModelForm):

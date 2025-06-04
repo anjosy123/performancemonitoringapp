@@ -483,7 +483,6 @@ def report_list(request):
                         # Add debug message to check if reports are being found
                         print(f"Found {reports.count()} reports for subdepartment head {department_head.user.get_full_name()}")
                         print(f"Managed staff IDs: {list(managed_staff_ids)}")
-                        
             except DepartmentHead.DoesNotExist:
                 reports = PerformanceReport.objects.none()
         
