@@ -458,37 +458,20 @@ def report_list(request):
                 
                 # Check if HR head with all-reports privilege
                 if department_head.is_hr_head and hasattr(department_head, 'privileges') and department_head.privileges.can_view_all_reports:
-                    # HR head sees all reports except their own
-                    reports = PerformanceReport.objects.exclude(
-                        department_head=department_head
-                    ).order_by('-date')
+                    reports = PerformanceReport.objects.exclude(department_head=department_head).order_by('-date')
                 elif department_head.department.name.lower() == "hr" or (department_head.subdepartment and department_head.subdepartment.name.lower() == "hr"):
-                    # HR department or subdepartment sees all reports except their own
-                    reports = PerformanceReport.objects.exclude(
-                        department_head=department_head
-                    ).order_by('-date')
+                    reports = PerformanceReport.objects.exclude(department_head=department_head).order_by('-date')
                 else:
-                    # Department head sees only reports from their department
                     if department_head.subdepartment is None:
-                        # Main department head sees all reports from their department except their own
                         reports = PerformanceReport.objects.filter(
-                            models.Q(staff__department=department_head.department) |
+                            models.Q(staff__department=department_head.department) | 
                             models.Q(department_head__department=department_head.department)
-                        ).exclude(
-                            department_head=department_head
-                        ).order_by('-date')
+                        ).exclude(department_head=department_head).order_by('-date')
                     else:
-                        # Subdepartment head sees only reports for staff assigned to them, not their own
                         managed_staff_ids = department_head.managed_staff.values_list('id', flat=True)
                         reports = PerformanceReport.objects.filter(
                             models.Q(staff_id__in=managed_staff_ids)
-                        ).exclude(
-                            department_head=department_head
-                        ).order_by('-date')
-                        
-                        # Add debug message to check if reports are being found
-                        print(f"Found {reports.count()} reports for subdepartment head {department_head.user.get_full_name()}")
-                        print(f"Managed staff IDs: {list(managed_staff_ids)}")
+                        ).exclude(department_head=department_head).order_by('-date')
             except DepartmentHead.DoesNotExist:
                 reports = PerformanceReport.objects.none()
         
