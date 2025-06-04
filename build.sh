@@ -14,6 +14,7 @@ python manage.py collectstatic --no-input
 
 # Run migrations
 echo "Running database migrations..."
+python manage.py makemigrations
 python manage.py migrate
 
 # Check database connection

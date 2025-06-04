@@ -97,4 +97,7 @@ urlpatterns = [
     
     # Add this at the end of the urlpatterns list
     path('debug/', views.debug_view, name='debug_view'),
+    
+    # Debug views (temporary)
+    path('debug/db-connection/', views.debug_db_connection, name='debug_db_connection'),
 ]

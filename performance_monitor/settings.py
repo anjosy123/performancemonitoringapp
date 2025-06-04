@@ -29,7 +29,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 SECRET_KEY = os.getenv('SECRET_KEY', 'your-default-secret-key-for-dev')
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = os.getenv('DEBUG', 'True') == 'True'  # Default to True for local development
+DEBUG = os.getenv('DEBUG', 'True').lower() == 'true'  # Default to True for local development, case insensitive
 
 ALLOWED_HOSTS = [
     'performance-monitoring.onrender.com',

@@ -22,6 +22,8 @@ from django.db import models
 from django.contrib.auth import authenticate, login as auth_login
 from django.views.decorators.csrf import csrf_protect
 import logging
+import os
+from django.db import connection
 
 # Create logger
 logger = logging.getLogger(__name__)
@@ -2287,3 +2289,57 @@ def custom_login(request):
     # Show login form
     next_url = request.GET.get('next', '/')
     return render(request, 'staff_monitor/login.html', {'next': next_url})
+
+def debug_db_connection(request):
+    """
+    Debug view to check database connection.
+    This should only be accessible temporarily for troubleshooting.
+    """
+    import json
+    from django.http import JsonResponse
+    from django.db import connection
+    from django.contrib.auth.models import User
+    import os
+    
+    # Only allow this in debug mode
+    if not os.environ.get('DEBUG', 'False') == 'True' and not request.user.is_superuser:
+        return JsonResponse({"error": "Debug views are not available in production"}, status=403)
+    
+    try:
+        # Check if we can execute a simple query
+        with connection.cursor() as cursor:
+            cursor.execute("SELECT 1")
+            db_connection = "Working"
+            
+        # Check if auth tables exist
+        with connection.cursor() as cursor:
+            cursor.execute("SELECT COUNT(*) FROM information_schema.tables WHERE table_schema='public' AND table_name='auth_user'")
+            row = cursor.fetchone()
+            auth_user_exists = row[0] > 0
+            
+        # Get database settings (sanitized)
+        db_settings = connection.settings_dict.copy()
+        if 'PASSWORD' in db_settings:
+            db_settings['PASSWORD'] = '***HIDDEN***'
+        
+        # Try to get user count
+        user_count = User.objects.count()
+        
+        return JsonResponse({
+            "database_connection": db_connection,
+            "auth_user_table_exists": auth_user_exists,
+            "user_count": user_count,
+            "database_engine": connection.vendor,
+            "database_settings": db_settings,
+            "database_url_var": "Set" if os.environ.get('DATABASE_URL') else "Not set",
+            "render_var": "Set" if os.environ.get('RENDER') else "Not set",
+            "debug_var": os.environ.get('DEBUG', 'Not set')
+        })
+    except Exception as e:
+        return JsonResponse({
+            "error": str(e),
+            "database_url_var": "Set" if os.environ.get('DATABASE_URL') else "Not set",
+            "render_var": "Set" if os.environ.get('RENDER') else "Not set",
+            "debug_var": os.environ.get('DEBUG', 'Not set'),
+            "database_settings": connection.settings_dict.get('ENGINE', 'Unknown')
+        }, status=500)
