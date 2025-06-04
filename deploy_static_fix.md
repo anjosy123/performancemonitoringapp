@@ -59,7 +59,7 @@ In case both options above don't work, you can directly edit the login.html file
    ```css
    body {
        background: linear-gradient(rgba(0, 0, 0, 0.5), rgba(0, 0, 0, 0.5)),
-                   url('/static/images/hospital-logo.png');
+                   url('/static/images/hospital_front.JPG')
        /* rest of the CSS remains the same */
    }
    ```
