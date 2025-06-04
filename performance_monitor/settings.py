@@ -90,7 +90,7 @@ WSGI_APPLICATION = 'performance_monitor.wsgi.application'
 # Database
 # https://docs.djangoproject.com/en/5.2/ref/settings/#databases
 
-# PostgreSQL Configuration for development and production
+# PostgreSQL Configuration for development
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql',
@@ -102,18 +102,29 @@ DATABASES = {
     }
 }
 
-# Database configuration for production - uses environment variables if available
+# Database configuration for production - uses Render PostgreSQL if available
 if not DEBUG:
-    DATABASES = {
-        'default': {
-            'ENGINE': 'django.db.backends.postgresql',
-            'NAME': os.getenv('DB_NAME', 'hospital_performance'),
-            'USER': os.getenv('DB_USER', 'Admin'),
-            'PASSWORD': os.getenv('DB_PASSWORD', 'Admin@123'),
-            'HOST': os.getenv('DB_HOST', 'localhost'),
-            'PORT': os.getenv('DB_PORT', '5432'),
+    # Use Render PostgreSQL if RENDER environment is detected
+    if 'RENDER' in os.environ:
+        # Parse database URL from DATABASE_URL environment variable
+        DATABASES = {
+            'default': dj_database_url.config(
+                conn_max_age=600,
+                conn_health_checks=True,
+            )
         }
-    }
+    else:
+        # Use regular environment variables if not on Render
+        DATABASES = {
+            'default': {
+                'ENGINE': 'django.db.backends.postgresql',
+                'NAME': os.getenv('DB_NAME', 'hospital_performance'),
+                'USER': os.getenv('DB_USER', 'Admin'),
+                'PASSWORD': os.getenv('DB_PASSWORD', 'Admin@123'),
+                'HOST': os.getenv('DB_HOST', 'localhost'),
+                'PORT': os.getenv('DB_PORT', '5432'),
+            }
+        }
 
 # Password validation
 # https://docs.djangoproject.com/en/5.2/ref/settings/#auth-password-validators
