@@ -243,5 +243,5 @@ LOGGING = {
 
 # Default image paths - for fallbacks
 DEFAULT_IMAGE_PATHS = {
-    'hospital_front': 'images/hospital_front.JPG',  # Use JPG directly rather than fallback
+    'hospital_front': 'images/hospital_front.png',  # Now using PNG instead of JPG
 }

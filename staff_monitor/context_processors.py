@@ -12,6 +12,6 @@ def image_paths(request):
     image_paths = {}
     for key, fallback_path in default_paths.items():
         # Always try to use the original path first
-        image_paths[key] = f"images/{key}.JPG"
+        image_paths[key] = f"images/{key}.png"
     
     return {'image_paths': image_paths} 
