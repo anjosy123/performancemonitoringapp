@@ -245,3 +245,24 @@ LOGGING = {
 DEFAULT_IMAGE_PATHS = {
     'hospital_front': 'images/hospital_front.png',  # Now using PNG instead of JPG
 }
+
+# CSRF settings
+CSRF_TRUSTED_ORIGINS = [
+    'https://performance-monitoring.onrender.com',
+    'https://hospital-performance-monitor.onrender.com',
+    'http://localhost:8000',
+    'http://127.0.0.1:8000',
+]
+
+# During deployment transition, be more permissive with cookies
+if not DEBUG and 'RENDER' in os.environ:
+    CSRF_COOKIE_SECURE = True
+    SESSION_COOKIE_SECURE = True
+    CSRF_USE_SESSIONS = True
+    CSRF_COOKIE_SAMESITE = 'Lax'
+    SESSION_COOKIE_SAMESITE = 'Lax'
+    CSRF_COOKIE_DOMAIN = None
+else:
+    CSRF_COOKIE_SECURE = False
+    SESSION_COOKIE_SECURE = False
+    CSRF_USE_SESSIONS = True

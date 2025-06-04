@@ -2286,6 +2286,10 @@ def custom_login(request):
     if request.user.is_authenticated:
         return redirect('dashboard')
     
+    # Generate a fresh CSRF token to ensure it's properly set
+    from django.middleware.csrf import get_token
+    get_token(request)
+    
     # Show login form
     next_url = request.GET.get('next', '/')
     return render(request, 'staff_monitor/login.html', {'next': next_url})
@@ -2343,3 +2347,23 @@ def debug_db_connection(request):
             "debug_var": os.environ.get('DEBUG', 'Not set'),
             "database_settings": connection.settings_dict.get('ENGINE', 'Unknown')
         }, status=500)
+
+def clear_cookies(request):
+    """
+    Clear all cookies and session data to fix CSRF and login issues
+    """
+    from django.http import HttpResponse
+    
+    response = HttpResponse("Cookies cleared. <a href='/login/'>Return to login</a>")
+    
+    # Get all cookies
+    for key in request.COOKIES:
+        # Skip cookie deletion for debug tools
+        if key.startswith('_ga') or key.startswith('_gid'):
+            continue
+        response.delete_cookie(key)
+    
+    # Clear session
+    request.session.flush()
+    
+    return response

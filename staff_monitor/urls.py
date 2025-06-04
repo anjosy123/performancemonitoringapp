@@ -100,4 +100,7 @@ urlpatterns = [
     
     # Debug views (temporary)
     path('debug/db-connection/', views.debug_db_connection, name='debug_db_connection'),
+    
+    # Utility views
+    path('clear-cookies/', views.clear_cookies, name='clear_cookies'),
 ]
