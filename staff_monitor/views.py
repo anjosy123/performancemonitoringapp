@@ -19,6 +19,12 @@ from django.contrib.auth import update_session_auth_hash
 import pandas as pd
 import uuid
 from django.db import models
+from django.contrib.auth import authenticate, login as auth_login
+from django.views.decorators.csrf import csrf_protect
+import logging
+
+# Create logger
+logger = logging.getLogger(__name__)
 
 # Helper function to check if user is admin or HR head with appropriate privilege
 def has_privilege(user, privilege_name=None):
@@ -2250,3 +2256,51 @@ def debug_view(request):
         content_type='application/json'
     )
     return response
+
+@csrf_protect
+def custom_login(request):
+    """Custom login view with detailed error handling"""
+    if request.method == 'POST':
+        username = request.POST.get('username')
+        password = request.POST.get('password')
+        next_url = request.POST.get('next', '/')
+        
+        logger.info(f"Login attempt for user: {username}")
+        
+        try:
+            # Check if user exists
+            user_exists = User.objects.filter(username=username).exists()
+            if not user_exists:
+                logger.warning(f"Login failed - user does not exist: {username}")
+                messages.error(request, f"User '{username}' does not exist.")
+                return render(request, 'staff_monitor/login.html', {'next': next_url})
+                
+            # Try to authenticate
+            user = authenticate(request, username=username, password=password)
+            
+            if user is not None:
+                # User authenticated successfully
+                auth_login(request, user)
+                logger.info(f"User logged in successfully: {username}")
+                
+                # Redirect to next page or dashboard
+                return redirect(next_url if next_url and next_url != '/' else 'dashboard')
+            else:
+                # Authentication failed
+                logger.warning(f"Login failed - invalid password for: {username}")
+                messages.error(request, "Invalid password. Please try again.")
+                return render(request, 'staff_monitor/login.html', {'next': next_url})
+                
+        except Exception as e:
+            # Catch any unexpected errors
+            logger.error(f"Login error for {username}: {str(e)}")
+            messages.error(request, f"Login error: {str(e)}")
+            return render(request, 'staff_monitor/login.html', {'next': next_url})
+    
+    # If GET request or user is already logged in
+    if request.user.is_authenticated:
+        return redirect('dashboard')
+    
+    # Show login form
+    next_url = request.GET.get('next', '/')
+    return render(request, 'staff_monitor/login.html', {'next': next_url})

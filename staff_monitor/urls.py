@@ -1,6 +1,6 @@
 # staff_monitor/urls.py
 
-from django.urls import path
+from django.urls import path, include
 from . import views
 from django.contrib.auth import views as auth_views
 from django.contrib.auth.views import LogoutView
@@ -53,9 +53,9 @@ urlpatterns = [
     # Staff assignment to subdepartment heads
     path('manage-subdepartment-staff/<int:subdepartment_head_id>/', views.manage_subdepartment_staff, name='manage_subdepartment_staff'),
     
-    # Authentication
-    path('login/', auth_views.LoginView.as_view(template_name='staff_monitor/login.html'), name='login'),
-    path('logout/', auth_views.LogoutView.as_view(next_page='login'), name='logout'),
+    # Authentication routes - use our custom login view
+    path('login/', views.custom_login, name='login'),
+    path('logout/', auth_views.LogoutView.as_view(), name='logout'),
     
     # Password reset
     path('password_reset/', 
