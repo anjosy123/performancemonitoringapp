@@ -266,3 +266,15 @@ else:
     CSRF_COOKIE_SECURE = False
     SESSION_COOKIE_SECURE = False
     CSRF_USE_SESSIONS = True
+
+# Configure for production media serving
+if not DEBUG and 'RENDER' in os.environ:
+    # Tell Django how to find media files in production
+    DEFAULT_FILE_STORAGE = 'django.core.files.storage.FileSystemStorage'
+    
+    # If using Render.com
+    MEDIA_ROOT = os.path.join(os.path.dirname(BASE_DIR), 'media')
+    
+    # Make sure media URL works with your hosting configuration
+    # This might need to be adjusted based on your specific hosting setup
+    MEDIA_URL = '/media/'
