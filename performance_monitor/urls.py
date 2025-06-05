@@ -1,7 +1,7 @@
 # performance_monitor/urls.py
 
 from django.contrib import admin
-from django.urls import path, include
+from django.urls import path, include, re_path
 from django.contrib.auth import views as auth_views
 from django.views.generic import RedirectView
 from django.conf import settings
@@ -16,6 +16,5 @@ urlpatterns = [
     path('accounts/logout/', RedirectView.as_view(url='/logout/'), name='logout_redirect'),
 ]
 
-# Serve media files during development
-if settings.DEBUG:
-    urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
+# Serve media files in all environments
+urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
