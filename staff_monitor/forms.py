@@ -221,20 +221,20 @@ class DepartmentHeadForm(forms.ModelForm):
         else:
             # Create new user for a new department head
             password = ''.join(random.choices(string.ascii_letters + string.digits, k=8))
-            
-            # Create User instance
-            user = User.objects.create_user(
-                username=self.cleaned_data['email'],
-                email=self.cleaned_data['email'],
-                password=password,
-                first_name=self.cleaned_data['first_name'],
-                last_name=self.cleaned_data['last_name'],
-                is_active=True
-            )
-            
-            # Create DepartmentHead instance
-            head = super().save(commit=False)
-            head.user = user
+        
+        # Create User instance
+        user = User.objects.create_user(
+            username=self.cleaned_data['email'],
+            email=self.cleaned_data['email'],
+            password=password,
+            first_name=self.cleaned_data['first_name'],
+            last_name=self.cleaned_data['last_name'],
+            is_active=True
+        )
+        
+        # Create DepartmentHead instance
+        head = super().save(commit=False)
+        head.user = user
         
         if commit:
             head.save()

@@ -163,8 +163,8 @@
                         </div>
                         <div class="card-body text-center">
                             <img src="{{ report.incident_photo.url }}" alt="Incident Photo" class="img-fluid img-thumbnail" style="max-height: 400px;" 
-                                 onerror="this.onerror=null; this.src='/static/images/placeholder-photo.svg'; this.alt='Photo Not Available';">
-                            <div class="photo-error-message mt-2 text-muted d-none">
+                                 onerror="this.onerror=null; this.src='/static/images/placeholder-photo.png'; this.alt='Photo Not Available'; document.getElementById('photo-error-message').classList.remove('d-none');">
+                            <div id="photo-error-message" class="photo-error-message mt-2 text-muted d-none">
                                 <i class="fas fa-exclamation-circle"></i>
                                 The original photo could not be loaded.
                             </div>
