@@ -2,6 +2,7 @@
 
 from django.db import models
 from django.contrib.auth.models import User
+import os
 
 class Department(models.Model):
     name = models.CharField(max_length=100, unique=True)
@@ -70,7 +71,7 @@ class Staff(models.Model):
     appointment_date = models.DateField(null=True, blank=True)
 
     def __str__(self):
-        return f"{self.user.get_full_name()} ({self.employee_id})"
+        return f"{self.user.get_full_name()} - {self.position} ({self.employee_id})"
 
 class PerformanceReport(models.Model):
     RATING_CHOICES = [
@@ -310,8 +311,10 @@ class IncidentReport(models.Model):
     # Individuals Involved (stored as JSON)
     individuals_involved = models.TextField(default="[]")  # JSON string containing individual names, departments, positions, roles
     
-    # Incident Photo
-    incident_photo = models.ImageField(upload_to='incident_photos/', blank=True, null=True)
+    # Incident Photo - Stored in database instead of file system
+    incident_photo = models.BinaryField(null=True, blank=True)  # Raw image data
+    incident_photo_name = models.CharField(max_length=255, null=True, blank=True)  # Original filename
+    incident_photo_type = models.CharField(max_length=50, null=True, blank=True)  # MIME type
     
     # Action Taken
     immediate_action = models.TextField(blank=True)
@@ -338,7 +341,24 @@ class IncidentReport(models.Model):
         ordering = ['-incident_date', '-incident_time']
         
     def __str__(self):
-        return f"Incident Report #{self.report_number} - {self.staff.user.get_full_name()} - {self.incident_date}"
+        if self.staff:
+            return f"Incident Report #{self.report_number} - {self.staff.user.get_full_name()} - {self.incident_date}"
+        elif self.department_head:
+            return f"Incident Report #{self.report_number} - {self.department_head.user.get_full_name()} - {self.incident_date}"
+        return f"Incident Report #{self.report_number} - {self.incident_date}"
+    
+    def save_image(self, image_file):
+        """Store an uploaded image file directly in the database"""
+        if image_file:
+            self.incident_photo_name = image_file.name
+            self.incident_photo_type = image_file.content_type
+            self.incident_photo = image_file.read()
+    
+    def get_image_url(self):
+        """Return a URL to display the stored image"""
+        if self.incident_photo:
+            return f"/serve-image/{self.id}/"
+        return None
         
     def set_incident_types(self, types_list):
         import json

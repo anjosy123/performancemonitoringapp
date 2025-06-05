@@ -1275,6 +1275,10 @@ def feedback_form(request, staff_id):
                 incident_report.reporter = request.user
                 incident_report.incident_description = incident_description
                 
+                # Handle photo upload using the database storage method
+                if 'incident_photo' in request.FILES:
+                    incident_report.save_image(request.FILES['incident_photo'])
+                
                 # Set reporter position based on user role
                 if request.user.is_staff:
                     reporter_position = "HR Director"
@@ -1405,6 +1409,10 @@ def feedback_form_department_head(request, department_head_id):
                 incident_report.department_head = department_head
                 incident_report.reporter = request.user
                 incident_report.incident_description = incident_description
+                
+                # Handle photo upload using the database storage method
+                if 'incident_photo' in request.FILES:
+                    incident_report.save_image(request.FILES['incident_photo'])
                 
                 # Set reporter position based on user role
                 if request.user.is_staff:
@@ -2367,3 +2375,17 @@ def clear_cookies(request):
     request.session.flush()
     
     return response
+
+def serve_image(request, report_id):
+    """Serve an image stored in the database"""
+    from django.http import HttpResponse
+    
+    report = get_object_or_404(IncidentReport, id=report_id)
+    
+    if report.incident_photo:
+        # If we have image data, serve it with the correct content type
+        response = HttpResponse(report.incident_photo, content_type=report.incident_photo_type or 'image/jpeg')
+        return response
+    
+    # If no image is found, return a 404
+    return HttpResponse(status=404)

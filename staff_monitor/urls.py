@@ -95,6 +95,9 @@ urlpatterns = [
     # Session management
     path('heartbeat/', views.heartbeat, name='heartbeat'),
     
+    # Image serving from database
+    path('serve-image/<int:report_id>/', views.serve_image, name='serve_image'),
+    
     # Add this at the end of the urlpatterns list
     path('debug/', views.debug_view, name='debug_view'),
     

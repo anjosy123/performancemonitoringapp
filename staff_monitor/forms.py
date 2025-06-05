@@ -221,20 +221,20 @@ class DepartmentHeadForm(forms.ModelForm):
         else:
             # Create new user for a new department head
             password = ''.join(random.choices(string.ascii_letters + string.digits, k=8))
-        
-        # Create User instance
-        user = User.objects.create_user(
-            username=self.cleaned_data['email'],
-            email=self.cleaned_data['email'],
-            password=password,
-            first_name=self.cleaned_data['first_name'],
-            last_name=self.cleaned_data['last_name'],
-            is_active=True
-        )
-        
-        # Create DepartmentHead instance
-        head = super().save(commit=False)
-        head.user = user
+            
+            # Create User instance
+            user = User.objects.create_user(
+                username=self.cleaned_data['email'],
+                email=self.cleaned_data['email'],
+                password=password,
+                first_name=self.cleaned_data['first_name'],
+                last_name=self.cleaned_data['last_name'],
+                is_active=True
+            )
+            
+            # Create DepartmentHead instance
+            head = super().save(commit=False)
+            head.user = user
         
         if commit:
             head.save()
@@ -282,7 +282,7 @@ class DepartmentHeadForm(forms.ModelForm):
                         html_message=html_message,
                         fail_silently=False,
                     )
-                    
+                
                     # Flag to indicate email was sent
                     head.email_sent = True
                 except Exception as e:
@@ -568,7 +568,7 @@ class IncidentReportForm(forms.ModelForm):
         })
     )
     
-    # Incident Photo
+    # Incident Photo - using a standard form field, not connected to model field
     incident_photo = forms.ImageField(
         required=False,
         widget=forms.FileInput(attrs={
@@ -616,17 +616,13 @@ class IncidentReportForm(forms.ModelForm):
     
     class Meta:
         model = IncidentReport
-        fields = [
-            'incident_date', 'incident_time', 'incident_location', 'report_number',
-            'incident_photo', 'immediate_action', 'follow_up_actions', 'prepared_by', 
-            'reporter_position'
-        ]
+        exclude = ['incident_photo', 'incident_photo_name', 'incident_photo_type']
         
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         # Set the initial value for prepared_by if user is available
         if 'initial' in kwargs and 'user' in kwargs['initial']:
-            self.fields['prepared_by'].initial = kwargs['initial']['user'].get_full_name() 
+            self.fields['prepared_by'].initial = kwargs['initial']['user'].get_full_name()
 
 # New form for bulk staff upload
 class StaffBulkUploadForm(forms.Form):
