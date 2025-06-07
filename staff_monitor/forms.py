@@ -246,7 +246,7 @@ class DepartmentHeadForm(forms.ModelForm):
                 
                 # Try to send email with login credentials
                 try:
-                    from django.core.mail import send_mail
+            from django.core.mail import send_mail
                     from django.template.loader import render_to_string
                     from django.utils.html import strip_tags
                     from django.conf import settings
@@ -274,15 +274,15 @@ class DepartmentHeadForm(forms.ModelForm):
                     html_message = render_to_string('staff_monitor/email/welcome_department_head.html', context)
                     plain_message = strip_tags(html_message)
                     
-                    send_mail(
+            send_mail(
                         'Welcome to Mariampur Hospital Performance Monitoring System',
                         plain_message,
                         None,  # Use DEFAULT_FROM_EMAIL from settings
-                        [user.email],
+                [user.email],
                         html_message=html_message,
-                        fail_silently=False,
-                    )
-                
+                fail_silently=False,
+            )
+        
                     # Flag to indicate email was sent
                     head.email_sent = True
                 except Exception as e:
@@ -568,7 +568,7 @@ class IncidentReportForm(forms.ModelForm):
         })
     )
     
-    # Incident Photo - using a standard form field, not connected to model field
+    # Incident Photo
     incident_photo = forms.ImageField(
         required=False,
         widget=forms.FileInput(attrs={
@@ -616,13 +616,17 @@ class IncidentReportForm(forms.ModelForm):
     
     class Meta:
         model = IncidentReport
-        exclude = ['incident_photo', 'incident_photo_name', 'incident_photo_type']
+        fields = [
+            'incident_date', 'incident_time', 'incident_location', 'report_number',
+            'incident_photo', 'immediate_action', 'follow_up_actions', 'prepared_by', 
+            'reporter_position'
+        ]
         
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         # Set the initial value for prepared_by if user is available
         if 'initial' in kwargs and 'user' in kwargs['initial']:
-            self.fields['prepared_by'].initial = kwargs['initial']['user'].get_full_name()
+            self.fields['prepared_by'].initial = kwargs['initial']['user'].get_full_name() 
 
 # New form for bulk staff upload
 class StaffBulkUploadForm(forms.Form):

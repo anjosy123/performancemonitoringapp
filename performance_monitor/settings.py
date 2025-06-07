@@ -79,11 +79,9 @@ TEMPLATES = [
         'APP_DIRS': True,
         'OPTIONS': {
             'context_processors': [
-                'django.template.context_processors.debug',
                 'django.template.context_processors.request',
                 'django.contrib.auth.context_processors.auth',
                 'django.contrib.messages.context_processors.messages',
-                'staff_monitor.context_processors.image_paths',
             ],
         },
     },
@@ -169,10 +167,6 @@ STATICFILES_DIRS = [
 MEDIA_URL = '/media/'
 MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 
-# Ensure media directory exists
-os.makedirs(MEDIA_ROOT, exist_ok=True)
-os.makedirs(os.path.join(MEDIA_ROOT, 'incident_photos'), exist_ok=True)
-
 # Login/Logout URLs
 LOGIN_URL = 'login'
 LOGIN_REDIRECT_URL = 'dashboard'
@@ -247,38 +241,5 @@ LOGGING = {
 
 # Default image paths - for fallbacks
 DEFAULT_IMAGE_PATHS = {
-    'hospital_front': 'images/hospital_front.png',  # Now using PNG instead of JPG
+    'hospital_front': 'images/hospital-logo.png',  # Fallback if hospital_front.JPG is missing
 }
-
-# CSRF settings
-CSRF_TRUSTED_ORIGINS = [
-    'https://performance-monitoring.onrender.com',
-    'https://hospital-performance-monitor.onrender.com',
-    'http://localhost:8000',
-    'http://127.0.0.1:8000',
-]
-
-# During deployment transition, be more permissive with cookies
-if not DEBUG and 'RENDER' in os.environ:
-    CSRF_COOKIE_SECURE = True
-    SESSION_COOKIE_SECURE = True
-    CSRF_USE_SESSIONS = True
-    CSRF_COOKIE_SAMESITE = 'Lax'
-    SESSION_COOKIE_SAMESITE = 'Lax'
-    CSRF_COOKIE_DOMAIN = None
-else:
-    CSRF_COOKIE_SECURE = False
-    SESSION_COOKIE_SECURE = False
-    CSRF_USE_SESSIONS = True
-
-# Configure for production media serving
-if not DEBUG and 'RENDER' in os.environ:
-    # Tell Django how to find media files in production
-    DEFAULT_FILE_STORAGE = 'django.core.files.storage.FileSystemStorage'
-    
-    # If using Render.com
-    MEDIA_ROOT = os.path.join(os.path.dirname(BASE_DIR), 'media')
-    
-    # Make sure media URL works with your hosting configuration
-    # This might need to be adjusted based on your specific hosting setup
-    MEDIA_URL = '/media/'

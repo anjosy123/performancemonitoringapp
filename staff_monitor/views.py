@@ -452,7 +452,7 @@ def report_list(request):
     try:
         if request.user.is_staff:
             # Admin sees all reports
-            reports = PerformanceReport.objects.all().order_by('-date')
+    reports = PerformanceReport.objects.all().order_by('-date')
         else:
             try:
                 # Check if the user is a department head
@@ -1275,10 +1275,6 @@ def feedback_form(request, staff_id):
                 incident_report.reporter = request.user
                 incident_report.incident_description = incident_description
                 
-                # Handle photo upload using the database storage method
-                if 'incident_photo' in request.FILES:
-                    incident_report.save_image(request.FILES['incident_photo'])
-                
                 # Set reporter position based on user role
                 if request.user.is_staff:
                     reporter_position = "HR Director"
@@ -1409,10 +1405,6 @@ def feedback_form_department_head(request, department_head_id):
                 incident_report.department_head = department_head
                 incident_report.reporter = request.user
                 incident_report.incident_description = incident_description
-                
-                # Handle photo upload using the database storage method
-                if 'incident_photo' in request.FILES:
-                    incident_report.save_image(request.FILES['incident_photo'])
                 
                 # Set reporter position based on user role
                 if request.user.is_staff:
@@ -2294,10 +2286,6 @@ def custom_login(request):
     if request.user.is_authenticated:
         return redirect('dashboard')
     
-    # Generate a fresh CSRF token to ensure it's properly set
-    from django.middleware.csrf import get_token
-    get_token(request)
-    
     # Show login form
     next_url = request.GET.get('next', '/')
     return render(request, 'staff_monitor/login.html', {'next': next_url})
@@ -2355,37 +2343,3 @@ def debug_db_connection(request):
             "debug_var": os.environ.get('DEBUG', 'Not set'),
             "database_settings": connection.settings_dict.get('ENGINE', 'Unknown')
         }, status=500)
-
-def clear_cookies(request):
-    """
-    Clear all cookies and session data to fix CSRF and login issues
-    """
-    from django.http import HttpResponse
-    
-    response = HttpResponse("Cookies cleared. <a href='/login/'>Return to login</a>")
-    
-    # Get all cookies
-    for key in request.COOKIES:
-        # Skip cookie deletion for debug tools
-        if key.startswith('_ga') or key.startswith('_gid'):
-            continue
-        response.delete_cookie(key)
-    
-    # Clear session
-    request.session.flush()
-    
-    return response
-
-def serve_image(request, report_id):
-    """Serve an image stored in the database"""
-    from django.http import HttpResponse
-    
-    report = get_object_or_404(IncidentReport, id=report_id)
-    
-    if report.incident_photo:
-        # If we have image data, serve it with the correct content type
-        response = HttpResponse(report.incident_photo, content_type=report.incident_photo_type or 'image/jpeg')
-        return response
-    
-    # If no image is found, return a 404
-    return HttpResponse(status=404)
