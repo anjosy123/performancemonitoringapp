@@ -82,6 +82,8 @@ TEMPLATES = [
                 'django.template.context_processors.request',
                 'django.contrib.auth.context_processors.auth',
                 'django.contrib.messages.context_processors.messages',
+                'django.template.context_processors.media',  # Add media context processor
+                'staff_monitor.context_processors.media_settings',  # Add our custom context processor
             ],
         },
     },

@@ -1,4 +1,4 @@
-# staff_monitor/views.py
+﻿# staff_monitor/views.py
 
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required, user_passes_test
@@ -24,6 +24,11 @@ from django.views.decorators.csrf import csrf_protect
 import logging
 import os
 from django.db import connection
+from django.core.files.uploadedfile import InMemoryUploadedFile, TemporaryUploadedFile
+from django.core.files.base import ContentFile
+import sys
+from io import BytesIO
+from PIL import Image
 
 # Create logger
 logger = logging.getLogger(__name__)
@@ -118,6 +123,26 @@ def can_perform_action(user, privilege_name):
 # Original is_admin function for compatibility
 def is_admin(user):
     return user.is_staff
+
+@login_required
+@user_passes_test(lambda u: can_perform_action(u, 'can_delete_reports') or u.is_staff)
+def delete_report(request, report_id):
+    try:
+        report = get_object_or_404(PerformanceReport, id=report_id)
+        
+        # Create appropriate success message based on whether it's a staff or department head report
+        if report.staff:
+            report_info = f"Performance report for {report.staff.user.get_full_name()} on {report.date}"
+        elif report.department_head:
+            report_info = f"Performance report for {report.department_head.user.get_full_name()} on {report.date}"
+        else:
+            report_info = f"Performance report on {report.date}"
+            
+        report.delete()
+        messages.success(request, f'{report_info} deleted successfully.')
+    except PerformanceReport.DoesNotExist:
+        messages.error(request, 'Report not found.')
+    return redirect('report_list')
 
 @login_required
 def dashboard(request):
@@ -448,179 +473,19 @@ def performance_form_department_head(request, department_head_id):
     })
 
 @login_required
-def report_list(request):
-    try:
-        if request.user.is_staff:
-            # Admin sees all reports
-    reports = PerformanceReport.objects.all().order_by('-date')
-        else:
-            try:
-                # Check if the user is a department head
-                department_head = DepartmentHead.objects.get(user=request.user)
-                
-                # Check if HR head with all-reports privilege
-                if department_head.is_hr_head and hasattr(department_head, 'privileges') and department_head.privileges.can_view_all_reports:
-                    reports = PerformanceReport.objects.exclude(department_head=department_head).order_by('-date')
-                elif department_head.department.name.lower() == "hr" or (department_head.subdepartment and department_head.subdepartment.name.lower() == "hr"):
-                    reports = PerformanceReport.objects.exclude(department_head=department_head).order_by('-date')
-                else:
-                    if department_head.subdepartment is None:
-                        reports = PerformanceReport.objects.filter(
-                            models.Q(staff__department=department_head.department) | 
-                            models.Q(department_head__department=department_head.department)
-                        ).exclude(department_head=department_head).order_by('-date')
-                    else:
-                        managed_staff_ids = department_head.managed_staff.values_list('id', flat=True)
-                        reports = PerformanceReport.objects.filter(
-                            models.Q(staff_id__in=managed_staff_ids)
-                        ).exclude(department_head=department_head).order_by('-date')
-            except DepartmentHead.DoesNotExist:
-                reports = PerformanceReport.objects.none()
-        
-        return render(request, 'staff_monitor/report_list.html', {
-            'reports': reports,
-            'rating_choices': PerformanceReport.RATING_CHOICES
-        })
-    except Exception as e:
-        messages.error(request, f"Error loading reports: {str(e)}")
-        return redirect('dashboard')
-
-@login_required
-def incident_report_list(request):
-    try:
-        # Check permissions (same as performance reports)
-        if request.user.is_staff:
-            # Admin sees all reports
-            is_authorized = True
-            # Get all incident reports
-            reports = IncidentReport.objects.all().order_by('-incident_date', '-incident_time')
-        else:
-            try:
-                # Check if the user is a department head
-                department_head = DepartmentHead.objects.get(user=request.user)
-                
-                # Check if HR head with all-reports privilege
-                if department_head.is_hr_head and hasattr(department_head, 'privileges') and department_head.privileges.can_view_all_reports:
-                    is_authorized = True
-                    # HR head sees all reports except their own
-                    reports = IncidentReport.objects.exclude(
-                        department_head=department_head
-                    ).order_by('-incident_date', '-incident_time')
-                elif department_head.department.name.lower() == "hr" or (department_head.subdepartment and department_head.subdepartment.name.lower() == "hr"):
-                    is_authorized = True
-                    # HR department or subdepartment sees all reports except their own
-                    reports = IncidentReport.objects.exclude(
-                        department_head=department_head
-                    ).order_by('-incident_date', '-incident_time')
-                else:
-                    # Regular department head is authorized to see their department's reports
-                    is_authorized = True
-                    
-                    if department_head.subdepartment is None:
-                        # Main department head sees all reports from their department except their own
-                        reports = IncidentReport.objects.filter(
-                            models.Q(staff__department=department_head.department) |
-                            models.Q(department_head__department=department_head.department)
-                        ).exclude(
-                            department_head=department_head
-                        ).order_by('-incident_date', '-incident_time')
-                    else:
-                        # Subdepartment head sees only reports for staff assigned to them, not their own
-                        managed_staff_ids = department_head.managed_staff.values_list('id', flat=True)
-                        reports = IncidentReport.objects.filter(
-                            models.Q(staff_id__in=managed_staff_ids)
-                        ).exclude(
-                            department_head=department_head
-                        ).order_by('-incident_date', '-incident_time')
-                        
-                        # Add debug message to check if reports are being found
-                        print(f"Found {reports.count()} incident reports for subdepartment head {department_head.user.get_full_name()}")
-                        print(f"Managed staff IDs for incidents: {list(managed_staff_ids)}")
-            except DepartmentHead.DoesNotExist:
-                is_authorized = False
-                reports = IncidentReport.objects.none()
-        
-        if not is_authorized:
-            messages.error(request, "You do not have permission to view incident reports.")
-            return redirect('dashboard')
-        
-        # Get departments for filter
-        departments = Department.objects.all().order_by('name')
-            
-        # Pass the reports to the template
-        return render(request, 'staff_monitor/incident_report_list.html', {
-            'reports': reports,
-            'departments': departments,
-            'status_choices': IncidentReport.STATUS_CHOICES
-        })
-        
-    except Exception as e:
-        messages.error(request, f"Error loading incident reports: {str(e)}")
-        return redirect('dashboard')
-
-@login_required
-@user_passes_test(lambda u: can_perform_action(u, 'can_add_department_head') or u.is_staff)
-def add_superintendent(request):
-    if request.method == 'POST':
-        form = DepartmentHeadForm(request.POST)
-        if form.is_valid():
-            department_head = form.save()
-            
-            # Check if email was sent
-            if hasattr(department_head, 'email_sent'):
-                if department_head.email_sent:
-                    messages.success(request, 'Department Head added successfully. Login credentials have been sent to their email.')
-                else:
-                    # Email failed to send - use SweetAlert to display credentials
-                    # Store the credentials in session to be accessed by JavaScript
-                    request.session['show_credentials'] = {
-                        'name': f"{department_head.user.first_name} {department_head.user.last_name}",
-                        'username': department_head.user.email,
-                        'password': department_head.user_password,
-                        'department': department_head.department.name
-                    }
-                    
-                    # Basic success message
-                    messages.success(request, 'Department Head added successfully.')
-                    messages.warning(request, 'Email delivery failed. Login credentials will be displayed on the next screen.')
-            else:
-                messages.success(request, 'Department Head added successfully.')
-                
-            return redirect('dashboard')
-    else:
-        form = DepartmentHeadForm()
-    return render(request, 'staff_monitor/add_department_head.html', {'form': form})
-
-@login_required
-@user_passes_test(lambda u: can_perform_action(u, 'can_add_staff') or u.is_staff)
-def add_staff(request):
-    if request.method == 'POST':
-        form = StaffForm(request.POST)
-        if form.is_valid():
-            try:
-                staff = form.save()
-                
-                messages.success(request, 'Staff added successfully.')
-                
-                return redirect('dashboard')
-            except forms.ValidationError as e:
-                # Add validation errors back to the form
-                form.add_error(None, str(e))
-            except Exception as e:
-                # Handle any other unexpected errors
-                messages.error(request, f"An error occurred: {str(e)}")
-        else:
-            messages.error(request, 'Please correct the errors below.')
-    else:
-        form = StaffForm()
-    return render(request, 'staff_monitor/add_staff.html', {'form': form})
-
-@login_required
 @user_passes_test(lambda u: can_perform_action(u, 'can_delete_reports') or u.is_staff)
 def delete_report(request, report_id):
     try:
         report = get_object_or_404(PerformanceReport, id=report_id)
-        report_info = f"Performance report for {report.staff.user.get_full_name()} on {report.date}"
+        
+        # Create appropriate success message based on whether it's a staff or department head report
+        if report.staff:
+            report_info = f"Performance report for {report.staff.user.get_full_name()} on {report.date}"
+        elif report.department_head:
+            report_info = f"Performance report for {report.department_head.user.get_full_name()} on {report.date}"
+        else:
+            report_info = f"Performance report on {report.date}"
+            
         report.delete()
         messages.success(request, f'{report_info} deleted successfully.')
     except PerformanceReport.DoesNotExist:
@@ -1217,6 +1082,76 @@ def get_subdepartments(request, department_id):
         print(f"Error in get_subdepartments: {str(e)}")
         return JsonResponse({'error': str(e)}, status=500)
 
+def handle_incident_photo_upload(photo, report_number):
+    """
+    Custom handler for incident photo uploads. 
+    This function renames the uploaded photo using the incident report number.
+    
+    Args:
+        photo: The uploaded file object
+        report_number: The incident report number to use in the filename
+        
+    Returns:
+        A new InMemoryUploadedFile object with the renamed file
+    """
+    if not photo:
+        return None
+    
+    # Format the new filename - replace any special characters that could cause issues
+    # in filenames with underscores
+    safe_report_number = report_number.replace('/', '_').replace('-', '_').replace(' ', '_')
+    file_extension = os.path.splitext(photo.name)[1].lower()
+    new_filename = f"incident_{safe_report_number}{file_extension}"
+    
+    # For images, we can process them to ensure proper format
+    try:
+        # If it's an image, we'll process it using PIL
+        img = Image.open(photo)
+        
+        # Create a BytesIO object to hold the processed image
+        output = BytesIO()
+        
+        # Save the image to the BytesIO object in its original format
+        if file_extension == '.jpg' or file_extension == '.jpeg':
+            img.save(output, format='JPEG', quality=90)
+        elif file_extension == '.png':
+            img.save(output, format='PNG')
+        elif file_extension == '.gif':
+            img.save(output, format='GIF')
+        else:
+            # For other formats, default to JPEG
+            img.save(output, format='JPEG', quality=90)
+            file_extension = '.jpg'
+            new_filename = f"incident_{safe_report_number}{file_extension}"
+            
+        # Get the file content from the BytesIO object
+        output.seek(0)
+        
+        # Create a new InMemoryUploadedFile with the processed image
+        new_photo = InMemoryUploadedFile(
+            output,
+            'ImageField',
+            new_filename,
+            f'image/{file_extension[1:]}',
+            sys.getsizeof(output),
+            None
+        )
+        return new_photo
+        
+    except Exception as e:
+        # If processing fails for any reason, just rename the original file
+        print(f"Error processing image: {str(e)}")
+        content = photo.read()
+        photo.seek(0)
+        return InMemoryUploadedFile(
+            ContentFile(content),
+            'ImageField',
+            new_filename,
+            photo.content_type,
+            len(content),
+            None
+        )
+
 @login_required
 def feedback_form(request, staff_id):
     staff = get_object_or_404(Staff, id=staff_id)
@@ -1303,6 +1238,13 @@ def feedback_form(request, staff_id):
                     
                     # Create the report number
                     incident_report.report_number = f"IR-{date_str}-{staff.id}-{existing_count + 1:03d}"
+                
+                # Process the uploaded photo and rename it based on the report number
+                if 'incident_photo' in request.FILES:
+                    photo = request.FILES['incident_photo']
+                    processed_photo = handle_incident_photo_upload(photo, incident_report.report_number)
+                    if processed_photo:
+                        incident_report.incident_photo = processed_photo
                 
                 # Set status
                 incident_report.status = 'reported'
@@ -1434,6 +1376,13 @@ def feedback_form_department_head(request, department_head_id):
                     
                     # Create the report number
                     incident_report.report_number = f"IR-{date_str}-DH{department_head.id}-{existing_count + 1:03d}"
+                
+                # Process the uploaded photo and rename it based on the report number
+                if 'incident_photo' in request.FILES:
+                    photo = request.FILES['incident_photo']
+                    processed_photo = handle_incident_photo_upload(photo, incident_report.report_number)
+                    if processed_photo:
+                        incident_report.incident_photo = processed_photo
                 
                 # Set status
                 incident_report.status = 'reported'
@@ -1612,7 +1561,15 @@ def toggle_hr_status(request, head_id):
 def delete_incident_report(request, report_id):
     try:
         report = get_object_or_404(IncidentReport, id=report_id)
-        report_info = f"Incident report #{report.report_number} for {report.staff.user.get_full_name()}"
+        
+        # Create appropriate success message based on whether it's a staff or department head report
+        if report.staff:
+            report_info = f"Incident report #{report.report_number} for {report.staff.user.get_full_name()}"
+        elif report.department_head:
+            report_info = f"Incident report #{report.report_number} for {report.department_head.user.get_full_name()}"
+        else:
+            report_info = f"Incident report #{report.report_number}"
+            
         report.delete()
         messages.success(request, f'{report_info} deleted successfully.')
     except IncidentReport.DoesNotExist:
@@ -2343,3 +2300,184 @@ def debug_db_connection(request):
             "debug_var": os.environ.get('DEBUG', 'Not set'),
             "database_settings": connection.settings_dict.get('ENGINE', 'Unknown')
         }, status=500)
+
+@login_required
+def report_list(request):
+    try:
+        if request.user.is_staff:
+            # Admin sees all reports
+            reports = PerformanceReport.objects.all().order_by('-date')
+        else:
+            try:
+                # Check if the user is a department head
+                department_head = DepartmentHead.objects.get(user=request.user)
+                
+                # Check if HR head with all-reports privilege
+                if department_head.is_hr_head and hasattr(department_head, 'privileges') and department_head.privileges.can_view_all_reports:
+                    reports = PerformanceReport.objects.exclude(department_head=department_head).order_by('-date')
+                elif department_head.department.name.lower() == "hr" or (department_head.subdepartment and department_head.subdepartment.name.lower() == "hr"):
+                    reports = PerformanceReport.objects.exclude(department_head=department_head).order_by('-date')
+                else:
+                    if department_head.subdepartment is None:
+                        reports = PerformanceReport.objects.filter(
+                            models.Q(staff__department=department_head.department) | 
+                            models.Q(department_head__department=department_head.department)
+                        ).exclude(department_head=department_head).order_by('-date')
+                    else:
+                        managed_staff_ids = department_head.managed_staff.values_list('id', flat=True)
+                        reports = PerformanceReport.objects.filter(
+                            models.Q(staff_id__in=managed_staff_ids)
+                        ).exclude(department_head=department_head).order_by('-date')
+            except DepartmentHead.DoesNotExist:
+                reports = PerformanceReport.objects.none()
+        
+        return render(request, 'staff_monitor/report_list.html', {
+            'reports': reports,
+            'rating_choices': PerformanceReport.RATING_CHOICES
+        })
+    except Exception as e:
+        messages.error(request, f"Error loading reports: {str(e)}")
+        return redirect('dashboard')
+
+@login_required
+def incident_report_list(request):
+    try:
+        # Check permissions (same as performance reports)
+        if request.user.is_staff:
+            # Admin sees all reports
+            is_authorized = True
+            # Get all incident reports
+            reports = IncidentReport.objects.all().order_by('-incident_date', '-incident_time')
+        else:
+            try:
+                # Check if the user is a department head
+                department_head = DepartmentHead.objects.get(user=request.user)
+                
+                # Check if HR head with all-reports privilege
+                if department_head.is_hr_head and hasattr(department_head, 'privileges') and department_head.privileges.can_view_all_reports:
+                    is_authorized = True
+                    # HR head sees all reports except their own
+                    reports = IncidentReport.objects.exclude(
+                        department_head=department_head
+                    ).order_by('-incident_date', '-incident_time')
+                elif department_head.department.name.lower() == "hr" or (department_head.subdepartment and department_head.subdepartment.name.lower() == "hr"):
+                    is_authorized = True
+                    # HR department or subdepartment sees all reports except their own
+                    reports = IncidentReport.objects.exclude(
+                        department_head=department_head
+                    ).order_by('-incident_date', '-incident_time')
+                else:
+                    # Regular department head is authorized to see their department's reports
+                    is_authorized = True
+                    
+                    if department_head.subdepartment is None:
+                        # Main department head sees all reports from their department except their own
+                        reports = IncidentReport.objects.filter(
+                            models.Q(staff__department=department_head.department) |
+                            models.Q(department_head__department=department_head.department)
+                        ).exclude(
+                            department_head=department_head
+                        ).order_by('-incident_date', '-incident_time')
+                    else:
+                        # Subdepartment head sees only reports for staff assigned to them, not their own
+                        managed_staff_ids = department_head.managed_staff.values_list('id', flat=True)
+                        reports = IncidentReport.objects.filter(
+                            models.Q(staff_id__in=managed_staff_ids)
+                        ).exclude(
+                            department_head=department_head
+                        ).order_by('-incident_date', '-incident_time')
+                        
+                        # Add debug message to check if reports are being found
+                        print(f"Found {reports.count()} incident reports for subdepartment head {department_head.user.get_full_name()}")
+                        print(f"Managed staff IDs for incidents: {list(managed_staff_ids)}")
+            except DepartmentHead.DoesNotExist:
+                is_authorized = False
+                reports = IncidentReport.objects.none()
+        
+        if not is_authorized:
+            messages.error(request, "You do not have permission to view incident reports.")
+            return redirect('dashboard')
+        
+        # Get departments for filter
+        departments = Department.objects.all().order_by('name')
+            
+        # Pass the reports to the template
+        return render(request, 'staff_monitor/incident_report_list.html', {
+            'reports': reports,
+            'departments': departments,
+            'status_choices': IncidentReport.STATUS_CHOICES
+        })
+        
+    except Exception as e:
+        messages.error(request, f"Error loading incident reports: {str(e)}")
+        return redirect('dashboard')
+
+@login_required
+@user_passes_test(lambda u: can_perform_action(u, 'can_add_department_head') or u.is_staff)
+def add_superintendent(request):
+    if request.method == 'POST':
+        form = DepartmentHeadForm(request.POST)
+        if form.is_valid():
+            department_head = form.save()
+            
+            # Check if email was sent
+            if hasattr(department_head, 'email_sent'):
+                if department_head.email_sent:
+                    messages.success(request, 'Department Head added successfully. Login credentials have been sent to their email.')
+                else:
+                    # Email failed to send - use SweetAlert to display credentials
+                    # Store the credentials in session to be accessed by JavaScript
+                    request.session['show_credentials'] = {
+                        'name': f"{department_head.user.first_name} {department_head.user.last_name}",
+                        'username': department_head.user.email,
+                        'password': department_head.user_password,
+                        'department': department_head.department.name
+                    }
+                    
+                    # Basic success message
+                    messages.success(request, 'Department Head added successfully.')
+                    messages.warning(request, 'Email delivery failed. Login credentials will be displayed on the next screen.')
+            else:
+                messages.success(request, 'Department Head added successfully.')
+                
+            return redirect('dashboard')
+    else:
+        form = DepartmentHeadForm()
+    return render(request, 'staff_monitor/add_department_head.html', {'form': form})
+
+@login_required
+@user_passes_test(lambda u: can_perform_action(u, 'can_add_staff') or u.is_staff)
+def add_staff(request):
+    if request.method == 'POST':
+        form = StaffForm(request.POST)
+        if form.is_valid():
+            try:
+                staff = form.save()
+                
+                # Check if email was sent
+                if hasattr(staff, 'email_sent'):
+                    if staff.email_sent:
+                        messages.success(request, 'Staff member added successfully. Login credentials have been sent to their email.')
+                    else:
+                        # Email failed to send - use SweetAlert to display credentials
+                        # Store the credentials in session to be accessed by JavaScript
+                        request.session['show_credentials'] = {
+                            'name': f"{staff.user.first_name} {staff.user.last_name}",
+                            'username': staff.user.email,
+                            'password': staff.user_password,
+                            'department': staff.department.name
+                        }
+                        
+                        # Basic success message
+                        messages.success(request, 'Staff member added successfully.')
+                        messages.warning(request, 'Email delivery failed. Login credentials will be displayed on the next screen.')
+                else:
+                    messages.success(request, 'Staff member added successfully.')
+                
+                return redirect('dashboard')
+            except Exception as e:
+                messages.error(request, f"Error adding staff: {str(e)}")
+                return redirect('add_staff')
+    else:
+        form = StaffForm()
+    return render(request, 'staff_monitor/add_staff.html', {'form': form})

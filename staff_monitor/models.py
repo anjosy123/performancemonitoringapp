@@ -338,7 +338,12 @@ class IncidentReport(models.Model):
         ordering = ['-incident_date', '-incident_time']
         
     def __str__(self):
-        return f"Incident Report #{self.report_number} - {self.staff.user.get_full_name()} - {self.incident_date}"
+        if self.staff:
+            return f"Incident Report #{self.report_number} - {self.staff.user.get_full_name()} - {self.incident_date}"
+        elif self.department_head:
+            return f"Incident Report #{self.report_number} - {self.department_head.user.get_full_name()} - {self.incident_date}"
+        else:
+            return f"Incident Report #{self.report_number} - {self.incident_date}"
         
     def set_incident_types(self, types_list):
         import json
@@ -363,3 +368,38 @@ class IncidentReport(models.Model):
     def get_individuals_involved(self):
         import json
         return json.loads(self.individuals_involved)
+        
+    @property
+    def photo_url(self):
+        """Safe way to get the incident photo URL"""
+        from django.conf import settings
+        import os
+        
+        if self.incident_photo:
+            try:
+                # First, try the direct path
+                direct_path = os.path.join(settings.MEDIA_ROOT, self.incident_photo.name)
+                if os.path.exists(direct_path):
+                    return self.incident_photo.url
+                    
+                # Try with report number converted to have underscores instead of hyphens
+                safe_report_number = self.report_number.replace('-', '_')
+                potential_filename = f"incident_{safe_report_number}.jpg"
+                potential_path = os.path.join(settings.MEDIA_ROOT, 'incident_photos', potential_filename)
+                
+                if os.path.exists(potential_path):
+                    return f"{settings.MEDIA_URL}incident_photos/{potential_filename}"
+                    
+                # Also try with other common image extensions
+                for ext in ['.png', '.jpeg', '.gif']:
+                    alt_filename = f"incident_{safe_report_number}{ext}"
+                    alt_path = os.path.join(settings.MEDIA_ROOT, 'incident_photos', alt_filename)
+                    if os.path.exists(alt_path):
+                        return f"{settings.MEDIA_URL}incident_photos/{alt_filename}"
+                        
+            except (ValueError, AttributeError, FileNotFoundError) as e:
+                print(f"Error retrieving photo URL: {str(e)}")
+                pass
+        
+        # Return default image if original photo doesn't exist
+        return f"{settings.STATIC_URL}images/image-not-found.png"

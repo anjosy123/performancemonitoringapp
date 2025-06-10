@@ -1,3 +1,6 @@
+from django.contrib.auth.models import User
+import os, random, string
+
 def save(self, commit=True):
     # Check if we're updating an existing user
     if self.instance and self.instance.pk and hasattr(self.instance, 'user'):

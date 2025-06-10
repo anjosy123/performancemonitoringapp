@@ -344,7 +344,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 cancelButtonColor: '#6c757d'
             }).then((result) => {
                 if (result.isConfirmed) {
-                    window.location.href = `/delete_report/${reportId}/`;
+                    window.location.href = `{% url 'delete_report' 0 %}`.replace('0', reportId);
                 }
             });
         });

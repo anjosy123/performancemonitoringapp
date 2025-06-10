@@ -58,6 +58,7 @@
                         <th>Role</th>
                         <th>Date</th>
                         <th>Location</th>
+                        <th>Photo</th>
                         <th>Status</th>
                         <th>Actions</th>
                     </tr>
@@ -89,6 +90,13 @@
                             </td>
                             <td>{{ report.incident_date }}</td>
                             <td>{{ report.incident_location }}</td>
+                            <td class="text-center">
+                                {% if report.incident_photo %}
+                                    <i class="fas fa-camera text-primary" data-bs-toggle="tooltip" title="Photo evidence available"></i>
+                                {% else %}
+                                    <i class="fas fa-times text-muted" data-bs-toggle="tooltip" title="No photo attached"></i>
+                                {% endif %}
+                            </td>
                             <td>
                                 <span class="badge {% if report.status == 'reported' %}bg-warning{% elif report.status == 'under_investigation' %}bg-info{% elif report.status == 'resolved' %}bg-success{% else %}bg-secondary{% endif %}">
                                     {{ report.get_status_display }}
@@ -115,7 +123,7 @@
                         </tr>
                     {% empty %}
                         <tr>
-                            <td colspan="8" class="text-center py-4">
+                            <td colspan="9" class="text-center py-4">
                                 <i class="fas fa-exclamation-triangle text-muted me-2"></i>No incident reports found
                             </td>
                         </tr>
@@ -266,6 +274,12 @@ document.addEventListener('DOMContentLoaded', function() {
     const rows = table.getElementsByClassName('report-row');
     const noResults = document.getElementById('noResults');
 
+    // Initialize tooltips
+    var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'))
+    var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
+        return new bootstrap.Tooltip(tooltipTriggerEl)
+    })
+
     // Remove duplicate department options
     const uniqueDepartments = new Set();
     Array.from(departmentFilter.options).forEach(option => {
@@ -288,7 +302,7 @@ document.addEventListener('DOMContentLoaded', function() {
             const department = row.cells[2].textContent.toLowerCase();
             const role = row.cells[3].textContent.toLowerCase();
             const location = row.cells[5].textContent.toLowerCase();
-            const status = row.cells[6].textContent.toLowerCase();
+            const status = row.cells[7].textContent.toLowerCase();
             
             const matchesSearch = reportNumber.includes(searchTerm) || 
                                   name.includes(searchTerm) || 

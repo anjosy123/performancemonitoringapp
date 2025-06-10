@@ -4,12 +4,11 @@ from .models import DepartmentHead, Staff, PerformanceReport, Department, SubDep
 from django.forms import inlineformset_factory
 import random
 import string
-from datetime import date, datetime
+from datetime import date
 
 # Add required imports for bulk upload functionality
 import pandas as pd
 from django.core.exceptions import ValidationError
-import openpyxl
 import uuid
 import os
 
@@ -218,6 +217,10 @@ class DepartmentHeadForm(forms.ModelForm):
                 user.username = email  # Update username to match email
                 
             user.save()
+            
+            # Update DepartmentHead instance
+            head = super().save(commit)
+            return head
         else:
             # Create new user for a new department head
             password = ''.join(random.choices(string.ascii_letters + string.digits, k=8))
@@ -235,18 +238,16 @@ class DepartmentHeadForm(forms.ModelForm):
             # Create DepartmentHead instance
             head = super().save(commit=False)
             head.user = user
-        
-        if commit:
-            head.save()
             
-            # If this is a new user with password
-            if 'password' in locals():
+            if commit:
+                head.save()
+                
                 # Store the generated password to inform the user
                 head.user_password = password
                 
                 # Try to send email with login credentials
                 try:
-            from django.core.mail import send_mail
+                    from django.core.mail import send_mail
                     from django.template.loader import render_to_string
                     from django.utils.html import strip_tags
                     from django.conf import settings
@@ -268,28 +269,28 @@ class DepartmentHeadForm(forms.ModelForm):
                         'last_name': user.last_name,
                         'email': user.email,
                         'password': password,
-                        'login_url': login_url  # Use the dynamically determined URL
+                        'login_url': login_url 
                     }
                     
                     html_message = render_to_string('staff_monitor/email/welcome_department_head.html', context)
                     plain_message = strip_tags(html_message)
                     
-            send_mail(
+                    send_mail(
                         'Welcome to Mariampur Hospital Performance Monitoring System',
                         plain_message,
-                        None,  # Use DEFAULT_FROM_EMAIL from settings
-                [user.email],
+                        None,  
+                        [user.email],
                         html_message=html_message,
-                fail_silently=False,
-            )
-        
+                        fail_silently=False,
+                    )
+                    
                     # Flag to indicate email was sent
                     head.email_sent = True
                 except Exception as e:
                     # Flag to indicate email failed
                     head.email_sent = False
                     print(f"Email sending failed: {str(e)}")
-            
+                
             return head
 
 class StaffForm(forms.ModelForm):

@@ -2,25 +2,25 @@
 {% extends 'staff_monitor/base.html' %}
 
 {% block content %}
-<div class="container mb-4" id="printArea">
-    <div class="card">
-        <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+<div class="container mb-5" id="printArea">
+    <div class="card shadow-sm">
+        <div class="card-header bg-gradient-danger text-white d-flex justify-content-between align-items-center py-3">
             <h3 class="mb-0">
                 <i class="fas fa-exclamation-triangle me-2"></i>Incident Report
             </h3>
             <div class="non-printable">
                 <div class="btn-group">
-                    <button type="button" class="btn btn-primary" onclick="printReport()">
+                    <button type="button" class="btn btn-light" onclick="printReport()">
                         <i class="fas fa-print me-2"></i>Print
                     </button>
-                    <a href="{% url 'incident_report_list' %}" class="btn btn-secondary">
+                    <a href="{% url 'incident_report_list' %}" class="btn btn-outline-light">
                         <i class="fas fa-arrow-left me-2"></i>Back
                     </a>
                 </div>
             </div>
         </div>
 
-        <div class="card-body">
+        <div class="card-body p-4">
             <div class="report-header mb-4">
                 <div class="text-center mb-4">
                     <h2 class="report-title">MARIAMPUR HOSPITAL</h2>
@@ -32,7 +32,7 @@
                         <div class="col-md-6">
                             <div class="report-field">
                                 <span class="report-label">Report Number:</span>
-                                <span class="report-value">{{ report.report_number }}</span>
+                                <span class="report-value fw-bold text-danger">{{ report.report_number }}</span>
                             </div>
                         </div>
                         <div class="col-md-6">
@@ -46,11 +46,13 @@
             </div>
 
             <div class="report-section mb-4">
-                <h5 class="section-title">Person Information</h5>
+                <h5 class="section-title">
+                    <i class="fas fa-user me-2"></i>Person Information
+                </h5>
                 <div class="table-responsive">
-                    <table class="table table-bordered">
+                    <table class="table table-bordered table-hover">
                         <tr>
-                            <th width="30%">Name</th>
+                            <th width="30%" class="bg-light">Name</th>
                             <td>
                                 {% if report.staff %}
                                     {{ report.staff.user.get_full_name }}
@@ -60,7 +62,7 @@
                             </td>
                         </tr>
                         <tr>
-                            <th>ID</th>
+                            <th class="bg-light">ID</th>
                             <td>
                                 {% if report.staff %}
                                     {{ report.staff.employee_id }}
@@ -70,7 +72,7 @@
                             </td>
                         </tr>
                         <tr>
-                            <th>Department</th>
+                            <th class="bg-light">Department</th>
                             <td>
                                 {% if report.staff %}
                                     {{ report.staff.department.name }}
@@ -80,7 +82,7 @@
                             </td>
                         </tr>
                         <tr>
-                            <th>Position</th>
+                            <th class="bg-light">Position</th>
                             <td>
                                 {% if report.staff %}
                                     {{ report.staff.position }}
@@ -94,25 +96,27 @@
             </div>
 
             <div class="report-section mb-4">
-                <h5 class="section-title">Incident Details</h5>
+                <h5 class="section-title">
+                    <i class="fas fa-info-circle me-2"></i>Incident Details
+                </h5>
                 <div class="table-responsive">
-                    <table class="table table-bordered">
+                    <table class="table table-bordered table-hover">
                         <tr>
-                            <th width="30%">Incident Date</th>
+                            <th width="30%" class="bg-light">Incident Date</th>
                             <td>{{ report.incident_date|date:"F d, Y" }}</td>
                         </tr>
                         <tr>
-                            <th>Incident Time</th>
+                            <th class="bg-light">Incident Time</th>
                             <td>{{ report.incident_time }}</td>
                         </tr>
                         <tr>
-                            <th>Location</th>
+                            <th class="bg-light">Location</th>
                             <td>{{ report.incident_location }}</td>
                         </tr>
                         <tr>
-                            <th>Status</th>
+                            <th class="bg-light">Status</th>
                             <td>
-                                <span class="badge {% if report.status == 'reported' %}bg-warning{% elif report.status == 'under_investigation' %}bg-info{% elif report.status == 'resolved' %}bg-success{% else %}bg-secondary{% endif %}">
+                                <span class="badge {% if report.status == 'reported' %}bg-warning{% elif report.status == 'under_investigation' %}bg-info{% elif report.status == 'resolved' %}bg-success{% else %}bg-secondary{% endif %} px-3 py-2">
                                     {{ report.get_status_display }}
                                 </span>
                             </td>
@@ -122,31 +126,36 @@
             </div>
 
             <div class="report-section mb-4">
-                <h5 class="section-title">Nature of Incident</h5>
-                <div class="incident-types mb-3">
-                    <ul class="list-unstyled row">
+                <h5 class="section-title">
+                    <i class="fas fa-exclamation-circle me-2"></i>Nature of Incident
+                </h5>
+                <div class="incident-types p-3 bg-light rounded mb-3">
+                    <div class="row">
                         {% for incident_type in incident_types %}
-                        <li class="col-md-6">
-                            <i class="fas fa-check-circle text-success me-2"></i>{{ incident_type }}
-                        </li>
+                        <div class="col-md-6 mb-2">
+                            <div class="d-flex align-items-center">
+                                <i class="fas fa-check-circle text-success me-2"></i>
+                                <span>{{ incident_type }}</span>
+                            </div>
+                        </div>
                         {% empty %}
-                        <li class="col-12">No incident types specified</li>
+                        <div class="col-12">No incident types specified</div>
                         {% endfor %}
-                    </ul>
+                    </div>
                 </div>
                 
                 {% if report.other_incident_type %}
-                <div class="other-incident mb-3">
-                    <strong>Other Incident Type:</strong>
+                <div class="other-incident mb-3 p-3 border rounded">
+                    <strong class="d-block mb-2">Other Incident Type:</strong>
                     <p class="mb-0">{{ report.other_incident_type }}</p>
                 </div>
                 {% endif %}
                 
                 {% if report.incident_description %}
                 <div class="incident-description mb-3">
-                    <div class="card">
-                        <div class="card-header bg-light">
-                            <strong>Detailed Description of Incident</strong>
+                    <div class="card border-danger">
+                        <div class="card-header bg-danger bg-opacity-10 text-danger">
+                            <i class="fas fa-file-alt me-2"></i><strong>Detailed Description of Incident</strong>
                         </div>
                         <div class="card-body">
                             <p class="mb-0">{{ report.incident_description|linebreaks }}</p>
@@ -159,10 +168,23 @@
                 <div class="incident-photo mb-3">
                     <div class="card">
                         <div class="card-header bg-light">
-                            <strong>Photo Evidence</strong>
+                            <i class="fas fa-camera me-2"></i><strong>Photo Evidence</strong>
                         </div>
                         <div class="card-body text-center">
-                            <img src="{{ report.incident_photo.url }}" alt="Incident Photo" class="img-fluid img-thumbnail" style="max-height: 400px;">
+                            <div id="incident-photo-container" class="position-relative">
+                                <div class="text-center mb-2" id="loading-indicator">
+                                    <div class="spinner-border text-primary" role="status">
+                                        <span class="visually-hidden">Loading image...</span>
+                                    </div>
+                                    <p class="mt-2 text-muted">Loading image...</p>
+                                </div>
+                                <img id="incident-photo" data-src="{{ report.photo_url }}" class="img-fluid img-thumbnail d-none" style="max-height: 400px; max-width: 100%;">
+                                <div id="error-message" class="alert alert-warning d-none mt-3">
+                                    <i class="fas fa-exclamation-triangle me-2"></i>
+                                    <span>Unable to load image. Photo not available.</span>
+                                </div>
+                            </div>
+                            <div class="mt-2 small text-muted photo-caption">Incident photo reference: {{ report.report_number }}</div>
                         </div>
                     </div>
                 </div>
@@ -170,25 +192,32 @@
             </div>
 
             <div class="report-section mb-4">
-                <h5 class="section-title">Related Parties</h5>
-                <div class="related-parties mb-3">
-                    <ul class="list-unstyled row">
+                <h5 class="section-title">
+                    <i class="fas fa-link me-2"></i>Related Parties
+                </h5>
+                <div class="related-parties p-3 bg-light rounded mb-3">
+                    <div class="row">
                         {% for party in related_parties %}
-                        <li class="col-md-6">
-                            <i class="fas fa-user-circle text-primary me-2"></i>{{ party }}
-                        </li>
+                        <div class="col-md-6 mb-2">
+                            <div class="d-flex align-items-center">
+                                <i class="fas fa-user-circle text-primary me-2"></i>
+                                <span>{{ party }}</span>
+                            </div>
+                        </div>
                         {% empty %}
-                        <li class="col-12">No related parties specified</li>
+                        <div class="col-12">No related parties specified</div>
                         {% endfor %}
-                    </ul>
+                    </div>
                 </div>
             </div>
 
             <div class="report-section mb-4">
-                <h5 class="section-title">Individuals Involved</h5>
+                <h5 class="section-title">
+                    <i class="fas fa-users me-2"></i>Individuals Involved
+                </h5>
                 <div class="table-responsive">
-                    <table class="table table-bordered">
-                        <thead>
+                    <table class="table table-bordered table-striped">
+                        <thead class="table-light">
                             <tr>
                                 <th>Name</th>
                                 <th>Department</th>
@@ -215,15 +244,17 @@
             </div>
 
             <div class="report-section mb-4">
-                <h5 class="section-title">Actions Taken</h5>
+                <h5 class="section-title">
+                    <i class="fas fa-tasks me-2"></i>Actions Taken
+                </h5>
                 <div class="table-responsive">
-                    <table class="table table-bordered">
+                    <table class="table table-bordered table-hover">
                         <tr>
-                            <th width="30%">Immediate Action</th>
+                            <th width="30%" class="bg-light">Immediate Action</th>
                             <td>{{ report.immediate_action|default:"No immediate action specified" }}</td>
                         </tr>
                         <tr>
-                            <th>Follow-up Actions</th>
+                            <th class="bg-light">Follow-up Actions</th>
                             <td>{{ report.follow_up_actions|default:"No follow-up actions specified" }}</td>
                         </tr>
                     </table>
@@ -231,28 +262,30 @@
             </div>
 
             <div class="report-section mb-4">
-                <h5 class="section-title">Report Preparation</h5>
+                <h5 class="section-title">
+                    <i class="fas fa-user-edit me-2"></i>Report Preparation
+                </h5>
                 <div class="table-responsive">
-                    <table class="table table-bordered">
+                    <table class="table table-bordered table-hover">
                         <tr>
-                            <th width="30%">Prepared By</th>
+                            <th width="30%" class="bg-light">Prepared By</th>
                             <td>{{ report.prepared_by }}</td>
                         </tr>
                         <tr>
-                            <th>Position/Role</th>
+                            <th class="bg-light">Position/Role</th>
                             <td>{{ report.reporter_position }}</td>
                         </tr>
                         <tr>
-                            <th>Reporter</th>
+                            <th class="bg-light">Reporter</th>
                             <td>{{ report.reporter.get_full_name }}</td>
                         </tr>
                         <tr>
-                            <th>Reported On</th>
+                            <th class="bg-light">Reported On</th>
                             <td>{{ report.created_at|date:"F d, Y" }} at {{ report.created_at|time:"H:i" }}</td>
                         </tr>
                         {% if report.updated_at != report.created_at %}
                         <tr>
-                            <th>Last Updated</th>
+                            <th class="bg-light">Last Updated</th>
                             <td>{{ report.updated_at|date:"F d, Y" }} at {{ report.updated_at|time:"H:i" }}</td>
                         </tr>
                         {% endif %}
@@ -260,22 +293,25 @@
                 </div>
             </div>
 
-            <div class="report-footer mt-5">
+            <div class="report-footer mt-5 pt-4 border-top">
                 <div class="row">
                     <div class="col-md-6">
                         <div class="signature-line">
                             <div class="line"></div>
-                            <div class="text-center">Signature of Reporter</div>
+                            <div class="text-center fw-bold">Signature of Reporter</div>
+                            <div class="text-center small text-muted">{{ report.reporter.get_full_name }}</div>
                         </div>
                     </div>
                     <div class="col-md-6">
                         <div class="signature-line">
                             <div class="line"></div>
-                            <div class="text-center">
+                            <div class="text-center fw-bold">
                                 {% if report.staff %}
                                     Signature of Staff Member
+                                    <div class="text-center small text-muted">{{ report.staff.user.get_full_name }}</div>
                                 {% elif report.department_head %}
                                     Signature of Department Head
+                                    <div class="text-center small text-muted">{{ report.department_head.user.get_full_name }}</div>
                                 {% endif %}
                             </div>
                         </div>
@@ -291,19 +327,22 @@
         font-weight: bold;
         color: #212529;
         margin-bottom: 0.5rem;
+        font-size: 1.8rem;
     }
     
     .report-subtitle {
         font-weight: 600;
         color: #495057;
         margin-bottom: 1.5rem;
+        font-size: 1.4rem;
     }
     
     .report-meta {
         background-color: #f8f9fa;
-        padding: 1rem;
+        padding: 1.25rem;
         border-radius: 0.5rem;
         border: 1px solid #dee2e6;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.05);
     }
     
     .report-field {
@@ -324,10 +363,32 @@
         background-color: #f8f9fa;
         padding: 0.75rem 1rem;
         border-radius: 0.5rem;
-        border-left: 4px solid #0d6efd;
-        margin-bottom: 1rem;
+        border-left: 4px solid #dc3545;
+        margin-bottom: 1.25rem;
         font-weight: 600;
         color: #212529;
+        display: flex;
+        align-items: center;
+        box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+    }
+    
+    .section-title i {
+        color: #dc3545;
+        margin-right: 0.5rem;
+    }
+    
+    .table {
+        box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+    }
+    
+    .table th {
+        background-color: #f8f9fa;
+        font-weight: 600;
+        vertical-align: middle;
+    }
+    
+    .table-hover tbody tr:hover {
+        background-color: rgba(220, 53, 69, 0.03);
     }
     
     .signature-line {
@@ -337,7 +398,7 @@
     .line {
         height: 1px;
         background-color: #000;
-        margin-bottom: 0.5rem;
+        margin-bottom: 0.75rem;
     }
     
     .report-header {
@@ -350,9 +411,24 @@
     .incident-photo img {
         max-width: 100%;
         height: auto;
-        box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        border-radius: 0.5rem;
     }
     
+    .badge {
+        font-weight: 500;
+        font-size: 0.9rem;
+    }
+    
+    .incident-types, .related-parties {
+        box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+    }
+    
+    .signature-line .text-center.small.text-muted {
+        color: #6c757d;
+    }
+
+    /* Print-specific styles */
     @media print {
         body {
             background-color: white;
@@ -367,14 +443,14 @@
         }
         
         .card {
-            border: none;
-            box-shadow: none;
+            border: none !important;
+            box-shadow: none !important;
         }
         
         .card-header {
             background: none !important;
             color: #000 !important;
-            padding: 0;
+            padding: 0 !important;
             margin-bottom: 1rem;
         }
         
@@ -383,17 +459,16 @@
         }
         
         .table {
-            border-collapse: collapse;
-        }
-        
-        .table th, .table td {
-            border: 1px solid #000 !important;
+            border: 1px solid #dee2e6 !important;
+            box-shadow: none !important;
         }
         
         .section-title {
-            background: none;
-            border-left: 2px solid #000;
-            padding: 0.25rem 0.5rem;
+            background: none !important;
+            border-left: 2px solid #000 !important;
+            padding: 0.25rem 0.5rem !important;
+            margin-bottom: 1rem !important;
+            box-shadow: none !important;
         }
         
         .badge {
@@ -406,6 +481,26 @@
         .incident-photo img {
             max-width: 400px;
             max-height: 300px;
+            box-shadow: none;
+        }
+        
+        .report-meta {
+            background: none !important;
+            border: 1px solid #dee2e6 !important;
+            box-shadow: none !important;
+        }
+        
+        .bg-light {
+            background-color: #f8f9fa !important;
+            -webkit-print-color-adjust: exact;
+        }
+        
+        .report-section {
+            page-break-inside: avoid;
+        }
+        
+        .report-footer {
+            margin-top: 3rem !important;
         }
     }
 </style>
@@ -415,13 +510,95 @@
         window.print();
     }
     
-    {% if print_mode %}
-    // Automatically trigger printing when in print mode
-    window.addEventListener('DOMContentLoaded', function() {
+    // Handle image loading with better error handling
+    document.addEventListener('DOMContentLoaded', function() {
+        const imageElem = document.getElementById('incident-photo');
+        const loadingIndicator = document.getElementById('loading-indicator');
+        const errorMessage = document.getElementById('error-message');
+        
+        if (imageElem) {
+            // Get the image URL from data attribute
+            const imageUrl = imageElem.getAttribute('data-src');
+            
+            // Function to try loading alternative image URLs
+            function tryAlternativeUrls(reportNumber) {
+                // Define possible image formats
+                const formats = ['jpg', 'jpeg', 'png', 'gif'];
+                
+                // Try different variations
+                const normalizedReportNumber = reportNumber.replace('-', '_');
+                
+                // Try direct media URL
+                for (const format of formats) {
+                    const alternateUrl = `/media/incident_photos/incident_${normalizedReportNumber}.${format}`;
+                    checkImageExists(alternateUrl, function(exists) {
+                        if (exists && !imageLoaded) {
+                            imageElem.src = alternateUrl;
+                            showImage();
+                        }
+                    });
+                }
+                
+                // If still not loaded, use fallback
+                setTimeout(function() {
+                    if (!imageLoaded) {
+                        showError();
+                    }
+                }, 3000); // 3 second timeout
+            }
+            
+            // Check if an image exists at the URL
+            function checkImageExists(url, callback) {
+                const img = new Image();
+                img.onload = function() { callback(true); };
+                img.onerror = function() { callback(false); };
+                img.src = url;
+            }
+            
+            // Flag to track if image was successfully loaded
+            let imageLoaded = false;
+            
+            // Function to show the image and hide loading indicator
+            function showImage() {
+                imageLoaded = true;
+                loadingIndicator.classList.add('d-none');
+                imageElem.classList.remove('d-none');
+            }
+            
+            // Function to show error message
+            function showError() {
+                loadingIndicator.classList.add('d-none');
+                errorMessage.classList.remove('d-none');
+            }
+            
+            // If there's an image URL, try loading it
+            if (imageUrl && imageUrl !== "") {
+                // Set the image source
+                imageElem.src = imageUrl;
+                
+                // When image loads successfully
+                imageElem.onload = function() {
+                    showImage();
+                };
+                
+                // When image fails to load
+                imageElem.onerror = function() {
+                    // Try alternative URLs based on the report number
+                    const reportNumber = document.querySelector('.photo-caption').textContent.split(': ')[1].trim();
+                    tryAlternativeUrls(reportNumber);
+                };
+            } else {
+                // No image URL provided
+                showError();
+            }
+        }
+        
+        // Automatically trigger printing when in print mode
+        {% if print_mode %}
         setTimeout(function() {
             printReport();
-        }, 500); // Small delay to ensure the page is fully rendered
+        }, 1000); // 1 second delay to ensure the page is fully rendered
+        {% endif %}
     });
-    {% endif %}
 </script>
 {% endblock %} 
