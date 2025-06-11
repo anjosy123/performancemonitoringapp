@@ -99,6 +99,11 @@ class DepartmentHeadForm(forms.ModelForm):
             'id': 'subdepartment-select'
         })
     )
+    # Hidden field to store additional subdepartments
+    additional_subdepartments = forms.CharField(
+        required=False,
+        widget=forms.HiddenInput()
+    )
     designation = forms.CharField(
         required=True,
         initial="Department Head",
@@ -170,6 +175,12 @@ class DepartmentHeadForm(forms.ModelForm):
         department = cleaned_data.get('department')
         subdepartment = cleaned_data.get('subdepartment')
         
+        # Get additional subdepartments from POST data
+        additional_subdepartments = self.data.getlist('additional_subdepartments')
+        
+        # Store for later use in save method
+        self.additional_subdepartments_ids = additional_subdepartments
+        
         # If subdepartment is selected, make sure it belongs to the selected department
         if subdepartment and department and subdepartment.department != department:
             # If there's a mismatch, raise validation error
@@ -177,6 +188,16 @@ class DepartmentHeadForm(forms.ModelForm):
             
             # Reset subdepartment queryset to show valid choices
             self.fields['subdepartment'].queryset = SubDepartment.objects.filter(department=department)
+        
+        # Validate additional subdepartments if any
+        if additional_subdepartments:
+            for subdept_id in additional_subdepartments:
+                try:
+                    subdept = SubDepartment.objects.get(id=subdept_id)
+                    if subdept.department != department:
+                        self.add_error(None, f'Subdepartment {subdept.name} does not belong to the selected department.')
+                except SubDepartment.DoesNotExist:
+                    self.add_error(None, f'Subdepartment with ID {subdept_id} does not exist.')
         
         return cleaned_data
 
@@ -220,6 +241,29 @@ class DepartmentHeadForm(forms.ModelForm):
             
             # Update DepartmentHead instance
             head = super().save(commit)
+            
+            # Process additional subdepartments if any
+            if hasattr(self, 'additional_subdepartments_ids') and self.additional_subdepartments_ids and commit:
+                # Store the primary subdepartment in managed_subdepartments as well
+                primary_subdept = self.cleaned_data.get('subdepartment')
+                subdepartments = []
+                
+                if primary_subdept:
+                    subdepartments.append(primary_subdept)
+                
+                # Add additional subdepartments
+                for subdept_id in self.additional_subdepartments_ids:
+                    try:
+                        subdept = SubDepartment.objects.get(id=subdept_id)
+                        subdepartments.append(subdept)
+                    except SubDepartment.DoesNotExist:
+                        pass
+                
+                # Clear existing and add new
+                head.managed_subdepartments.clear()
+                for subdept in subdepartments:
+                    head.managed_subdepartments.add(subdept)
+            
             return head
         else:
             # Create new user for a new department head
@@ -241,6 +285,27 @@ class DepartmentHeadForm(forms.ModelForm):
             
             if commit:
                 head.save()
+                
+                # Process additional subdepartments if any
+                if hasattr(self, 'additional_subdepartments_ids') and self.additional_subdepartments_ids:
+                    # Store the primary subdepartment in managed_subdepartments as well
+                    primary_subdept = self.cleaned_data.get('subdepartment')
+                    subdepartments = []
+                    
+                    if primary_subdept:
+                        subdepartments.append(primary_subdept)
+                    
+                    # Add additional subdepartments
+                    for subdept_id in self.additional_subdepartments_ids:
+                        try:
+                            subdept = SubDepartment.objects.get(id=subdept_id)
+                            subdepartments.append(subdept)
+                        except SubDepartment.DoesNotExist:
+                            pass
+                    
+                    # Add all subdepartments
+                    for subdept in subdepartments:
+                        head.managed_subdepartments.add(subdept)
                 
                 # Store the generated password to inform the user
                 head.user_password = password

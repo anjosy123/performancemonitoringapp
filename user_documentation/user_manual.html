@@ -1,0 +1,625 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mariampur Hospital - Staff Performance Monitoring System User Manual</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .cover-page {
+            text-align: center;
+            margin-bottom: 50px;
+            page-break-after: always;
+        }
+        .hospital-logo {
+            font-size: 48px;
+            color: #0d6efd;
+            margin-bottom: 20px;
+        }
+        h1 {
+            color: #1a237e;
+            margin-top: 40px;
+            page-break-before: always;
+        }
+        h2 {
+            color: #0d6efd;
+            margin-top: 30px;
+            border-bottom: 1px solid #dee2e6;
+            padding-bottom: 10px;
+        }
+        h3 {
+            color: #198754;
+            margin-top: 25px;
+        }
+        .table-of-contents {
+            background-color: #f8f9fa;
+            padding: 20px;
+            border-radius: 5px;
+            margin: 20px 0;
+            page-break-after: always;
+        }
+        .table-of-contents ul {
+            list-style-type: none;
+            padding-left: 0;
+        }
+        .table-of-contents ul ul {
+            padding-left: 20px;
+        }
+        .table-of-contents a {
+            text-decoration: none;
+            color: #0d6efd;
+        }
+        .role-section {
+            page-break-before: always;
+        }
+        .screenshot {
+            max-width: 100%;
+            border: 1px solid #dee2e6;
+            border-radius: 5px;
+            margin: 15px 0;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+        .note {
+            background-color: #fff3cd;
+            border-left: 4px solid #ffc107;
+            padding: 15px;
+            margin: 15px 0;
+            border-radius: 0 5px 5px 0;
+        }
+        .tip {
+            background-color: #d1e7dd;
+            border-left: 4px solid #198754;
+            padding: 15px;
+            margin: 15px 0;
+            border-radius: 0 5px 5px 0;
+        }
+        .warning {
+            background-color: #f8d7da;
+            border-left: 4px solid #dc3545;
+            padding: 15px;
+            margin: 15px 0;
+            border-radius: 0 5px 5px 0;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+        }
+        table, th, td {
+            border: 1px solid #dee2e6;
+        }
+        th {
+            background-color: #f8f9fa;
+            padding: 10px;
+            text-align: left;
+        }
+        td {
+            padding: 10px;
+        }
+        footer {
+            text-align: center;
+            margin-top: 40px;
+            color: #6c757d;
+            font-size: 0.9rem;
+            border-top: 1px solid #dee2e6;
+            padding-top: 20px;
+        }
+        @media print {
+            body {
+                font-size: 12pt;
+            }
+            h1 {
+                font-size: 24pt;
+            }
+            h2 {
+                font-size: 18pt;
+            }
+            h3 {
+                font-size: 14pt;
+            }
+            .no-print {
+                display: none;
+            }
+            a {
+                text-decoration: none;
+                color: #000;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Cover Page -->
+    <div class="cover-page">
+        <div class="hospital-logo">
+            <i class="fas fa-hospital-user"></i>
+        </div>
+        <h1>Mariampur Hospital</h1>
+        <h2>Staff Performance Monitoring System</h2>
+        <h3>User Manual</h3>
+        <p>Version 1.0</p>
+        <p>Last Updated: May 2023</p>
+    </div>
+
+    <!-- Table of Contents -->
+    <div class="table-of-contents">
+        <h2>Table of Contents</h2>
+        <ul>
+            <li><a href="#introduction">1. Introduction</a></li>
+            <li><a href="#getting-started">2. Getting Started</a>
+                <ul>
+                    <li><a href="#system-requirements">2.1 System Requirements</a></li>
+                    <li><a href="#accessing-system">2.2 Accessing the System</a></li>
+                    <li><a href="#login">2.3 Login Process</a></li>
+                </ul>
+            </li>
+            <li><a href="#admin-guide">3. Administrator Guide</a>
+                <ul>
+                    <li><a href="#admin-dashboard">3.1 Dashboard Overview</a></li>
+                    <li><a href="#managing-department-heads">3.2 Managing Department Heads</a></li>
+                    <li><a href="#managing-staff">3.3 Managing Staff</a></li>
+                    <li><a href="#viewing-reports">3.4 Viewing Reports</a></li>
+                    <li><a href="#hr-privileges">3.5 Managing HR Privileges</a></li>
+                    <li><a href="#bulk-upload">3.6 Bulk Upload Staff</a></li>
+                </ul>
+            </li>
+            <li><a href="#hr-head-guide">4. HR Department Head Guide</a>
+                <ul>
+                    <li><a href="#hr-dashboard">4.1 Dashboard Overview</a></li>
+                    <li><a href="#hr-staff-management">4.2 Staff Management</a></li>
+                    <li><a href="#hr-department-head-management">4.3 Department Head Management</a></li>
+                    <li><a href="#hr-reports">4.4 Reports</a></li>
+                    <li><a href="#hr-privileges-view">4.5 HR Privileges</a></li>
+                </ul>
+            </li>
+            <li><a href="#department-head-guide">5. Department Head Guide</a>
+                <ul>
+                    <li><a href="#dept-dashboard">5.1 Dashboard Overview</a></li>
+                    <li><a href="#dept-staff">5.2 Managing Department Staff</a></li>
+                    <li><a href="#dept-reports">5.3 Performance Reports</a></li>
+                    <li><a href="#subdept-heads">5.4 Subdepartment Heads</a></li>
+                </ul>
+            </li>
+            <li><a href="#subdepartment-head-guide">6. Subdepartment Head Guide</a>
+                <ul>
+                    <li><a href="#subdept-dashboard">6.1 Dashboard Overview</a></li>
+                    <li><a href="#subdept-staff">6.2 Managing Assigned Staff</a></li>
+                    <li><a href="#subdept-reports">6.3 Performance Reports</a></li>
+                </ul>
+            </li>
+            <li><a href="#mobile-usage">7. Mobile Usage Guide</a>
+                <ul>
+                    <li><a href="#mobile-navigation">7.1 Navigating on Mobile Devices</a></li>
+                    <li><a href="#mobile-tables">7.2 Working with Tables on Mobile</a></li>
+                    <li><a href="#mobile-forms">7.3 Completing Forms on Mobile</a></li>
+                </ul>
+            </li>
+            <li><a href="#common-tasks">8. Common Tasks</a>
+                <ul>
+                    <li><a href="#evaluating-staff">8.1 Evaluating Staff Performance</a></li>
+                    <li><a href="#recording-incidents">8.2 Recording Incidents</a></li>
+                    <li><a href="#searching-filtering">8.3 Searching and Filtering</a></li>
+                </ul>
+            </li>
+            <li><a href="#troubleshooting">9. Troubleshooting</a></li>
+        </ul>
+    </div>
+
+    <!-- Introduction -->
+    <h1 id="introduction">1. Introduction</h1>
+    <p>Welcome to the Mariampur Hospital Staff Performance Monitoring System. This comprehensive system is designed to streamline the process of monitoring, evaluating, and managing staff performance across all departments in the hospital.</p>
+    <p>This user manual provides detailed instructions for using the system based on your role within the organization. Whether you are an administrator, HR department head, department head, or subdepartment head, this guide will help you navigate the system effectively.</p>
+    <p>The Staff Performance Monitoring System enables:</p>
+    <ul>
+        <li>Standardized performance evaluations</li>
+        <li>Incident reporting and tracking</li>
+        <li>Department and staff management</li>
+        <li>Comprehensive reporting and analytics</li>
+        <li>Role-based access control</li>
+    </ul>
+
+    <!-- Getting Started -->
+    <h1 id="getting-started">2. Getting Started</h1>
+    
+    <h2 id="system-requirements">2.1 System Requirements</h2>
+    <p>The Staff Performance Monitoring System is a web-based application that works on most modern devices. For optimal performance, we recommend:</p>
+    <table>
+        <tr>
+            <th>Component</th>
+            <th>Minimum Requirements</th>
+            <th>Recommended</th>
+        </tr>
+        <tr>
+            <td>Web Browser</td>
+            <td>Chrome 88+, Firefox 85+, Safari 14+, Edge 88+</td>
+            <td>Latest version of Chrome or Firefox</td>
+        </tr>
+        <tr>
+            <td>Screen Resolution</td>
+            <td>1280 x 720</td>
+            <td>1920 x 1080 or higher</td>
+        </tr>
+        <tr>
+            <td>Internet Connection</td>
+            <td>1 Mbps</td>
+            <td>5+ Mbps</td>
+        </tr>
+        <tr>
+            <td>Mobile Device</td>
+            <td>iOS 13+ or Android 9+</td>
+            <td>Latest iOS or Android version</td>
+        </tr>
+    </table>
+    <p>The system is fully responsive and works on desktops, laptops, tablets, and smartphones.</p>
+
+    <h2 id="accessing-system">2.2 Accessing the System</h2>
+    <p>To access the Staff Performance Monitoring System:</p>
+    <ol>
+        <li>Open your web browser</li>
+        <li>Navigate to the hospital's staff portal</li>
+        <li>Click on the "Performance Monitoring System" link</li>
+    </ol>
+    <div class="note">
+        <strong>Note:</strong> For security reasons, the system can only be accessed from within the hospital network or via secure VPN connection when accessing remotely.
+    </div>
+
+    <h2 id="login">2.3 Login Process</h2>
+    <p>To log in to the system:</p>
+    <ol>
+        <li>Enter your username (typically your employee ID or email address)</li>
+        <li>Enter your password</li>
+        <li>Click the "Login" button</li>
+    </ol>
+    <div class="tip">
+        <strong>Tip:</strong> If you've forgotten your password, click the "Forgot Password" link and follow the instructions to reset it.
+    </div>
+    <p>After your first login, you will be prompted to change your password.</p>
+
+    <!-- Administrator Guide -->
+    <div class="role-section">
+        <h1 id="admin-guide">3. Administrator Guide</h1>
+        <p>As an administrator, you have full access to all features of the Staff Performance Monitoring System.</p>
+
+        <h2 id="admin-dashboard">3.1 Dashboard Overview</h2>
+        <p>Upon logging in as an administrator, you will see the administrator dashboard with several key sections:</p>
+        <ul>
+            <li><strong>Quick Links</strong> - Access to key system functions</li>
+            <li><strong>Department Head Evaluation Section</strong> - For evaluating department heads</li>
+        </ul>
+        <p>The quick links section provides buttons for:</p>
+        <ul>
+            <li>View Department Heads</li>
+            <li>View Staff</li>
+            <li>View Reports (Performance Appraisal and Incident Reports)</li>
+            <li>Manage HR Privileges</li>
+            <li>Bulk Upload Staff</li>
+        </ul>
+
+        <h2 id="managing-department-heads">3.2 Managing Department Heads</h2>
+        <p>To manage department heads:</p>
+        <ol>
+            <li>Click on "View Department Heads" from the dashboard quick links</li>
+            <li>You will see a list of all department heads with their details</li>
+            <li>Use the search and filter options to find specific department heads</li>
+            <li>Click on "Evaluate" to perform a performance evaluation for a department head</li>
+            <li>Click on "Incident" to record an incident related to a department head</li>
+        </ol>
+
+        <h2 id="managing-staff">3.3 Managing Staff</h2>
+        <p>To manage staff members:</p>
+        <ol>
+            <li>Click on "View Staff" from the dashboard quick links</li>
+            <li>You will see a list of all staff members with their details</li>
+            <li>Use the search and filter options to find specific staff members</li>
+            <li>Click on "Edit" to modify staff information</li>
+            <li>Click on "Delete" to remove a staff member (requires confirmation)</li>
+        </ol>
+
+        <h2 id="viewing-reports">3.4 Viewing Reports</h2>
+        <p>To access reports:</p>
+        <ol>
+            <li>Click on "View Reports" dropdown from the dashboard quick links</li>
+            <li>Select either "Performance Appraisal" or "Incident Reports"</li>
+        </ol>
+        <p>Both report types allow filtering by department, date range, and other criteria.</p>
+
+        <h2 id="hr-privileges">3.5 Managing HR Privileges</h2>
+        <p>To manage HR privileges:</p>
+        <ol>
+            <li>Click on "Manage HR Privileges" from the dashboard quick links</li>
+            <li>View a list of HR department heads with their current privileges</li>
+            <li>Click "Edit" next to a user to modify their privileges</li>
+            <li>Check or uncheck privilege options as needed</li>
+        </ol>
+
+        <h2 id="bulk-upload">3.6 Bulk Upload Staff</h2>
+        <p>To bulk upload staff members:</p>
+        <ol>
+            <li>Click on "Bulk Upload Staff" from the dashboard quick links</li>
+            <li>Download the template CSV file provided</li>
+            <li>Fill in staff information according to the template format</li>
+            <li>Upload the completed CSV file</li>
+        </ol>
+    </div>
+
+    <!-- HR Department Head Guide -->
+    <div class="role-section">
+        <h1 id="hr-head-guide">4. HR Department Head Guide</h1>
+        <p>As an HR Department Head, you have access to staff management and reporting features.</p>
+
+        <h2 id="hr-dashboard">4.1 Dashboard Overview</h2>
+        <p>Upon logging in as an HR Department Head, you will see the HR dashboard with several key sections based on your privileges:</p>
+        <ul>
+            <li><strong>Staff Management</strong> - If you have staff management privileges</li>
+            <li><strong>Department Heads</strong> - If you have department head management privileges</li>
+            <li><strong>Reports</strong> - If you have report viewing privileges</li>
+            <li><strong>HR Settings</strong> - To view your current privileges</li>
+            <li><strong>Departments</strong> - If you have department management privileges</li>
+        </ul>
+
+        <h2 id="hr-staff-management">4.2 Staff Management</h2>
+        <p>If you have staff management privileges, you can:</p>
+        <ol>
+            <li>Click on "Manage Staff" to access the staff list</li>
+            <li>View all staff members across departments</li>
+            <li>Add new staff members by clicking "Add Staff"</li>
+            <li>Edit existing staff by clicking "Edit" next to a staff member</li>
+        </ol>
+
+        <h2 id="hr-department-head-management">4.3 Department Head Management</h2>
+        <p>If you have department head management privileges, you can:</p>
+        <ol>
+            <li>Click on "Manage Department Heads" to access the department head list</li>
+            <li>View all department heads across departments</li>
+            <li>Add new department heads by clicking "Add Department Head"</li>
+            <li>Edit existing department heads by clicking "Edit"</li>
+        </ol>
+
+        <h2 id="hr-reports">4.4 Reports</h2>
+        <p>If you have report viewing privileges, you can:</p>
+        <ol>
+            <li>Click on "Performance Appraisal" to view performance reports</li>
+            <li>Click on "Incident Reports" to view incident reports</li>
+            <li>Filter reports by department, date range, or other criteria</li>
+        </ol>
+
+        <h2 id="hr-privileges-view">4.5 HR Privileges</h2>
+        <p>To view your current HR privileges:</p>
+        <ol>
+            <li>Click on "View HR Privileges" from the dashboard</li>
+            <li>Review the list of privileges and their current status (enabled/disabled)</li>
+        </ol>
+    </div>
+
+    <!-- Department Head Guide -->
+    <div class="role-section">
+        <h1 id="department-head-guide">5. Department Head Guide</h1>
+        <p>As a Department Head, you are responsible for managing staff in your department and evaluating both staff and subdepartment heads.</p>
+
+        <h2 id="dept-dashboard">5.1 Dashboard Overview</h2>
+        <p>Upon logging in as a Department Head, you will see the department head dashboard with several key sections:</p>
+        <ul>
+            <li><strong>Department Staff</strong> - Access to staff management in your department</li>
+            <li><strong>Performance Reports</strong> - Access to performance and incident reports</li>
+            <li><strong>Subdepartment Heads</strong> - Manage subdepartment heads in your department</li>
+            <li><strong>Department Staff List</strong> - List of all staff in your department</li>
+        </ul>
+
+        <h2 id="dept-staff">5.2 Managing Department Staff</h2>
+        <p>To manage staff in your department:</p>
+        <ol>
+            <li>View the Department Staff list at the bottom of your dashboard</li>
+            <li>Click on "Evaluate" to perform a performance evaluation for a staff member</li>
+            <li>Click on "Incident" to record an incident related to a staff member</li>
+        </ol>
+
+        <h2 id="dept-reports">5.3 Performance Reports</h2>
+        <p>To access reports for your department:</p>
+        <ol>
+            <li>Click on "Performance Appraisal" to view performance reports</li>
+            <li>Click on "Incident Reports" to view incident reports</li>
+        </ol>
+
+        <h2 id="subdept-heads">5.4 Subdepartment Heads</h2>
+        <p>To manage subdepartment heads:</p>
+        <ol>
+            <li>Click on "View Subdepartment Heads" to expand the subdepartment heads section</li>
+            <li>View a list of all subdepartment heads in your department</li>
+            <li>Click on "Assign Staff" to assign staff members to a subdepartment head</li>
+            <li>Click on "Evaluate" to perform a performance evaluation for a subdepartment head</li>
+            <li>Click on "Incident" to record an incident related to a subdepartment head</li>
+        </ol>
+    </div>
+
+    <!-- Subdepartment Head Guide -->
+    <div class="role-section">
+        <h1 id="subdepartment-head-guide">6. Subdepartment Head Guide</h1>
+        <p>As a Subdepartment Head, you are responsible for managing staff assigned to you by the main department head.</p>
+
+        <h2 id="subdept-dashboard">6.1 Dashboard Overview</h2>
+        <p>Upon logging in as a Subdepartment Head, you will see the subdepartment head dashboard with several key sections:</p>
+        <ul>
+            <li><strong>Performance Reports</strong> - Access to performance and incident reports</li>
+            <li><strong>Assigned Staff List</strong> - List of all staff assigned to you</li>
+        </ul>
+
+        <h2 id="subdept-staff">6.2 Managing Assigned Staff</h2>
+        <p>To manage staff assigned to you:</p>
+        <ol>
+            <li>View the Assigned Staff list at the bottom of your dashboard</li>
+            <li>Click on "Evaluate" to perform a performance evaluation for a staff member</li>
+            <li>Click on "Incident" to record an incident related to a staff member</li>
+        </ol>
+
+        <h2 id="subdept-reports">6.3 Performance Reports</h2>
+        <p>To access reports for your assigned staff:</p>
+        <ol>
+            <li>Click on "Performance Appraisal" to view performance reports</li>
+            <li>Click on "Incident Reports" to view incident reports</li>
+        </ol>
+    </div>
+
+    <!-- Mobile Usage Guide -->
+    <div class="role-section">
+        <h1 id="mobile-usage">7. Mobile Usage Guide</h1>
+        <p>The Staff Performance Monitoring System is fully responsive and optimized for mobile devices. This section provides guidance on using the system on smartphones and tablets.</p>
+
+        <h2 id="mobile-navigation">7.1 Navigating on Mobile Devices</h2>
+        <p>When using the system on a mobile device:</p>
+        <ul>
+            <li>The menu may collapse into a hamburger menu (≡) in the top corner</li>
+            <li>Cards and buttons will stack vertically for easier access</li>
+            <li>Some less critical information may be hidden to save space</li>
+            <li>Touch interactions replace mouse hover effects</li>
+        </ul>
+        <div class="tip">
+            <strong>Tip:</strong> Rotate your device to landscape orientation for a wider view when working with tables or forms.
+        </div>
+
+        <h2 id="mobile-tables">7.2 Working with Tables on Mobile</h2>
+        <p>On mobile devices, tables transform into a card-like format:</p>
+        <ul>
+            <li>Each row becomes a card with labeled data fields</li>
+            <li>Column headers appear as labels next to each data point</li>
+            <li>Action buttons may stack vertically for easier access</li>
+            <li>Some icons may be hidden on very small screens to save space</li>
+        </ul>
+        <p>To interact with tables on mobile:</p>
+        <ol>
+            <li>Scroll vertically to view all records</li>
+            <li>Tap on action buttons to perform operations</li>
+            <li>Use the search field to quickly find specific records</li>
+        </ol>
+
+        <h2 id="mobile-forms">7.3 Completing Forms on Mobile</h2>
+        <p>When filling out forms on mobile devices:</p>
+        <ul>
+            <li>Form fields will expand to full width for easier input</li>
+            <li>The keyboard will automatically appear when you tap on a text field</li>
+            <li>Specialized input fields (date pickers, dropdown menus) are optimized for touch</li>
+            <li>Long forms may be split into sections with "Next" buttons</li>
+        </ul>
+        <div class="note">
+            <strong>Note:</strong> For complex forms like performance evaluations, you may find it easier to use a tablet or desktop computer, but all functionality is available on smartphones.
+        </div>
+    </div>
+
+    <!-- Common Tasks -->
+    <h1 id="common-tasks">8. Common Tasks</h1>
+
+    <h2 id="evaluating-staff">8.1 Evaluating Staff Performance</h2>
+    <p>Performance evaluation is a key function of the system. To evaluate staff or department heads:</p>
+    <ol>
+        <li>Locate the staff member or department head in the relevant list</li>
+        <li>Click the "Evaluate" button</li>
+        <li>Fill in the performance evaluation form:
+            <ul>
+                <li>Select the evaluation period</li>
+                <li>Rate performance in various categories</li>
+                <li>Provide comments and feedback</li>
+                <li>Set goals for improvement if needed</li>
+            </ul>
+        </li>
+        <li>Click "Submit" to save the evaluation</li>
+    </ol>
+
+    <h2 id="recording-incidents">8.2 Recording Incidents</h2>
+    <p>To record an incident:</p>
+    <ol>
+        <li>Locate the staff member or department head in the relevant list</li>
+        <li>Click the "Incident" button</li>
+        <li>Fill in the incident report form:
+            <ul>
+                <li>Select the incident date and time</li>
+                <li>Choose the incident type</li>
+                <li>Provide a detailed description</li>
+                <li>Upload any relevant photos or documents</li>
+            </ul>
+        </li>
+        <li>Click "Submit" to save the incident report</li>
+    </ol>
+
+    <h2 id="searching-filtering">8.3 Searching and Filtering</h2>
+    <p>Most list views in the system offer search and filter capabilities:</p>
+    <ul>
+        <li><strong>Search Bar</strong> - Type to search by name, department, position, or other relevant fields</li>
+        <li><strong>Department Filter</strong> - Select a specific department to view only staff or department heads in that department</li>
+        <li><strong>Reset Button</strong> - Clear all search and filter criteria</li>
+    </ul>
+
+    <!-- Troubleshooting -->
+    <h1 id="troubleshooting">9. Troubleshooting</h1>
+    <table>
+        <tr>
+            <th>Issue</th>
+            <th>Possible Cause</th>
+            <th>Solution</th>
+        </tr>
+        <tr>
+            <td>Unable to log in</td>
+            <td>Incorrect credentials or account locked</td>
+            <td>
+                <ul>
+                    <li>Verify username and password</li>
+                    <li>Check Caps Lock key</li>
+                    <li>Use "Forgot Password" link</li>
+                </ul>
+            </td>
+        </tr>
+        <tr>
+            <td>Missing features or permissions</td>
+            <td>Insufficient privileges for your role</td>
+            <td>
+                <ul>
+                    <li>Verify your role and assigned privileges</li>
+                    <li>Contact administrator to request additional permissions if needed</li>
+                </ul>
+            </td>
+        </tr>
+        <tr>
+            <td>Tables not displaying properly on mobile</td>
+            <td>Browser compatibility or screen size issues</td>
+            <td>
+                <ul>
+                    <li>Try rotating your device to landscape orientation</li>
+                    <li>Update your browser to the latest version</li>
+                    <li>Clear browser cache and reload the page</li>
+                </ul>
+            </td>
+        </tr>
+        <tr>
+            <td>Unable to submit forms</td>
+            <td>Missing required fields or validation errors</td>
+            <td>
+                <ul>
+                    <li>Check for error messages on the form</li>
+                    <li>Fill in all required fields (marked with *)</li>
+                    <li>Ensure data is in the correct format</li>
+                </ul>
+            </td>
+        </tr>
+    </table>
+
+    <footer>
+        <p>Mariampur Hospital - Staff Performance Monitoring System User Manual</p>
+        <p>For internal use only. Copyright © 2023 Mariampur Hospital.</p>
+    </footer>
+
+    <div class="no-print">
+        <h2>How to Convert to PDF</h2>
+        <p>To convert this HTML document to PDF:</p>
+        <ol>
+            <li>In your web browser, press Ctrl+P (or Cmd+P on Mac) to open the print dialog</li>
+            <li>Select "Save as PDF" as the destination/printer</li>
+            <li>Click "Save" or "Print" to generate the PDF</li>
+            <li>Save the file with a name like "Mariampur_Hospital_User_Manual.pdf"</li>
+        </ol>
+    </div>
+</body>
+</html> 

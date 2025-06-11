@@ -35,6 +35,7 @@ class DepartmentHead(models.Model):
     appointment_date = models.DateField(null=True, blank=True)
     managed_staff = models.ManyToManyField('Staff', related_name='supervisors', blank=True)
     is_hr_head = models.BooleanField(default=False)
+    managed_subdepartments = models.ManyToManyField(SubDepartment, related_name='department_heads', blank=True)
 
     def __str__(self):
         return f"{self.user.get_full_name()} - {self.department}"

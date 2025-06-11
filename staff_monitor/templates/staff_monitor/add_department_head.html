@@ -41,13 +41,33 @@
                     <div class="row">
                         <div class="col-md-6 mb-3">
                             <label class="form-label">Department</label>
-                            <label class="form-label" style="color: red;">If this person is the Head of the Department. Please don't select the subdepartment</label>
+                            <label class="form-label" style="color: red;">If this person is the Head of the Department. Please don't select any subdepartment</label>
                             {{ form.department }}
                         </div>
                         <div class="col-md-6 mb-3" id="subdepartment-container">
-                            <label class="form-label">Sub Department</label>
-                            {{ form.subdepartment }}
-                            <small class="text-muted" id="no-subdepts-msg" style="display: none;">No subdepartments available for the selected department</small>
+                            <label class="form-label">Sub Departments</label>
+                            <div class="subdepartments-checkbox-container">
+                                <div id="subdepartment-checkboxes" class="border rounded p-3" style="max-height: 200px; overflow-y: auto;">
+                                    <div id="loading-subdepts" class="text-center py-2">
+                                        <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
+                                        Loading subdepartments...
+                                    </div>
+                                    <div id="no-subdepts-msg" class="text-muted py-2" style="display: none;">
+                                        No subdepartments available for the selected department
+                                    </div>
+                                    <div id="subdepartment-checkbox-list">
+                                        <!-- Checkboxes will be dynamically added here -->
+                                    </div>
+                                </div>
+                                <small class="text-muted mt-1 d-block">
+                                    <i class="fas fa-info-circle me-1"></i>
+                                    You can select multiple subdepartments if this person manages more than one.
+                                </small>
+                            </div>
+                            <!-- Keep the original select for form submission compatibility -->
+                            <div style="display: none;">
+                                {{ form.subdepartment }}
+                            </div>
                         </div>
                     </div>
 
@@ -129,6 +149,29 @@
     .text-muted {
         font-size: 0.875rem;
     }
+    .subdepartments-checkbox-container {
+        margin-top: 0.5rem;
+    }
+    .form-check {
+        padding: 0.5rem;
+        margin-bottom: 0.25rem;
+        border-radius: 0.25rem;
+    }
+    .form-check:hover {
+        background-color: #f8f9fa;
+    }
+    .form-check-input {
+        margin-top: 0.3rem;
+    }
+    .form-check-label {
+        cursor: pointer;
+    }
+    /* Styles for mobile */
+    @media (max-width: 767.98px) {
+        #subdepartment-checkboxes {
+            max-height: 150px;
+        }
+    }
 </style>
 
 <script>
@@ -137,13 +180,78 @@ document.addEventListener('DOMContentLoaded', function() {
     const subdepartmentContainer = document.getElementById('subdepartment-container');
     const subdepartmentSelect = document.getElementById('subdepartment-select');
     const noSubdeptsMsg = document.getElementById('no-subdepts-msg');
+    const loadingSubdepts = document.getElementById('loading-subdepts');
+    const subdepartmentCheckboxList = document.getElementById('subdepartment-checkbox-list');
+    
+    // Store selected subdepartments
+    let selectedSubdepartments = [];
+    
+    // If editing mode, get initial selected subdepartment(s)
+    if (subdepartmentSelect && subdepartmentSelect.value) {
+        selectedSubdepartments = [subdepartmentSelect.value];
+    }
 
-    // Store the initial subdepartment selection
-    const initialSubdepartmentId = subdepartmentSelect ? subdepartmentSelect.value : null;
+    // Function to update the hidden select field based on checkboxes
+    function updateHiddenSelect() {
+        if (!subdepartmentSelect) return;
+        
+        // If there's only one subdepartment selected, use that for compatibility
+        if (selectedSubdepartments.length === 1) {
+            subdepartmentSelect.value = selectedSubdepartments[0];
+        } else if (selectedSubdepartments.length > 1) {
+            // For multiple selections, we'll need to handle this in the backend
+            // For now, set the first one in the select for backward compatibility
+            subdepartmentSelect.value = selectedSubdepartments[0];
+            
+            // Add a hidden input to pass all selected subdepartments
+            const hiddenInputs = document.querySelectorAll('.hidden-subdepartment-input');
+            hiddenInputs.forEach(input => input.remove());
+            
+            selectedSubdepartments.forEach((subdeptId, index) => {
+                if (index === 0) return; // Skip first one as it's in the select
+                
+                const hiddenInput = document.createElement('input');
+                hiddenInput.type = 'hidden';
+                hiddenInput.name = 'additional_subdepartments';
+                hiddenInput.value = subdeptId;
+                hiddenInput.className = 'hidden-subdepartment-input';
+                subdepartmentSelect.parentNode.appendChild(hiddenInput);
+            });
+        } else {
+            // No subdepartments selected
+            subdepartmentSelect.value = '';
+            
+            // Remove any existing hidden inputs
+            const hiddenInputs = document.querySelectorAll('.hidden-subdepartment-input');
+            hiddenInputs.forEach(input => input.remove());
+        }
+    }
 
-    // Function to load subdepartments for the selected department
+    // Function to handle checkbox changes
+    function handleCheckboxChange(event) {
+        const checkbox = event.target;
+        const subdeptId = checkbox.value;
+        
+        if (checkbox.checked) {
+            // Add to selected subdepartments if not already included
+            if (!selectedSubdepartments.includes(subdeptId)) {
+                selectedSubdepartments.push(subdeptId);
+            }
+        } else {
+            // Remove from selected subdepartments
+            selectedSubdepartments = selectedSubdepartments.filter(id => id !== subdeptId);
+        }
+        
+        // Update the hidden select field
+        updateHiddenSelect();
+    }
+
+    // Function to load subdepartments and create checkboxes
     function loadSubdepartments() {
         const departmentId = departmentSelect.value;
+        
+        // Reset selected subdepartments when department changes
+        selectedSubdepartments = [];
         
         // If no department is selected, hide subdepartment field
         if (!departmentId) {
@@ -152,10 +260,10 @@ document.addEventListener('DOMContentLoaded', function() {
         }
 
         // Show loading indicator
-        if (noSubdeptsMsg) {
-            noSubdeptsMsg.textContent = "Loading subdepartments...";
-            noSubdeptsMsg.style.display = 'block';
-        }
+        subdepartmentContainer.style.display = 'block';
+        loadingSubdepts.style.display = 'block';
+        noSubdeptsMsg.style.display = 'none';
+        subdepartmentCheckboxList.innerHTML = '';
         
         console.log(`Fetching subdepartments for department ID: ${departmentId}`);
 
@@ -170,56 +278,46 @@ document.addEventListener('DOMContentLoaded', function() {
             })
             .then(data => {
                 console.log('Subdepartments data:', data);
-                // Clear current options
-                subdepartmentSelect.innerHTML = '<option value="">Select Sub Department</option>';
+                // Hide loading indicator
+                loadingSubdepts.style.display = 'none';
                 
-                // If subdepartments exist, add them as options
+                // If subdepartments exist, create checkboxes
                 if (data.subdepartments && data.subdepartments.length > 0) {
-                    let hasInitialSubdept = false;
-
                     data.subdepartments.forEach(subdept => {
-                        const option = document.createElement('option');
-                        option.value = subdept.id;
-                        option.textContent = subdept.name;
+                        const checkboxDiv = document.createElement('div');
+                        checkboxDiv.className = 'form-check';
                         
-                        // If this is the initially selected subdepartment, select it again
-                        if (initialSubdepartmentId && subdept.id == initialSubdepartmentId) {
-                            option.selected = true;
-                            hasInitialSubdept = true;
-                        }
+                        const checkbox = document.createElement('input');
+                        checkbox.type = 'checkbox';
+                        checkbox.className = 'form-check-input';
+                        checkbox.id = `subdept-${subdept.id}`;
+                        checkbox.value = subdept.id;
+                        checkbox.checked = selectedSubdepartments.includes(subdept.id.toString());
+                        checkbox.addEventListener('change', handleCheckboxChange);
                         
-                        subdepartmentSelect.appendChild(option);
+                        const label = document.createElement('label');
+                        label.className = 'form-check-label';
+                        label.htmlFor = `subdept-${subdept.id}`;
+                        label.textContent = subdept.name;
+                        
+                        checkboxDiv.appendChild(checkbox);
+                        checkboxDiv.appendChild(label);
+                        subdepartmentCheckboxList.appendChild(checkboxDiv);
                     });
                     
-                    subdepartmentSelect.style.display = 'block';
                     noSubdeptsMsg.style.display = 'none';
-                    subdepartmentContainer.style.display = 'block';
-                    
                     console.log(`Added ${data.subdepartments.length} subdepartments`);
-                    
-                    // If the initial subdept was added but doesn't belong to this department, show a warning
-                    if (initialSubdepartmentId && !hasInitialSubdept) {
-                        console.warn("Initial subdepartment does not belong to the selected department");
-                    }
                 } else {
                     // If no subdepartments, show message
-                    subdepartmentSelect.style.display = 'none';
-                    noSubdeptsMsg.textContent = "No subdepartments available for the selected department";
                     noSubdeptsMsg.style.display = 'block';
-                    subdepartmentContainer.style.display = 'block';
                     console.log('No subdepartments found for this department');
                 }
             })
             .catch(error => {
                 console.error('Error loading subdepartments:', error);
-                if (noSubdeptsMsg) {
-                    noSubdeptsMsg.textContent = "Error loading subdepartments. Please try again.";
-                    noSubdeptsMsg.style.display = 'block';
-                }
-                if (subdepartmentSelect) {
-                    subdepartmentSelect.style.display = 'none';
-                }
-                subdepartmentContainer.style.display = 'block';
+                loadingSubdepts.style.display = 'none';
+                noSubdeptsMsg.textContent = "Error loading subdepartments. Please try again.";
+                noSubdeptsMsg.style.display = 'block';
             });
     }
 

@@ -602,7 +602,13 @@ def edit_superintendent(request, superintendent_id):
             # Log info about the update
             print(f"Updated department head: {department_head.user.get_full_name()} - Dept: {department_head.department.name}")
             if department_head.subdepartment:
-                print(f"Subdepartment: {department_head.subdepartment.name}")
+                print(f"Primary Subdepartment: {department_head.subdepartment.name}")
+            
+            # Log managed subdepartments
+            managed_subdepts = department_head.managed_subdepartments.all()
+            if managed_subdepts.exists():
+                subdept_names = [sd.name for sd in managed_subdepts]
+                print(f"Managing subdepartments: {', '.join(subdept_names)}")
                 
             messages.success(request, 'Department Head updated successfully.')
             
@@ -2419,6 +2425,17 @@ def add_superintendent(request):
         form = DepartmentHeadForm(request.POST)
         if form.is_valid():
             department_head = form.save()
+            
+            # Log information about the newly created department head
+            print(f"Added department head: {department_head.user.get_full_name()} - Dept: {department_head.department.name}")
+            if department_head.subdepartment:
+                print(f"Primary Subdepartment: {department_head.subdepartment.name}")
+            
+            # Log managed subdepartments
+            managed_subdepts = department_head.managed_subdepartments.all()
+            if managed_subdepts.exists():
+                subdept_names = [sd.name for sd in managed_subdepts]
+                print(f"Managing subdepartments: {', '.join(subdept_names)}")
             
             # Check if email was sent
             if hasattr(department_head, 'email_sent'):
