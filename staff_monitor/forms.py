@@ -244,10 +244,11 @@ class DepartmentHeadForm(forms.ModelForm):
             
             # Process additional subdepartments if any
             if hasattr(self, 'additional_subdepartments_ids') and self.additional_subdepartments_ids and commit:
-                # Store the primary subdepartment in managed_subdepartments as well
-                primary_subdept = self.cleaned_data.get('subdepartment')
+                # Get all selected subdepartments
                 subdepartments = []
                 
+                # Add primary subdepartment if selected
+                primary_subdept = self.cleaned_data.get('subdepartment')
                 if primary_subdept:
                     subdepartments.append(primary_subdept)
                 
@@ -255,7 +256,8 @@ class DepartmentHeadForm(forms.ModelForm):
                 for subdept_id in self.additional_subdepartments_ids:
                     try:
                         subdept = SubDepartment.objects.get(id=subdept_id)
-                        subdepartments.append(subdept)
+                        if subdept not in subdepartments:  # Avoid duplicates
+                            subdepartments.append(subdept)
                     except SubDepartment.DoesNotExist:
                         pass
                 
@@ -288,10 +290,11 @@ class DepartmentHeadForm(forms.ModelForm):
                 
                 # Process additional subdepartments if any
                 if hasattr(self, 'additional_subdepartments_ids') and self.additional_subdepartments_ids:
-                    # Store the primary subdepartment in managed_subdepartments as well
-                    primary_subdept = self.cleaned_data.get('subdepartment')
+                    # Get all selected subdepartments
                     subdepartments = []
                     
+                    # Add primary subdepartment if selected
+                    primary_subdept = self.cleaned_data.get('subdepartment')
                     if primary_subdept:
                         subdepartments.append(primary_subdept)
                     
@@ -299,7 +302,8 @@ class DepartmentHeadForm(forms.ModelForm):
                     for subdept_id in self.additional_subdepartments_ids:
                         try:
                             subdept = SubDepartment.objects.get(id=subdept_id)
-                            subdepartments.append(subdept)
+                            if subdept not in subdepartments:  # Avoid duplicates
+                                subdepartments.append(subdept)
                         except SubDepartment.DoesNotExist:
                             pass
                     
@@ -377,13 +381,70 @@ class StaffForm(forms.ModelForm):
         required=False,
         widget=forms.EmailInput(attrs={
             'class': 'form-control',
-            'placeholder': 'Enter email address (or leave blank if not available)'
+            'placeholder': 'Enter email address'
+        })
+    )
+    employee_id = forms.CharField(
+        required=True,
+        widget=forms.TextInput(attrs={
+            'class': 'form-control',
+            'placeholder': 'Enter employee ID'
+        })
+    )
+    department = forms.ModelChoiceField(
+        queryset=Department.objects.all(),
+        widget=forms.Select(attrs={
+            'class': 'form-control',
+            'id': 'department-select'
+        })
+    )
+    subdepartment = forms.ModelChoiceField(
+        queryset=SubDepartment.objects.none(),
+        required=False,
+        widget=forms.Select(attrs={
+            'class': 'form-control',
+            'id': 'subdepartment-select'
+        })
+    )
+    position = forms.CharField(
+        required=True,
+        widget=forms.TextInput(attrs={
+            'class': 'form-control',
+            'placeholder': 'Enter position'
+        })
+    )
+    qualification = forms.CharField(
+        required=False,
+        widget=forms.TextInput(attrs={
+            'class': 'form-control',
+            'placeholder': 'Enter educational qualification'
+        })
+    )
+    joining_date = forms.DateField(
+        required=False,
+        widget=forms.DateInput(attrs={
+            'class': 'form-control',
+            'type': 'date'
+        })
+    )
+    appointment_date = forms.DateField(
+        required=False,
+        widget=forms.DateInput(attrs={
+            'class': 'form-control',
+            'type': 'date'
+        })
+    )
+    contact_info = forms.CharField(
+        required=False,
+        widget=forms.TextInput(attrs={
+            'class': 'form-control',
+            'placeholder': 'Enter contact information'
         })
     )
     
     class Meta:
         model = Staff
-        fields = ['employee_id', 'department', 'subdepartment', 'position', 'joining_date', 'appointment_date']
+        fields = ['employee_id', 'department', 'subdepartment', 'position', 'qualification', 'joining_date', 'appointment_date', 'contact_info']
         widgets = {
             'employee_id': forms.TextInput(attrs={
                 'class': 'form-control',
@@ -725,8 +786,8 @@ class StaffBulkUploadForm(forms.Form):
                 'Designation', 'Department', 'Joining date'
             ]
             
-            # Email is now optional
-            recommended_columns = ['Email']
+            # Email and Qualification are now optional
+            recommended_columns = ['Email', 'Qualification']
             
             missing_columns = [col for col in required_columns if col not in df.columns]
             if missing_columns:

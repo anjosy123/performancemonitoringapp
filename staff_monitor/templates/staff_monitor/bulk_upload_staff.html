@@ -23,8 +23,10 @@
                                 <li><strong>Employee ID</strong> - Staff member's employee ID (must be unique)</li>
                                 <li><strong>Designation</strong> - Staff member's position/designation</li>
                                 <li><strong>Department</strong> - Department name or subdepartment name (see formats below)</li>
+                                <li><strong>Qualification</strong> - <em>Optional:</em> Staff member's educational qualification</li>
                                 <li><strong>Joining date</strong> - Date when the staff member joined (YYYY-MM-DD format)</li>
                                 <li><strong>Date of appointment</strong> - <em>Optional:</em> Date of appointment (YYYY-MM-DD format)</li>
+                                <li>Contact Information (optional)</li>
                             </ul>
                             <div class="alert alert-warning mt-3">
                                 <h6><i class="fas fa-exclamation-triangle me-2"></i>Department/Subdepartment Formats</h6>
@@ -125,17 +127,17 @@ document.addEventListener('DOMContentLoaded', function() {
         e.preventDefault();
         
         // Create workbook with headers
-        const headers = ['First name', 'Last name', 'Email', 'Employee ID', 'Designation', 'Department', 'Joining date', 'Date of appointment'];
+        const headers = ['First name', 'Last name', 'Email', 'Employee ID', 'Designation', 'Department', 'Qualification', 'Contact Information', 'Joining date', 'Date of appointment'];
         
         // Sample data rows showing different department format options
         const sampleData = [
-            ['John', 'Doe', 'john.doe@example.com', 'EMP001', 'Staff Nurse', 'Nursing', '2023-01-15', '2023-02-01'],
-            ['Jane', 'Smith', 'jane.smith@example.com', 'EMP002', 'Nurse', 'NURSERY', '2023-02-10', '2023-03-01'],
-            ['Robert', 'Johnson', 'robert@example.com', 'EMP003', 'Doctor', 'NURSERY - MATERNITY', '2023-03-05', '2023-04-01'],
-            ['Maria', 'Garcia', 'maria@example.com', 'EMP004', 'Technician', 'Radiology', '2023-04-15', ''],
-            ['David', 'Lee', '', 'EMP005', 'Assistant', 'Administration', '2023-05-20', ''],
-            ['Emma', 'Wilson', 'emma@example.com', 'EMP006', 'Senior Nurse', 'ICU - EMERGENCY', '2023-06-01', '2023-06-15'],
-            ['Michael', 'Brown', '', 'EMP007', 'Receptionist', 'RECEPTION - ADMINISTRATION', '2023-07-10', '']
+            ['John', 'Doe', 'john.doe@example.com', 'EMP001', 'Staff Nurse', 'Nursing', 'BSc Nursing', '9876543210', '2023-01-15', '2023-02-01'],
+            ['Jane', 'Smith', 'jane.smith@example.com', 'EMP002', 'Nurse', 'NURSERY', 'MSc Nursing', '9876543211', '2023-02-10', '2023-03-01'],
+            ['Robert', 'Johnson', 'robert@example.com', 'EMP003', 'Doctor', 'NURSERY - MATERNITY', 'MD', '9876543212', '2023-03-05', '2023-04-01'],
+            ['Maria', 'Garcia', 'maria@example.com', 'EMP004', 'Technician', 'Radiology', 'BSc Radiography', '9876543213', '2023-04-15', ''],
+            ['David', 'Lee', '', 'EMP005', 'Assistant', 'Administration', 'BA', '9876543214', '2023-05-20', ''],
+            ['Emma', 'Wilson', 'emma@example.com', 'EMP006', 'Senior Nurse', 'ICU - EMERGENCY', 'RN', '9876543215', '2023-06-01', '2023-06-15'],
+            ['Michael', 'Brown', '', 'EMP007', 'Receptionist', 'RECEPTION - ADMINISTRATION', 'Diploma in Hospitality Management', '9876543216', '2023-07-10', '']
         ];
         
         // Create CSV content

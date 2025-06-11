@@ -66,7 +66,7 @@
                             </div>
                             <!-- Keep the original select for form submission compatibility -->
                             <div style="display: none;">
-                                {{ form.subdepartment }}
+                            {{ form.subdepartment }}
                             </div>
                         </div>
                     </div>
@@ -316,8 +316,8 @@ document.addEventListener('DOMContentLoaded', function() {
             .catch(error => {
                 console.error('Error loading subdepartments:', error);
                 loadingSubdepts.style.display = 'none';
-                noSubdeptsMsg.textContent = "Error loading subdepartments. Please try again.";
-                noSubdeptsMsg.style.display = 'block';
+                    noSubdeptsMsg.textContent = "Error loading subdepartments. Please try again.";
+                    noSubdeptsMsg.style.display = 'block';
             });
     }
 

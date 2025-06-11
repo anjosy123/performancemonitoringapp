@@ -104,7 +104,7 @@
                                     <tr>
                                         <th>Name</th>
                                         <th>Department</th>
-                                        <th>Subdepartment</th>
+                                        <th>Managed Subdepartments</th>
                                         <th>Contact</th>
                                         <th>Actions</th>
                                     </tr>
@@ -114,11 +114,15 @@
                                     <tr class="dept-head-row">
                                         <td data-label="Name">{{ head.user.get_full_name }}</td>
                                         <td data-label="Department">{{ head.department.name }}</td>
-                                        <td data-label="Subdepartment">
-                                            {% if head.subdepartment %}
-                                            {{ head.subdepartment.name }}
+                                        <td data-label="Managed Subdepartments">
+                                            {% if head.managed_subdepartments.exists %}
+                                                {% for subdept in head.managed_subdepartments.all %}
+                                                    <span class="badge bg-info me-1">{{ subdept.name }}</span>
+                                                {% endfor %}
+                                            {% elif head.subdepartment %}
+                                                <span class="badge bg-info">{{ head.subdepartment.name }}</span>
                                             {% else %}
-                                            <span class="text-muted">Main</span>
+                                                <span class="text-muted">None</span>
                                             {% endif %}
                                         </td>
                                         <td data-label="Contact">{{ head.contact_number }}</td>
@@ -351,7 +355,7 @@
                                     <thead>
                                         <tr>
                                             <th>Name</th>
-                                            <th>Subdepartment</th>
+                                            <th>Managed Subdepartments</th>
                                             <th>Contact</th>
                                             <th>Staff Assigned</th>
                                             <th>Actions</th>
@@ -361,24 +365,13 @@
                                         {% for head in subdepartment_heads %}
                                         <tr>
                                             <td data-label="Name">{{ head.user.get_full_name }}</td>
-                                            <td data-label="Subdepartment">
-                                                {% if head.subdepartment %}
-                                                    {{ head.subdepartment.name }}
-                                                    {% if head.managed_subdepartments.all.count > 1 %}
-                                                    <div class="mt-1">
-                                                        <span class="badge bg-secondary" data-bs-toggle="tooltip" data-bs-placement="top" title="Additional managed subdepartments">
-                                                            +{{ head.managed_subdepartments.all.count|add:"-1" }} more
-                                                        </span>
-                                                        <div class="small text-muted mt-1">
-                                                            <i class="fas fa-info-circle me-1"></i>Also manages:
-                                                            {% for subdept in head.managed_subdepartments.all %}
-                                                                {% if subdept != head.subdepartment %}
-                                                                    <span class="badge bg-light text-dark">{{ subdept.name }}</span>
-                                                                {% endif %}
-                                                            {% endfor %}
-                                                        </div>
-                                                    </div>
-                                                    {% endif %}
+                                            <td data-label="Managed Subdepartments">
+                                                {% if head.managed_subdepartments.exists %}
+                                                    {% for subdept in head.managed_subdepartments.all %}
+                                                        <span class="badge bg-info me-1">{{ subdept.name }}</span>
+                                                    {% endfor %}
+                                                {% elif head.subdepartment %}
+                                                    <span class="badge bg-info">{{ head.subdepartment.name }}</span>
                                                 {% else %}
                                                     <span class="text-muted">None</span>
                                                 {% endif %}
@@ -433,6 +426,7 @@
                                         <th>Position</th>
                                         <th>Employee ID</th>
                                         <th>Email</th>
+                                        <th>Qualification</th>
                                         <th>Actions</th>
                                     </tr>
                                 </thead>
@@ -443,6 +437,7 @@
                                         <td data-label="Position">{{ staff.position }}</td>
                                         <td data-label="Employee ID">{{ staff.employee_id }}</td>
                                         <td data-label="Email">{{ staff.user.email }}</td>
+                                        <td data-label="Qualification">{% if staff.qualification %}{{ staff.qualification }}{% else %}<span class="text-muted">-</span>{% endif %}</td>
                                         <td data-label="Actions">
                                             <div class="btn-group d-flex flex-wrap gap-1">
                                                 <a href="{% url 'performance_form' staff.id %}" class="btn btn-primary btn-sm mb-1">
@@ -472,8 +467,12 @@
                 <div class="alert alert-info mb-4">
                     <i class="fas fa-user-md me-2"></i>You are logged in as <strong>Subdepartment Head</strong> for 
                     <span class="badge bg-primary">{{ department_head.department.name }}</span>
-                    {% if department_head.subdepartment %}
-                        / <span class="badge bg-success">{{ department_head.subdepartment.name }}</span>
+                    {% if department_head.managed_subdepartments.exists %}
+                        {% for subdept in department_head.managed_subdepartments.all %}
+                            <span class="badge bg-success">{{ subdept.name }}</span>
+                        {% endfor %}
+                    {% elif department_head.subdepartment %}
+                        <span class="badge bg-success">{{ department_head.subdepartment.name }}</span>
                     {% endif %}
                 </div>
                 
@@ -516,6 +515,7 @@
                                         <th>Position</th>
                                         <th>Employee ID</th>
                                         <th>Email</th>
+                                        <th>Qualification</th>
                                         <th>Actions</th>
                                     </tr>
                                 </thead>
@@ -526,6 +526,7 @@
                                         <td data-label="Position">{{ staff.position }}</td>
                                         <td data-label="Employee ID">{{ staff.employee_id }}</td>
                                         <td data-label="Email">{{ staff.user.email }}</td>
+                                        <td data-label="Qualification">{% if staff.qualification %}{{ staff.qualification }}{% else %}<span class="text-muted">-</span>{% endif %}</td>
                                         <td data-label="Actions">
                                             <div class="btn-group d-flex flex-wrap gap-1">
                                                 <a href="{% url 'performance_form' staff.id %}" class="btn btn-primary btn-sm mb-1">
@@ -744,6 +745,57 @@
         display: table-header-group;
     }
 }
+
+/* Extra mobile enhancements */
+@media (max-width: 575.98px) {
+    .card-header, .card-body {
+        padding: 1rem !important;
+    }
+    .welcome-title {
+        font-size: 1.1rem;
+    }
+    .welcome-message {
+        font-size: 0.95rem;
+    }
+    .btn, .btn-group .btn {
+        font-size: 0.95rem;
+        padding: 0.5rem 1rem;
+    }
+    .table-mobile td {
+        font-size: 0.95rem;
+        padding-left: 38%;
+    }
+    .table-mobile td:before {
+        font-size: 0.95rem;
+    }
+    .row.g-3 > [class^='col-'], .row.g-3 > [class*=' col-'] {
+        margin-bottom: 1rem;
+    }
+    .quick-links .row.g-3 {
+        flex-direction: column;
+    }
+    .quick-links .col-md-4, .quick-links .col-sm-6 {
+        max-width: 100%;
+        flex: 0 0 100%;
+    }
+    .btn-group {
+        flex-direction: column;
+        gap: 0.25rem;
+    }
+    .table-responsive {
+        overflow-x: auto;
+    }
+    .alert, .card {
+        font-size: 0.97rem;
+    }
+}
+
+/* Make sure table headers are always visible on larger screens */
+@media (min-width: 576px) {
+    .table-mobile thead {
+        display: table-header-group;
+    }
+}
 </style>
 
 <script>
@@ -765,12 +817,12 @@ document.addEventListener('DOMContentLoaded', function() {
             rows.forEach(row => {
                 const name = row.cells[0].textContent.toLowerCase();
                 const department = row.cells[1].textContent.toLowerCase();
-                const subdepartment = row.cells[2].textContent.toLowerCase();
+                const subdepartments = row.cells[2].textContent.toLowerCase();
                 const contact = row.cells[3].textContent.toLowerCase();
                 
                 const matchesSearch = name.includes(searchTerm) || 
                                      department.includes(searchTerm) || 
-                                     subdepartment.includes(searchTerm) ||
+                                     subdepartments.includes(searchTerm) ||
                                      contact.includes(searchTerm);
                                      
                 const matchesDepartment = !selectedDepartment || department === selectedDepartment;

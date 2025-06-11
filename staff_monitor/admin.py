@@ -58,7 +58,7 @@ class DepartmentHeadAdmin(admin.ModelAdmin):
 
 @admin.register(Staff)
 class StaffAdmin(admin.ModelAdmin):
-    list_display = ('user', 'employee_id', 'department', 'position', 'joining_date')
+    list_display = ('user', 'employee_id', 'department', 'position', 'qualification', 'joining_date')
     search_fields = ('user__username', 'employee_id', 'department__name')
     list_filter = ('department', 'position')
 

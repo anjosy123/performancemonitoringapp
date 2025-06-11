@@ -45,81 +45,54 @@
 
         {% if show_by_department %}
         <!-- HR Head View - Department Heads Grouped by Department -->
-        <div class="accordion" id="departmentsAccordion">
+        <div class="accordion" id="departmentAccordion">
             {% for dept_id, dept_data in superintendents_by_department.items %}
-            <div class="accordion-item mb-3 department-section" data-department="{{ dept_data.name }}">
-                <h2 class="accordion-header" id="heading{{ dept_id }}">
-                    <button class="accordion-button" type="button" data-bs-toggle="collapse" data-bs-target="#collapse{{ dept_id }}" aria-expanded="true" aria-controls="collapse{{ dept_id }}">
-                        <i class="fas fa-hospital me-2"></i>{{ dept_data.name }} Department
-                        <span class="badge bg-primary ms-2">{{ dept_data.department_heads.count }} Department Heads</span>
+            <div class="accordion-item">
+                <h2 class="accordion-header">
+                    <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#dept{{ dept_id }}">
+                        <i class="fas fa-hospital me-2"></i>{{ dept_data.name }}
+                        <span class="badge bg-primary ms-2">{{ dept_data.department_heads|length }} Head(s)</span>
                     </button>
                 </h2>
-                <div id="collapse{{ dept_id }}" class="accordion-collapse collapse show" aria-labelledby="heading{{ dept_id }}" data-bs-parent="#departmentsAccordion">
-                    <div class="accordion-body p-0">
+                <div id="dept{{ dept_id }}" class="accordion-collapse collapse" data-bs-parent="#departmentAccordion">
+                    <div class="accordion-body">
                         <div class="table-responsive">
-                            <table class="table table-hover mb-0">
+                            <table class="table table-hover table-mobile" id="deptHeadTable">
                                 <thead class="table-light">
                                     <tr>
                                         <th>Name</th>
-                                        <th>Subdepartment</th>
+                                        <th>Department</th>
+                                        <th>Managed Subdepartments</th>
                                         <th>Contact</th>
-                                        <th>Staff Count</th>
                                         <th>Actions</th>
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    {% for superintendent in dept_data.department_heads %}
-                                    <tr class="superintendent-row">
-                                        <td>{{ superintendent.user.get_full_name }}</td>
-                                        <td>
-                                            {% if superintendent.subdepartment %}
-                                                {{ superintendent.subdepartment.name }}
-                                                {% if superintendent.managed_subdepartments.all.count > 1 %}
-                                                <div class="mt-1">
-                                                    <span class="badge bg-secondary" data-bs-toggle="tooltip" data-bs-placement="top" title="Also manages additional subdepartments">
-                                                        +{{ superintendent.managed_subdepartments.all.count|add:"-1" }} more
-                                                    </span>
-                                                    <div class="small text-muted mt-1">
-                                                        <i class="fas fa-info-circle me-1"></i>Also manages:
-                                                        {% for subdept in superintendent.managed_subdepartments.all %}
-                                                            {% if subdept != superintendent.subdepartment %}
-                                                                <span class="badge bg-light text-dark">{{ subdept.name }}</span>
-                                                            {% endif %}
-                                                        {% endfor %}
-                                                    </div>
-                                                </div>
-                                                {% endif %}
+                                    {% for head in dept_data.department_heads %}
+                                    <tr class="dept-head-row">
+                                        <td data-label="Name">{{ head.user.get_full_name }}</td>
+                                        <td data-label="Department">{{ head.department.name }}</td>
+                                        <td data-label="Managed Subdepartments">
+                                            {% if head.managed_subdepartments.exists %}
+                                                {% for subdept in head.managed_subdepartments.all %}
+                                                    <span class="badge bg-info me-1">{{ subdept.name }}</span>
+                                                {% endfor %}
+                                            {% elif head.subdepartment %}
+                                                <span class="badge bg-info">{{ head.subdepartment.name }}</span>
                                             {% else %}
-                                                <span class="text-muted">Not Assigned</span>
+                                                <span class="text-muted">None</span>
                                             {% endif %}
                                         </td>
-                                        <td>{{ superintendent.contact_number }}</td>
-                                        <td>
-                                            <span class="badge bg-info">
-                                                {{ superintendent.staff_count }} Staff
-                                            </span>
-                                        </td>
-                                        <td>
-                                            <div class="btn-group">
-                                                {% if is_hr_head and department_head.privileges.can_edit_department_head %}
-                                                <a href="{% url 'edit_superintendent' superintendent.id %}" class="btn btn-warning btn-sm">
-                                                    <i class="fas fa-edit me-1"></i>Edit
+                                        <td data-label="Contact">{{ head.contact_number }}</td>
+                                        <td data-label="Actions">
+                                            <div class="btn-group d-flex flex-wrap gap-1">
+                                                <a href="{% url 'performance_form_department_head' head.id %}" class="btn btn-primary btn-sm">
+                                                    <i class="fas fa-clipboard-check me-1 d-none d-sm-inline"></i>Evaluate
                                                 </a>
-                                                {% endif %}
-                                                {% if is_hr_head and department_head.privileges.can_delete_department_head %}
-                                                <button class="btn btn-danger btn-sm delete-department-head" 
-                                                        data-superintendent-id="{{ superintendent.id }}"
-                                                        data-superintendent-name="{{ superintendent.user.get_full_name }}">
-                                                    <i class="fas fa-trash me-1"></i>Delete
-                                                </button>
-                                                {% endif %}
+                                                <a href="{% url 'feedback_form_department_head' head.id %}" class="btn btn-success btn-sm">
+                                                    <i class="fas fa-comment-dots me-1 d-none d-sm-inline"></i>Incident
+                                                </a>
                                             </div>
-                                        </td>
-                                    </tr>
-                                    {% empty %}
-                                    <tr>
-                                        <td colspan="5" class="text-center py-4">
-                                            <i class="fas fa-user-md text-muted me-2"></i>No department heads found
                                         </td>
                                     </tr>
                                     {% endfor %}
@@ -132,76 +105,49 @@
             {% endfor %}
         </div>
         {% else %}
-        <!-- Regular Department Heads Table View -->
+        <!-- Regular View - All Department Heads in One Table -->
         <div class="table-responsive">
-            <table class="table table-hover">
+            <table class="table table-hover table-mobile" id="deptHeadTable">
                 <thead class="table-light">
                     <tr>
                         <th>Name</th>
                         <th>Department</th>
-                        <th>Subdepartment</th>
+                        <th>Managed Subdepartments</th>
                         <th>Contact</th>
-                        <th>Staff Count</th>
                         <th>Actions</th>
                     </tr>
                 </thead>
                 <tbody>
-                    {% for superintendent in superintendents %}
-                    <tr class="superintendent-row">
-                        <td>{{ superintendent.user.get_full_name }}</td>
-                        <td>{{ superintendent.department.name }}</td>
-                        <td>
-                            {% if superintendent.subdepartment %}
-                                {{ superintendent.subdepartment.name }}
-                                {% if superintendent.managed_subdepartments.all.count > 1 %}
-                                <div class="mt-1">
-                                    <span class="badge bg-secondary" data-bs-toggle="tooltip" data-bs-placement="top" title="Also manages additional subdepartments">
-                                        +{{ superintendent.managed_subdepartments.all.count|add:"-1" }} more
-                                    </span>
-                                    <div class="small text-muted mt-1">
-                                        <i class="fas fa-info-circle me-1"></i>Also manages:
-                                        {% for subdept in superintendent.managed_subdepartments.all %}
-                                            {% if subdept != superintendent.subdepartment %}
-                                                <span class="badge bg-light text-dark">{{ subdept.name }}</span>
-                                            {% endif %}
-                                        {% endfor %}
-                                    </div>
-                                </div>
-                                {% endif %}
+                    {% for head in superintendents %}
+                    <tr class="dept-head-row">
+                        <td data-label="Name">{{ head.user.get_full_name }}</td>
+                        <td data-label="Department">{{ head.department.name }}</td>
+                        <td data-label="Managed Subdepartments">
+                            {% if head.managed_subdepartments.exists %}
+                                {% for subdept in head.managed_subdepartments.all %}
+                                    <span class="badge bg-info me-1">{{ subdept.name }}</span>
+                                {% endfor %}
+                            {% elif head.subdepartment %}
+                                <span class="badge bg-info">{{ head.subdepartment.name }}</span>
                             {% else %}
-                                <span class="text-muted">Not Assigned</span>
+                                <span class="text-muted">None</span>
                             {% endif %}
                         </td>
-                        <td>{{ superintendent.contact_number }}</td>
-                        <td>
-                            <span class="badge bg-info">
-                                {{ superintendent.staff_count }} Staff
-                            </span>
-                        </td>
-                        <td>
-                            <div class="btn-group">
-                                {% if is_admin %}
-                                <a href="{% url 'performance_form_department_head' superintendent.id %}" class="btn btn-primary btn-sm">
-                                    <i class="fas fa-clipboard-check me-1"></i>Evaluate
+                        <td data-label="Contact">{{ head.contact_number }}</td>
+                        <td data-label="Actions">
+                            <div class="btn-group d-flex flex-wrap gap-1">
+                                <a href="{% url 'performance_form_department_head' head.id %}" class="btn btn-primary btn-sm">
+                                    <i class="fas fa-clipboard-check me-1 d-none d-sm-inline"></i>Evaluate
                                 </a>
-                                <a href="{% url 'feedback_form_department_head' superintendent.id %}" class="btn btn-success btn-sm">
-                                    <i class="fas fa-comment-dots me-1"></i>Incident
+                                <a href="{% url 'feedback_form_department_head' head.id %}" class="btn btn-success btn-sm">
+                                    <i class="fas fa-comment-dots me-1 d-none d-sm-inline"></i>Incident
                                 </a>
-                                {% endif %}
-                                <a href="{% url 'edit_superintendent' superintendent.id %}" class="btn btn-warning btn-sm">
-                                    <i class="fas fa-edit me-1"></i>Edit
-                                </a>
-                                <button class="btn btn-danger btn-sm delete-superintendent" 
-                                        data-superintendent-id="{{ superintendent.id }}"
-                                        data-superintendent-name="{{ superintendent.user.get_full_name }}">
-                                    <i class="fas fa-trash me-1"></i>Delete
-                                </button>
                             </div>
                         </td>
                     </tr>
                     {% empty %}
                     <tr>
-                        <td colspan="6" class="text-center py-4">
+                        <td colspan="5" class="text-center py-4">
                             <i class="fas fa-user-md text-muted me-2"></i>No department heads found
                         </td>
                     </tr>
@@ -214,123 +160,92 @@
 </div>
 
 <style>
-.card {
-    border: none;
-    border-radius: 1rem;
-    box-shadow: 0 0.5rem 1rem rgba(0,0,0,0.1);
-    background-color: #fff;
-    margin-bottom: 1.5rem;
-}
-
-.card-header {
-    background: linear-gradient(135deg, #1a237e 0%, #0d47a1 100%);
-    color: white;
-    border-top-left-radius: 1rem !important;
-    border-top-right-radius: 1rem !important;
-    padding: 1.5rem;
-}
-
-.table {
-    margin-bottom: 0;
-    background-color: #fff;
-}
-
-.table thead th {
-    background-color: #f8f9fa;
-    border-bottom: 2px solid #dee2e6;
-    font-weight: 600;
-    color: #212529;
-}
-
-.table tbody td {
-    vertical-align: middle;
-    color: #212529;
-}
-
-.table-hover tbody tr:hover {
-    background-color: rgba(13, 110, 253, 0.05);
-}
-
-.btn-group {
-    display: flex;
-    gap: 0.5rem;
-}
-
-.btn {
-    padding: 0.5rem 1rem;
-    font-weight: 500;
-}
-
-.btn-sm {
-    padding: 0.375rem 0.75rem;
-    font-size: 0.875rem;
-}
-
-.input-group {
-    box-shadow: 0 2px 4px rgba(0,0,0,0.05);
-}
-
-.input-group-text {
-    background-color: #f8f9fa;
-    border: 1px solid #dee2e6;
-}
-
-.form-control {
-    border: 1px solid #dee2e6;
-}
-
-.form-control:focus {
-    border-color: #86b7fe;
-    box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.25);
-}
-
-.badge {
-    padding: 0.5em 0.75em;
-    font-weight: 500;
-}
-
-/* Accordion Styling */
-.accordion-item {
-    border-radius: 0.5rem !important;
-    overflow: hidden;
-    border: 1px solid #dee2e6;
-    box-shadow: 0 0.125rem 0.25rem rgba(0,0,0,0.05);
-}
-
-.accordion-button {
-    font-weight: 600;
-    padding: 1rem 1.25rem;
-    background-color: #f8f9fa;
-    color: #212529;
-}
-
 .accordion-button:not(.collapsed) {
-    background-color: #e9ecef;
+    background-color: #e7f1ff;
     color: #0d6efd;
 }
-
-.accordion-button:focus {
-    box-shadow: none;
-    border-color: #dee2e6;
+.badge {
+    font-weight: 500;
+}
+.table th {
+    background-color: #f8f9fa;
+}
+.btn-group .btn {
+    padding: 0.25rem 0.5rem;
 }
 
-@media (max-width: 768px) {
-    .card-header {
-        padding: 1rem;
+/* Mobile responsive enhancements for department heads list */
+@media (max-width: 767.98px) {
+    .table-mobile, .table-mobile thead, .table-mobile tbody, .table-mobile tr, .table-mobile th, .table-mobile td {
+        display: block;
     }
-
+    .table-mobile tr {
+        margin-bottom: 1rem;
+    border: 1px solid #dee2e6;
+        border-radius: 0.5rem;
+        box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+}
+    .table-mobile td {
+        position: relative;
+        padding-left: 40%;
+        text-align: right;
+        border-bottom: 1px solid #f0f0f0;
+        font-size: 0.97rem;
+}
+    .table-mobile td:last-child {
+        border-bottom: none;
+}
+    .table-mobile td:before {
+        content: attr(data-label);
+        position: absolute;
+        left: 1rem;
+        width: 35%;
+        white-space: nowrap;
+        font-weight: 600;
+        text-align: left;
+        font-size: 0.97rem;
+    }
     .btn-group {
         flex-direction: column;
         width: 100%;
+        gap: 0.25rem;
     }
-
     .btn-group .btn {
         width: 100%;
-        margin: 0.25rem 0;
+        margin-right: 0;
     }
+    .gap-1 {
+        gap: 0.25rem !important;
+    }
+    .table-responsive {
+        overflow-x: auto;
+    }
+    .search-bar, .filter-bar {
+        margin-bottom: 1rem;
+    }
+}
 
-    .table td {
-        padding: 0.75rem;
+@media (min-width: 768px) and (max-width: 991.98px) {
+    .table-mobile thead {
+        display: table-header-group;
+    }
+    .table-mobile tbody {
+        display: table-row-group;
+    }
+    .table-mobile tr {
+        display: table-row;
+    }
+    .table-mobile th, .table-mobile td {
+        display: table-cell;
+    }
+    .table-mobile td:before {
+        display: none;
+    }
+}
+
+@media (min-width: 992px) {
+    .table-mobile thead {
+        display: table-header-group;
     }
 }
 </style>
@@ -339,74 +254,31 @@
 document.addEventListener('DOMContentLoaded', function() {
     const searchInput = document.getElementById('superintendentSearch');
     const departmentFilter = document.getElementById('departmentFilter');
-    const resetFilter = document.getElementById('resetFilters');
-    const superintendentRows = document.querySelectorAll('.superintendent-row');
-    const departmentSections = document.querySelectorAll('.department-section');
+    const resetButton = document.getElementById('resetFilters');
+    const table = document.querySelector('table');
+    const rows = table ? table.querySelectorAll('tbody tr') : [];
     
-    // Function to filter department heads
     function filterTable() {
         const searchTerm = searchInput.value.toLowerCase();
         const selectedDepartment = departmentFilter ? departmentFilter.value.toLowerCase() : '';
         
-        // If we're using the department grouped view
-        if (departmentSections.length > 0) {
-            departmentSections.forEach(section => {
-                const deptName = section.getAttribute('data-department').toLowerCase();
-                let hasVisibleRows = false;
-                
-                // If department filter doesn't match, hide the whole section
-                if (selectedDepartment && deptName !== selectedDepartment) {
-                    section.style.display = 'none';
-                    return;
-                } else {
-                    section.style.display = '';
-                }
-                
-                // Filter rows within this department
-                const rows = section.querySelectorAll('.superintendent-row');
                 rows.forEach(row => {
-                    const name = row.querySelector('td:first-child').textContent.toLowerCase();
-                    const subdept = row.querySelector('td:nth-child(2)').textContent.toLowerCase();
-                    const contact = row.querySelector('td:nth-child(3)').textContent.toLowerCase();
-                    
-                    if (searchTerm === '' || 
-                        name.includes(searchTerm) || 
-                        subdept.includes(searchTerm) || 
-                        contact.includes(searchTerm)) {
-                        row.style.display = '';
-                        hasVisibleRows = true;
-                    } else {
-                        row.style.display = 'none';
-                    }
-                });
-                
-                // If all rows in this department are hidden by search, hide the department
-                if (!hasVisibleRows && searchTerm) {
-                    section.style.display = 'none';
-                }
-            });
-        } else {
-            // Regular table view
-            superintendentRows.forEach(row => {
-                const name = row.querySelector('td:first-child').textContent.toLowerCase();
-                const department = row.querySelector('td:nth-child(2)').textContent.toLowerCase();
-                const subdept = row.querySelector('td:nth-child(3)').textContent.toLowerCase();
-                const contact = row.querySelector('td:nth-child(4)').textContent.toLowerCase();
-                
-                if ((searchTerm === '' || 
-                     name.includes(searchTerm) || 
-                     subdept.includes(searchTerm) || 
-                     contact.includes(searchTerm)) &&
-                    (selectedDepartment === '' || department.includes(selectedDepartment))) {
-                    row.style.display = '';
-                } else {
-                    row.style.display = 'none';
-                }
+            const name = row.cells[0].textContent.toLowerCase();
+            const department = row.cells[1] ? row.cells[1].textContent.toLowerCase() : '';
+            const designation = row.cells[2].textContent.toLowerCase();
+            const contact = row.cells[3].textContent.toLowerCase();
+            
+            const matchesSearch = name.includes(searchTerm) || 
+                                department.includes(searchTerm) || 
+                                designation.includes(searchTerm) ||
+                                contact.includes(searchTerm);
+                                
+            const matchesDepartment = !selectedDepartment || department === selectedDepartment;
+            
+            row.style.display = matchesSearch && matchesDepartment ? '' : 'none';
             });
         }
-    }
     
-    // Set event listeners
     if (searchInput) {
         searchInput.addEventListener('input', filterTable);
     }
@@ -415,64 +287,13 @@ document.addEventListener('DOMContentLoaded', function() {
         departmentFilter.addEventListener('change', filterTable);
     }
     
-    if (resetFilter) {
-        resetFilter.addEventListener('click', function() {
+    if (resetButton) {
+        resetButton.addEventListener('click', function() {
             if (searchInput) searchInput.value = '';
             if (departmentFilter) departmentFilter.value = '';
             filterTable();
         });
     }
-
-    // Create a hidden form for POST submission
-    const deleteForm = document.createElement('form');
-    deleteForm.method = 'post';
-    deleteForm.style.display = 'none';
-    document.body.appendChild(deleteForm);
-
-    // Add CSRF token to the form
-    const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]');
-    if (csrfToken) {
-        deleteForm.appendChild(csrfToken.cloneNode());
-    }
-
-    // Delete confirmation
-    document.querySelectorAll('.delete-department-head, .delete-superintendent').forEach(button => {
-        button.addEventListener('click', function() {
-            const superintendentId = this.dataset.superintendentId;
-            const superintendentName = this.dataset.superintendentName;
-            
-            Swal.fire({
-                title: 'Confirm Delete',
-                html: `
-                    <p>Are you sure you want to delete ${superintendentName}?</p>
-                    <p class="text-danger"><strong>Note:</strong> This will also remove their access to the system and all associated staff records.</p>
-                `,
-                icon: 'warning',
-                showCancelButton: true,
-                confirmButtonText: 'Yes, Delete',
-                cancelButtonText: 'No, Cancel',
-                confirmButtonColor: '#dc3545',
-                cancelButtonColor: '#6c757d'
-            }).then((result) => {
-                if (result.isConfirmed) {
-                    // Set the form action to the delete URL
-                    deleteForm.action = `/delete-department-head/${superintendentId}/`;
-                    
-                    // Submit the form
-                    deleteForm.submit();
-                }
-            });
-        });
-    });
-
-    // Initialize tooltips
-    const tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
-    const tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
-        return new bootstrap.Tooltip(tooltipTriggerEl);
-    });
 });
 </script>
-
-<!-- Add CSRF token for the delete form -->
-{% csrf_token %}
 {% endblock %} 

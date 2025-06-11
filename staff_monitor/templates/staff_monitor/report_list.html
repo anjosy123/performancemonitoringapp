@@ -68,35 +68,35 @@
         <tbody>
             {% for report in reports %}
                     <tr class="report-row">
-                <td>
+                <td data-label="Name">
                     {% if report.staff %}
                         {{ report.staff.user.get_full_name }}
                     {% elif report.department_head %}
                         {{ report.department_head.user.get_full_name }}
                     {% endif %}
                 </td>
-                <td>
+                <td data-label="Department">
                     {% if report.staff %}
                         {{ report.staff.department }}
                     {% elif report.department_head %}
                         {{ report.department_head.department }}
                     {% endif %}
                 </td>
-                <td>
+                <td data-label="Role">
                     {% if report.staff %}
                         {{ report.staff.position }}
                     {% elif report.department_head %}
                         {{ report.department_head.designation }}
                     {% endif %}
                 </td>
-                <td>{{ report.date }}</td>
-                <td>{{ report.percentage|floatformat:2 }}%</td>
-                <td>
+                <td data-label="Date">{{ report.date }}</td>
+                <td data-label="Score">{{ report.percentage|floatformat:2 }}%</td>
+                <td data-label="Performance Status">
                     <span class="badge {% if report.percentage >= 76 %}bg-success{% elif report.percentage >= 51 %}bg-warning{% else %}bg-danger{% endif %}">
                         {{ report.get_performance_status }}
                     </span>
                 </td>
-                <td>
+                <td data-label="Actions">
                     <div class="btn-group">
                         <a href="{% url 'view_report' report.id %}" class="btn btn-info btn-sm">
                             <i class="fas fa-eye me-1"></i>View

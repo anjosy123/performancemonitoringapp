@@ -63,15 +63,18 @@ class HRPrivileges(models.Model):
 
 class Staff(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE)
-    employee_id = models.CharField(max_length=20, unique=True)
-    department = models.ForeignKey(Department, on_delete=models.PROTECT)
-    subdepartment = models.ForeignKey(SubDepartment, on_delete=models.PROTECT, null=True, blank=True)
+    employee_id = models.CharField(max_length=50, unique=True)
+    department = models.ForeignKey(Department, on_delete=models.CASCADE)
+    subdepartment = models.ForeignKey(SubDepartment, on_delete=models.CASCADE, null=True, blank=True)
     position = models.CharField(max_length=100)
-    joining_date = models.DateField()
+    joining_date = models.DateField(null=True, blank=True)
     appointment_date = models.DateField(null=True, blank=True)
+    qualification = models.CharField(max_length=200, null=True, blank=True, help_text="Staff member's educational qualification")
+    contact_info = models.CharField(max_length=200, null=True, blank=True, help_text="Staff member's contact information")
+    managed_by = models.ForeignKey(DepartmentHead, on_delete=models.SET_NULL, null=True, blank=True, related_name='assigned_staff')
 
     def __str__(self):
-        return f"{self.user.get_full_name()} ({self.employee_id})"
+        return f"{self.user.get_full_name()} - {self.position}"
 
 class PerformanceReport(models.Model):
     RATING_CHOICES = [

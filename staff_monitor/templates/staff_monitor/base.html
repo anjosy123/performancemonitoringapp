@@ -531,6 +531,82 @@
                 padding-top: 0.5rem;
             }
         }
+
+        /* Global mobile responsive styles for all templates */
+        @media (max-width: 767.98px) {
+            .table-mobile, .table-mobile thead, .table-mobile tbody, .table-mobile tr, .table-mobile th, .table-mobile td {
+                display: block;
+            }
+            .table-mobile tr {
+                margin-bottom: 1rem;
+                border: 1px solid #dee2e6;
+                border-radius: 0.5rem;
+                box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+            }
+            .table-mobile td {
+                position: relative;
+                padding-left: 40%;
+                text-align: right;
+                border-bottom: 1px solid #f0f0f0;
+                font-size: 0.97rem;
+            }
+            .table-mobile td:last-child {
+                border-bottom: none;
+            }
+            .table-mobile td:before {
+                content: attr(data-label);
+                position: absolute;
+                left: 1rem;
+                width: 35%;
+                white-space: nowrap;
+                font-weight: 600;
+                text-align: left;
+                font-size: 0.97rem;
+            }
+            .btn-group {
+                flex-direction: column;
+                width: 100%;
+                gap: 0.25rem;
+            }
+            .btn-group .btn {
+                width: 100%;
+                margin-right: 0;
+            }
+            .gap-1 {
+                gap: 0.25rem !important;
+            }
+            .table-responsive {
+                overflow-x: auto;
+            }
+            .form-control, .btn, .card, .alert {
+                font-size: 0.97rem;
+            }
+            .row.g-3 > [class^='col-'], .row.g-3 > [class*=' col-'] {
+                margin-bottom: 1rem;
+            }
+        }
+        @media (min-width: 768px) and (max-width: 991.98px) {
+            .table-mobile thead {
+                display: table-header-group;
+            }
+            .table-mobile tbody {
+                display: table-row-group;
+            }
+            .table-mobile tr {
+                display: table-row;
+            }
+            .table-mobile th, .table-mobile td {
+                display: table-cell;
+            }
+            .table-mobile td:before {
+                display: none;
+            }
+        }
+        @media (min-width: 992px) {
+            .table-mobile thead {
+                display: table-header-group;
+            }
+        }
     </style>
 </head>
 <body>

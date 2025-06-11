@@ -36,7 +36,7 @@
                                 <table class="table table-bordered table-responsive">
                                     <tr>
                                         <th class="bg-light" width="40%">Name:</th>
-                                        <td>
+                                        <td data-label="Name">
                                             {% if staff %}
                                                 {{ staff.user.get_full_name }}
                                             {% elif department_head %}
@@ -46,7 +46,7 @@
                                     </tr>
                                     <tr>
                                         <th class="bg-light">Designation:</th>
-                                        <td>
+                                        <td data-label="Designation">
                                             {% if staff %}
                                                 {{ staff.position }}
                                             {% elif department_head %}
@@ -56,7 +56,7 @@
                                     </tr>
                                     <tr>
                                         <th class="bg-light">Employee ID:</th>
-                                        <td>
+                                        <td data-label="Employee ID">
                                             {% if staff %}
                                                 {{ staff.employee_id }}
                                             {% elif department_head %}
@@ -64,13 +64,21 @@
                                             {% endif %}
                                         </td>
                                     </tr>
+                                    <tr>
+                                        <th class="bg-light">Qualification:</th>
+                                        <td data-label="Qualification">{{ staff.qualification }}</td>
+                                    </tr>
+                                    <tr>
+                                        <th class="bg-light">Contact Information:</th>
+                                        <td data-label="Contact Information">{{ staff.contact_info }}</td>
+                                    </tr>
                                 </table>
                             </div>
                             <div class="col-lg-6">
                                 <table class="table table-bordered table-responsive">
                                     <tr>
                                         <th class="bg-light" width="40%">Department:</th>
-                                        <td>
+                                        <td data-label="Department">
                                             {% if staff %}
                                                 {{ staff.department }}
                                             {% elif department_head %}
@@ -80,7 +88,7 @@
                                     </tr>
                                     <tr>
                                         <th class="bg-light">Date of Joining:</th>
-                                        <td>
+                                        <td data-label="Date of Joining">
                                             {% if staff %}
                                                 {{ staff.joining_date }}
                                             {% elif department_head %}
@@ -90,7 +98,7 @@
                                     </tr>
                                     <tr>
                                         <th class="bg-light">Date of Appointment:</th>
-                                        <td>
+                                        <td data-label="Date of Appointment">
                                             {% if staff %}
                                                 {{ staff.appointment_date|default:"-" }}
                                             {% elif department_head %}

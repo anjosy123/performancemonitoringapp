@@ -32,7 +32,7 @@
                             {% if edit_mode %}
                                 You can update the email address if needed.
                             {% else %}
-                                Login credentials will be sent to this email address if provided.
+                                {% comment %} Login credentials will be sent to this email address if provided. {% endcomment %}
                             {% endif %}
                         </small>
                         {% if form.email.errors %}
@@ -68,6 +68,12 @@
                         </div>
                     </div>
 
+                    <div class="mb-3">
+                        <label class="form-label">Qualification</label>
+                        {{ form.qualification }}
+                        <small class="text-muted">Enter the staff member's educational qualification</small>
+                    </div>
+
                     <div class="row">
                         <div class="col-md-6 mb-3">
                         <label class="form-label">Joining Date</label>
@@ -77,6 +83,12 @@
                             <label class="form-label">Date of Appointment</label>
                             {{ form.appointment_date }}
                         </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">Contact Information</label>
+                        {{ form.contact_info }}
+                        <small class="text-muted">Enter the staff member's contact information.</small>
                     </div>
 
                     {% if form.errors %}

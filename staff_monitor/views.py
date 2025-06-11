@@ -914,25 +914,41 @@ def superintendent_list(request):
         superintendents = DepartmentHead.objects.all()
         departments = Department.objects.all()
         
-        # Calculate staff counts based on department and subdepartment matching
-        for superintendent in superintendents:
-            # Get the base query for staff in this superintendent's department
-            staff_query = Staff.objects.filter(department=superintendent.department)
+        # Group department heads by department for easier viewing
+        superintendents_by_department = {}
+        for dept in departments:
+            dept_heads = DepartmentHead.objects.filter(department=dept)
             
-            # If the superintendent has a subdepartment assigned, filter by that as well
-            if superintendent.subdepartment:
-                staff_count = staff_query.filter(subdepartment=superintendent.subdepartment).count()
+            # Calculate staff counts for each department head
+            for head in dept_heads:
+                # Get the base query for staff in this head's department
+                staff_query = Staff.objects.filter(department=head.department)
+            
+                # If the head has managed subdepartments, count staff in those subdepartments
+                if head.managed_subdepartments.exists():
+                    staff_count = staff_query.filter(subdepartment__in=head.managed_subdepartments.all()).count()
+                # If no managed subdepartments but has a primary subdepartment, use that
+                elif head.subdepartment:
+                    staff_count = staff_query.filter(subdepartment=head.subdepartment).count()
             else:
-                # If no subdepartment is assigned, count all staff in the department
+                    # If no subdepartments assigned, count all staff in the department
                 staff_count = staff_query.count()
             
-            # Attach the count to the superintendent object
-            superintendent.staff_count = staff_count
+                # Attach the count to the head object
+                head.staff_count = staff_count
+            
+            if dept_heads.exists():
+                superintendents_by_department[dept.id] = {
+                    'name': dept.name,
+                    'department_heads': dept_heads
+                }
         
         return render(request, 'staff_monitor/superintendent_list.html', {
             'superintendents': superintendents,
             'departments': departments,
-            'is_admin': True
+            'is_admin': True,
+            'superintendents_by_department': superintendents_by_department,
+            'show_by_department': True  # Flag to enable department-wise view
         })
     else:
         try:
@@ -962,11 +978,14 @@ def superintendent_list(request):
                         # Get the base query for staff in this head's department
                         staff_query = Staff.objects.filter(department=head.department)
                         
-                        # If the head has a subdepartment assigned, filter by that as well
-                        if head.subdepartment:
+                        # If the head has managed subdepartments, count staff in those subdepartments
+                        if head.managed_subdepartments.exists():
+                            staff_count = staff_query.filter(subdepartment__in=head.managed_subdepartments.all()).count()
+                        # If no managed subdepartments but has a primary subdepartment, use that
+                        elif head.subdepartment:
                             staff_count = staff_query.filter(subdepartment=head.subdepartment).count()
                         else:
-                            # If no subdepartment is assigned, count all staff in the department
+                            # If no subdepartments assigned, count all staff in the department
                             staff_count = staff_query.count()
                         
                         # Attach the count to the head object
@@ -992,7 +1011,6 @@ def superintendent_list(request):
                 return redirect('dashboard')
                 
         except DepartmentHead.DoesNotExist:
-            # User is neither admin nor department head
             messages.warning(request, "You don't have permission to view this page.")
             return redirect('dashboard')
 
@@ -1692,7 +1710,7 @@ def profile(request):
                 context['employee_id'] = staff.employee_id
                 context['position'] = staff.position
                 context['department_name'] = staff.department.name
-                
+                context['staff'] = staff
                 if staff.subdepartment:
                     context['subdepartment_name'] = staff.subdepartment.name
             except Staff.DoesNotExist:
@@ -1984,12 +2002,20 @@ def bulk_upload_staff(request):
                             )
                         
                         # Create Staff with department and subdepartment
+                        qualification = None
+                        if 'Qualification' in row and pd.notna(row['Qualification']):
+                            qualification = str(row['Qualification']).strip()
+                        
+                        contact_info = row.get('Contact Information', '')
+                        
                         staff = Staff.objects.create(
                             user=user,
                             employee_id=employee_id,
                             department=department,
                             subdepartment=subdepartment,
                             position=position,
+                            qualification=qualification,
+                            contact_info=contact_info,
                             joining_date=joining_date,
                             appointment_date=appointment_date
                         )

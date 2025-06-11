@@ -82,7 +82,7 @@
                             <tr>
                                 <th>Name</th>
                                 <th>Subdepartment</th>
-                                <th>Contact</th>
+                                {% comment %} <th>Contact</th> {% endcomment %}
                                 <th>Staff Assigned</th>
                                 <th>Actions</th>
                             </tr>
@@ -138,32 +138,35 @@
                 <div id="collapse{{ dept_id }}" class="accordion-collapse collapse show" aria-labelledby="heading{{ dept_id }}" data-bs-parent="#departmentsAccordion">
                     <div class="accordion-body p-0">
                         <div class="table-responsive">
-                            <table class="table table-hover mb-0">
+                            <table class="table table-hover table-mobile">
                                 <thead class="table-light">
                                     <tr>
                                         <th>Name</th>
                                         <th>Employee ID</th>
                                         <th>Subdepartment</th>
                                         <th>Position</th>
-                                        <th>Contact</th>
+                                        {% comment %} <th>Contact</th> {% endcomment %}
+                                        <th>Contact Information</th>
+                                        <th>Qualification</th>
                                         <th>Actions</th>
                                     </tr>
                                 </thead>
                                 <tbody>
                                     {% for staff in dept_data.staff %}
                                     <tr class="staff-row">
-                                        <td>{{ staff.user.get_full_name }}</td>
-                                        <td>{{ staff.employee_id }}</td>
-                                        <td>
+                                        <td data-label="Name">{{ staff.user.get_full_name }}</td>
+                                        <td data-label="Employee ID">{{ staff.employee_id }}</td>
+                                        <td data-label="Subdepartment">
                                             {% if staff.subdepartment %}
                                                 {{ staff.subdepartment.name }}
                                             {% else %}
                                                 <span class="text-muted">N/A</span>
                                             {% endif %}
                                         </td>
-                                        <td>{{ staff.position }}</td>
-                                        <td>{{ staff.user.email }}</td>
-                                        <td>
+                                        <td data-label="Position">{{ staff.position }}</td>
+                                        <td data-label="Contact Information">{% if staff.contact_info %}{{ staff.contact_info }}{% else %}<span class="text-muted">-</span>{% endif %}</td>
+                                        <td data-label="Qualification">{% if staff.qualification %}{{ staff.qualification }}{% else %}<span class="text-muted">-</span>{% endif %}</td>
+                                        <td data-label="Actions">
                                             <div class="btn-group">
                                                 <a href="{% url 'performance_form' staff.id %}" class="btn btn-primary btn-sm">
                                                     <i class="fas fa-clipboard-check me-1"></i>Evaluate
@@ -210,7 +213,7 @@
         {% else %}
         <!-- Regular Staff Table View -->
         <div class="table-responsive">
-            <table class="table table-hover">
+            <table class="table table-hover table-mobile">
                 <thead class="table-light">
                     <tr>
                         <th>Name</th>
@@ -218,26 +221,28 @@
                         <th>Department</th>
                         <th>Subdepartment</th>
                         <th>Position</th>
-                        <th>Contact</th>
+                        <th>Contact Information</th>
+                        <th>Qualification</th>
                         <th>Actions</th>
                     </tr>
                 </thead>
                 <tbody>
                     {% for staff in staff_members %}
                     <tr class="staff-row">
-                        <td>{{ staff.user.get_full_name }}</td>
-                        <td>{{ staff.employee_id }}</td>
-                        <td>{{ staff.department }}</td>
-                        <td>
+                        <td data-label="Name">{{ staff.user.get_full_name }}</td>
+                        <td data-label="Employee ID">{{ staff.employee_id }}</td>
+                        <td data-label="Department">{{ staff.department }}</td>
+                        <td data-label="Subdepartment">
                             {% if staff.subdepartment %}
                                 {{ staff.subdepartment.name }}
                             {% else %}
                                 <span class="text-muted">N/A</span>
                             {% endif %}
                         </td>
-                        <td>{{ staff.position }}</td>
-                        <td>{{ staff.user.email }}</td>
-                        <td>
+                        <td data-label="Position">{{ staff.position }}</td>
+                        <td data-label="Contact Information">{% if staff.contact_info %}{{ staff.contact_info }}{% else %}<span class="text-muted">-</span>{% endif %}</td>
+                        <td data-label="Qualification">{% if staff.qualification %}{{ staff.qualification }}{% else %}<span class="text-muted">-</span>{% endif %}</td>
+                        <td data-label="Actions">
                             <div class="btn-group">
                                 <a href="{% url 'performance_form' staff.id %}" class="btn btn-primary btn-sm">
                                     <i class="fas fa-clipboard-check me-1"></i>Evaluate

@@ -20,7 +20,9 @@
             </div>
         </div>
 
-        <div class="card-body p-4">
+        
+
+
             <div class="report-header mb-4">
                 <div class="text-center mb-4">
                     <h2 class="report-title">MARIAMPUR HOSPITAL</h2>
@@ -90,6 +92,14 @@
                                     {{ report.department_head.designation }}
                                 {% endif %}
                             </td>
+                        </tr>
+                        <tr>
+                            <th>Qualification</th>
+                            <td>{{ report.staff.qualification }}</td>
+                        </tr>
+                        <tr>
+                            <th>Contact Information</th>
+                            <td>{{ report.staff.contact_info }}</td>
                         </tr>
                     </table>
                 </div>
@@ -430,77 +440,112 @@
 
     /* Print-specific styles */
     @media print {
-        body {
-            background-color: white;
-            font-size: 12pt;
-        }
-        
-        .container {
-            width: 100%;
-            max-width: 100%;
-            padding: 0;
+        html, body {
+            width: 210mm;
+            height: 297mm;
             margin: 0;
-        }
-        
-        .card {
-            border: none !important;
-            box-shadow: none !important;
-        }
-        
-        .card-header {
-            background: none !important;
+            padding: 0;
+            font-size: 11pt;
+            background: #fff !important;
             color: #000 !important;
-            padding: 0 !important;
-            margin-bottom: 1rem;
         }
-        
-        .non-printable {
+        body {
+            margin: 10mm 10mm 10mm 10mm !important;
+        }
+        .card, .card-body, .container, .row, .col, .col-md-6, .col-md-8, .col-md-10 {
+            box-shadow: none !important;
+            border: none !important;
+            background: #fff !important;
+            padding: 0 !important;
+            margin: 0 !important;
+        }
+        .btn, .no-print, nav, .navbar, .sidebar, .alert, .print-hide, .swal2-container {
             display: none !important;
         }
-        
-        .table {
-            border: 1px solid #dee2e6 !important;
-            box-shadow: none !important;
+        h1, h2, h3, h4, h5, h6 {
+            page-break-after: avoid;
+            page-break-inside: avoid;
+            margin-top: 0.5em;
+            margin-bottom: 0.5em;
         }
-        
-        .section-title {
-            background: none !important;
-            border-left: 2px solid #000 !important;
-            padding: 0.25rem 0.5rem !important;
-            margin-bottom: 1rem !important;
-            box-shadow: none !important;
-        }
-        
-        .badge {
-            border: 1px solid #000;
-            color: #000 !important;
-            background: none !important;
-        }
-        
-        /* Ensure photo prints well */
-        .incident-photo img {
-            max-width: 400px;
-            max-height: 300px;
-            box-shadow: none;
-        }
-        
-        .report-meta {
-            background: none !important;
-            border: 1px solid #dee2e6 !important;
-            box-shadow: none !important;
-        }
-        
-        .bg-light {
-            background-color: #f8f9fa !important;
-            -webkit-print-color-adjust: exact;
-        }
-        
-        .report-section {
+        table {
+            width: 100% !important;
+            border-collapse: collapse !important;
+            font-size: 10.5pt;
+            margin-bottom: 1em;
             page-break-inside: avoid;
         }
-        
-        .report-footer {
-            margin-top: 3rem !important;
+        th, td {
+            border: 1px solid #333 !important;
+            padding: 4px 8px !important;
+            word-break: break-word;
+        }
+        .table-mobile td:before {
+            display: none !important;
+        }
+        .staff-details, .incident-report, .report-header, .section, .table-responsive {
+            page-break-inside: avoid;
+            margin-bottom: 0.5em;
+        }
+        .section {
+            margin-bottom: 0.5em;
+        }
+        /* Ensure at most 2-3 pages by reducing spacing and font size */
+        .mb-4, .mb-3, .mb-2, .mt-4, .mt-3, .mt-2 {
+            margin-bottom: 0.5em !important;
+            margin-top: 0.5em !important;
+        }
+        .py-4, .py-3, .py-2, .pt-4, .pt-3, .pt-2, .pb-4, .pb-3, .pb-2 {
+            padding-top: 0.5em !important;
+            padding-bottom: 0.5em !important;
+        }
+        /* Page break after main sections if needed */
+        .page-break {
+            page-break-after: always;
+        }
+        /* Optional: Add page numbers */
+        @page {
+            size: A4;
+            margin: 10mm;
+        }
+        footer {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            text-align: center;
+            font-size: 9pt;
+            color: #888;
+        }
+    }
+
+    @media (max-width: 767.98px) {
+        .table-mobile, .table-mobile thead, .table-mobile tbody, .table-mobile tr, .table-mobile th, .table-mobile td {
+            display: block;
+        }
+        .table-mobile tr {
+            margin-bottom: 1rem;
+            border: 1px solid #dee2e6;
+            border-radius: 0.5rem;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+        }
+        .table-mobile td {
+            position: relative;
+            padding-left: 40%;
+            text-align: right;
+            border-bottom: 1px solid #f0f0f0;
+        }
+        .table-mobile td:last-child {
+            border-bottom: none;
+        }
+        .table-mobile td:before {
+            content: attr(data-label);
+            position: absolute;
+            left: 1rem;
+            width: 35%;
+            white-space: nowrap;
+            font-weight: 600;
+            text-align: left;
         }
     }
 </style>

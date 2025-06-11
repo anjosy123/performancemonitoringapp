@@ -67,15 +67,15 @@
                                 <div class="profile-card-body">
                                     <div class="mb-4">
                                         <label for="first_name" class="form-label">First Name</label>
-                                        <input type="text" class="form-control" id="first_name" name="first_name" value="{{ user.first_name }}" required>
+                                        <input type="text" class="form-control" id="first_name" name="first_name" value="{{ user.first_name }}" required disabled>
                                     </div>
                                     <div class="mb-4">
                                         <label for="last_name" class="form-label">Last Name</label>
-                                        <input type="text" class="form-control" id="last_name" name="last_name" value="{{ user.last_name }}" required>
+                                        <input type="text" class="form-control" id="last_name" name="last_name" value="{{ user.last_name }}" required disabled>
                                     </div>
                                     <div class="mb-4">
                                         <label for="email" class="form-label">Email Address</label>
-                                        <input type="email" class="form-control readonly-field" id="email" name="email" value="{{ user.email }}" readonly>
+                                        <input type="email" class="form-control readonly-field" id="email" name="email" value="{{ user.email }}" readonly disabled>
                                         <small class="form-text">Email address cannot be changed</small>
                                     </div>
                                 </div>
@@ -99,39 +99,39 @@
                                     {% elif is_department_head %}
                                         <div class="mb-4">
                                             <label class="form-label">Position</label>
-                                            <input type="text" class="form-control readonly-field" value="{{ position }}" readonly>
+                                            <input type="text" class="form-control readonly-field" value="{{ position }}" readonly disabled>
                                         </div>
                                         <div class="mb-4">
                                             <label class="form-label">Department</label>
-                                            <input type="text" class="form-control readonly-field" value="{{ department_name }}" readonly>
+                                            <input type="text" class="form-control readonly-field" value="{{ department_name }}" readonly disabled>
                                         </div>
                                         {% if subdepartment_name %}
                                         <div class="mb-4">
                                             <label class="form-label">Sub Department</label>
-                                            <input type="text" class="form-control readonly-field" value="{{ subdepartment_name }}" readonly>
+                                            <input type="text" class="form-control readonly-field" value="{{ subdepartment_name }}" readonly disabled>
                                         </div>
                                         {% endif %}
                                         <div class="mb-0">
                                             <label for="contact_number" class="form-label">Contact Number</label>
-                                            <input type="text" class="form-control" id="contact_number" name="contact_number" value="{{ contact_number }}">
+                                            <input type="text" class="form-control" id="contact_number" name="contact_number" value="{{ contact_number }}" disabled>
                                         </div>
                                     {% else %}
                                         <div class="mb-4">
                                             <label class="form-label">Employee ID</label>
-                                            <input type="text" class="form-control readonly-field" value="{{ employee_id }}" readonly>
+                                            <input type="text" class="form-control readonly-field" value="{{ employee_id }}" readonly disabled>
                                         </div>
                                         <div class="mb-4">
                                             <label class="form-label">Position</label>
-                                            <input type="text" class="form-control readonly-field" value="{{ position }}" readonly>
+                                            <input type="text" class="form-control readonly-field" value="{{ position }}" readonly disabled>
                                         </div>
                                         <div class="mb-4">
                                             <label class="form-label">Department</label>
-                                            <input type="text" class="form-control readonly-field" value="{{ department_name }}" readonly>
+                                            <input type="text" class="form-control readonly-field" value="{{ department_name }}" readonly disabled>
                                         </div>
                                         {% if subdepartment_name %}
                                         <div class="mb-0">
                                             <label class="form-label">Sub Department</label>
-                                            <input type="text" class="form-control readonly-field" value="{{ subdepartment_name }}" readonly>
+                                            <input type="text" class="form-control readonly-field" value="{{ subdepartment_name }}" readonly disabled>
                                         </div>
                                         {% endif %}
                                     {% endif %}
@@ -141,9 +141,7 @@
                     </div>
                     
                     <div class="profile-submit-wrapper">
-                        <button type="submit" class="btn btn-primary">
-                            <i class="fas fa-save me-2"></i>Save Changes
-                        </button>
+                        <button type="submit" class="btn btn-primary" disabled>Save Changes</button>
                     </div>
                 </form>
             </div>
@@ -571,4 +569,28 @@
     });
 </script>
 {% endblock %}
+
+{% if is_staff_member %}
+    <div class="row mb-3">
+        <div class="col-md-6">
+            <strong>Employee ID:</strong> {{ employee_id }}
+        </div>
+        <div class="col-md-6">
+            <strong>Position:</strong> {{ position }}
+        </div>
+    </div>
+    <div class="row mb-3">
+        <div class="col-md-6">
+            <strong>Department:</strong> {{ department_name }}
+        </div>
+        <div class="col-md-6">
+            <strong>Subdepartment:</strong> {{ subdepartment_name|default:"-" }}
+        </div>
+    </div>
+    <div class="row mb-3">
+        <div class="col-md-6">
+            <strong>Qualification:</strong> {{ staff.qualification|default:"-" }}
+        </div>
+    </div>
+{% endif %}
 {% endblock %} 
