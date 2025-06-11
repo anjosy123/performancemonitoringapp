@@ -49,34 +49,76 @@
 
     <div class="card-body">
         <div class="table-responsive">
-            <table class="table table-hover table-mobile">
-                <thead>
+            <table class="table table-hover" id="incidentReportsTable">
+                <thead class="table-light">
                     <tr>
                         <th>Report Number</th>
-                        <th>Incident Date</th>
-                        <th>Incident Time</th>
-                        <th>Incident Location</th>
-                        <th>Prepared By</th>
+                        <th>Name</th>
+                        <th>Department</th>
+                        <th>Role</th>
+                        <th>Date</th>
+                        <th>Location</th>
+                        <th>Status</th>
                         <th>Actions</th>
                     </tr>
                 </thead>
                 <tbody>
                     {% for report in reports %}
-                    <tr>
-                        <td data-label="Report Number">{{ report.report_number }}</td>
-                        <td data-label="Incident Date">{{ report.incident_date }}</td>
-                        <td data-label="Incident Time">{{ report.incident_time }}</td>
-                        <td data-label="Incident Location">{{ report.incident_location }}</td>
-                        <td data-label="Prepared By">{{ report.prepared_by }}</td>
-                        <td data-label="Actions">
-                            <a href="{% url 'view_incident_report' report.id %}" class="btn btn-primary btn-sm">View</a>
-                            <a href="{% url 'print_incident_report' report.id %}" class="btn btn-secondary btn-sm">Print</a>
-                        </td>
-                    </tr>
+                        <tr class="report-row">
+                            <td class="fw-bold">{{ report.report_number }}</td>
+                            <td>
+                                {% if report.staff %}
+                                    {{ report.staff.user.get_full_name }}
+                                {% elif report.department_head %}
+                                    {{ report.department_head.user.get_full_name }}
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if report.staff %}
+                                    {{ report.staff.department }}
+                                {% elif report.department_head %}
+                                    {{ report.department_head.department }}
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if report.staff %}
+                                    {{ report.staff.position }}
+                                {% elif report.department_head %}
+                                    {{ report.department_head.designation }}
+                                {% endif %}
+                            </td>
+                            <td>{{ report.incident_date }}</td>
+                            <td>{{ report.incident_location }}</td>
+                            <td>
+                                <span class="badge {% if report.status == 'reported' %}bg-warning{% elif report.status == 'under_investigation' %}bg-info{% elif report.status == 'resolved' %}bg-success{% else %}bg-secondary{% endif %}">
+                                    {{ report.get_status_display }}
+                                </span>
+                            </td>
+                            <td>
+                                <div class="btn-group">
+                                    <a href="{% url 'view_incident_report' report.id %}" class="btn btn-info btn-sm">
+                                        <i class="fas fa-eye me-1"></i>View
+                                    </a>
+                                    <a href="{% url 'print_incident_report' report.id %}" class="btn btn-primary btn-sm" target="_blank">
+                                        <i class="fas fa-print me-1"></i>Print
+                                    </a>
+                                    {% if user.is_staff %}
+                                    <button class="btn btn-danger btn-sm delete-report" 
+                                            data-report-id="{{ report.id }}"
+                                            data-staff-name="{% if report.staff %}{{ report.staff.user.get_full_name }}{% elif report.department_head %}{{ report.department_head.user.get_full_name }}{% endif %}"
+                                            data-report-number="{{ report.report_number }}">
+                                        <i class="fas fa-trash me-1"></i>Delete
+                                    </button>
+                                    {% endif %}
+                                </div>
+                            </td>
+                        </tr>
                     {% empty %}
-                    <tr>
-                        <td colspan="6" class="text-center">No incident reports found.</td>
-                    </tr>
+                        <tr>
+                            <td colspan="8" class="text-center py-4">
+                                <i class="fas fa-exclamation-triangle text-muted me-2"></i>No incident reports found
+                            </td>
+                        </tr>
                     {% endfor %}
                 </tbody>
             </table>
@@ -187,33 +229,29 @@
         box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.25);
     }
 
-    @media (max-width: 767.98px) {
-        .table-mobile, .table-mobile thead, .table-mobile tbody, .table-mobile tr, .table-mobile th, .table-mobile td {
+    @media (max-width: 768px) {
+        .card-header {
+            padding: 1rem;
+        }
+
+        .btn-group {
+            flex-direction: column;
+            width: 100%;
+        }
+
+        .btn-group .btn {
+            width: 100%;
+            margin: 0.25rem 0;
+        }
+
+        .table td {
+            padding: 0.75rem;
+        }
+
+        .badge {
             display: block;
-        }
-        .table-mobile tr {
-            margin-bottom: 1rem;
-            border: 1px solid #dee2e6;
-            border-radius: 0.5rem;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.05);
-        }
-        .table-mobile td {
-            position: relative;
-            padding-left: 40%;
-            text-align: right;
-            border-bottom: 1px solid #f0f0f0;
-        }
-        .table-mobile td:last-child {
-            border-bottom: none;
-        }
-        .table-mobile td:before {
-            content: attr(data-label);
-            position: absolute;
-            left: 1rem;
-            width: 35%;
-            white-space: nowrap;
-            font-weight: 600;
-            text-align: left;
+            width: fit-content;
+            margin: 0 auto;
         }
     }
 </style>
@@ -227,12 +265,6 @@ document.addEventListener('DOMContentLoaded', function() {
     const table = document.getElementById('incidentReportsTable');
     const rows = table.getElementsByClassName('report-row');
     const noResults = document.getElementById('noResults');
-
-    // Initialize tooltips
-    var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'))
-    var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
-        return new bootstrap.Tooltip(tooltipTriggerEl)
-    })
 
     // Remove duplicate department options
     const uniqueDepartments = new Set();
@@ -256,7 +288,7 @@ document.addEventListener('DOMContentLoaded', function() {
             const department = row.cells[2].textContent.toLowerCase();
             const role = row.cells[3].textContent.toLowerCase();
             const location = row.cells[5].textContent.toLowerCase();
-            const status = row.cells[7].textContent.toLowerCase();
+            const status = row.cells[6].textContent.toLowerCase();
             
             const matchesSearch = reportNumber.includes(searchTerm) || 
                                   name.includes(searchTerm) || 
