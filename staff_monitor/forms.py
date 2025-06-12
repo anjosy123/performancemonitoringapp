@@ -752,14 +752,14 @@ class StaffBulkUploadForm(forms.Form):
             # Read the Excel file
             df = pd.read_excel(excel_file)
             
+            # Normalize column names
+            df.columns = [col.strip().lower() for col in df.columns]
+            
             # Check if required columns are present
-            required_columns = [
-                'First name', 'Last name', 'Employee ID', 
-                'Designation', 'Department', 'Joining date'
-            ]
+            required_columns = ['name', 'employee_id', 'position', 'department', 'joining_date']
             
             # Email and Qualification are now optional
-            recommended_columns = ['Email', 'Qualification']
+            recommended_columns = ['email', 'qualification']
             
             missing_columns = [col for col in required_columns if col not in df.columns]
             if missing_columns:

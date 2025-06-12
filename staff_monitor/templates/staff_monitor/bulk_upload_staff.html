@@ -138,17 +138,17 @@ document.addEventListener('DOMContentLoaded', function() {
         e.preventDefault();
         
         // Create workbook with headers
-        const headers = ['First name', 'Last name', 'Email', 'Employee ID', 'Designation', 'Department', 'Qualification', 'Contact Information', 'Joining date', 'Date of appointment'];
+        const headers = ['name', 'employee_id', 'email', 'position', 'department', 'subdepartment', 'qualification', 'contact_info', 'joining_date', 'appointment_date'];
         
         // Sample data rows showing different department format options
         const sampleData = [
-            ['John', 'Doe', 'john.doe@example.com', 'EMP001', 'Staff Nurse', 'Nursing', 'BSc Nursing', '9876543210', '2023-01-15', '2023-02-01'],
-            ['Jane', 'Smith', 'jane.smith@example.com', 'EMP002', 'Nurse', 'NURSERY', 'MSc Nursing', '9876543211', '2023-02-10', '2023-03-01'],
-            ['Robert', 'Johnson', 'robert@example.com', 'EMP003', 'Doctor', 'NURSERY - MATERNITY', 'MD', '9876543212', '2023-03-05', '2023-04-01'],
-            ['Maria', 'Garcia', 'maria@example.com', 'EMP004', 'Technician', 'Radiology', 'BSc Radiography', '9876543213', '2023-04-15', ''],
-            ['David', 'Lee', '', 'EMP005', 'Assistant', 'Administration', 'BA', '9876543214', '2023-05-20', ''],
-            ['Emma', 'Wilson', 'emma@example.com', 'EMP006', 'Senior Nurse', 'ICU - EMERGENCY', 'RN', '9876543215', '2023-06-01', '2023-06-15'],
-            ['Michael', 'Brown', '', 'EMP007', 'Receptionist', 'RECEPTION - ADMINISTRATION', 'Diploma in Hospitality Management', '9876543216', '2023-07-10', '']
+            ['John Doe', 'EMP001', 'john.doe@example.com', 'Staff Nurse', 'Nursing', 'Emergency', 'BSc Nursing', '9876543210', '12.05.2024', '15.05.2024'],
+            ['Jane Smith', 'EMP002', 'jane.smith@example.com', 'Nurse', 'NURSERY', '', 'MSc Nursing', '9876543211', '15.05.2024', ''],
+            ['Robert Johnson', 'EMP003', 'robert@example.com', 'Doctor', 'NURSERY - MATERNITY', '', 'MD', '9876543212', '20.05.2024', '25.05.2024'],
+            ['Maria Garcia', 'EMP004', 'maria@example.com', 'Technician', 'Radiology', '', 'BSc Radiography', '9876543213', '25.05.2024', ''],
+            ['David Lee', 'EMP005', '', 'Assistant', 'Administration', '', 'BA', '9876543214', '30.05.2024', ''],
+            ['Emma Wilson', 'EMP006', 'emma@example.com', 'Senior Nurse', 'ICU - EMERGENCY', '', 'RN', '9876543215', '01.06.2024', '05.06.2024'],
+            ['Michael Brown', 'EMP007', '', 'Receptionist', 'RECEPTION - ADMINISTRATION', '', 'Diploma in Hospitality Management', '9876543216', '10.06.2024', '']
         ];
         
         // Create CSV content

@@ -1787,7 +1787,7 @@ def bulk_upload_staff(request):
             excel_file = request.FILES['excel_file']
             df = pd.read_excel(excel_file)
             
-            # Validate required columns
+            # Validate required columns - using the new column names
             required_columns = ['name', 'employee_id', 'position', 'department', 'joining_date']
             missing_columns = [col for col in required_columns if col not in df.columns]
             if missing_columns:
@@ -1818,8 +1818,8 @@ def bulk_upload_staff(request):
                     email = str(row['email']).strip() if 'email' in df.columns and pd.notna(row['email']) else None
                     name = str(row['name']).strip()
                     
-                    # Generate a random password
-                    password = User.objects.make_random_password()
+                    # Set a default password for all staff (or leave blank if allowed)
+                    password = 'changeme123'  # You can change this default as needed
                     
                     user = User.objects.create_user(
                         username=username,
@@ -1912,8 +1912,12 @@ def bulk_upload_staff(request):
                 for col_num, value in enumerate(df.columns.values):
                     if value in required_fields:
                         worksheet.data_validation(1, col_num, 1000, col_num, {
-                            'validate': 'not_blank',
-                            'error_message': f'{value} is required'
+                            'validate': 'custom',
+                            'value': '=LEN(TRIM(A1))>0',
+                            'error_message': f'{value} is required',
+                            'error_title': 'Required Field',
+                            'input_message': f'Please enter {value}',
+                            'input_title': 'Required Field'
                         })
                     
                     # Add date format and validation for date columns
