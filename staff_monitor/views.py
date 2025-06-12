@@ -1788,7 +1788,7 @@ def bulk_upload_staff(request):
             df = pd.read_excel(excel_file)
             
             # Validate required columns
-            required_columns = ['name', 'employee_id', 'position', 'department']
+            required_columns = ['name', 'employee_id', 'position', 'department', 'joining_date']
             missing_columns = [col for col in required_columns if col not in df.columns]
             if missing_columns:
                 messages.error(request, f"Missing required columns: {', '.join(missing_columns)}")
@@ -1829,6 +1829,13 @@ def bulk_upload_staff(request):
                         last_name=''
                     )
                     
+                    # Parse dates
+                    try:
+                        joining_date = datetime.strptime(str(row['joining_date']), '%d.%m.%Y').date()
+                        appointment_date = datetime.strptime(str(row['appointment_date']), '%d.%m.%Y').date() if 'appointment_date' in df.columns and pd.notna(row['appointment_date']) else None
+                    except ValueError as e:
+                        raise ValueError(f"Invalid date format. Please use DD.MM.YYYY format. Error: {str(e)}")
+                    
                     # Create staff
                     staff = Staff.objects.create(
                         user=user,
@@ -1837,7 +1844,9 @@ def bulk_upload_staff(request):
                         subdepartment=subdepartment,
                         position=str(row['position']).strip(),
                         qualification=str(row['qualification']).strip() if 'qualification' in df.columns and pd.notna(row['qualification']) else None,
-                        contact_info=str(row['contact_info']).strip() if 'contact_info' in df.columns and pd.notna(row['contact_info']) else None
+                        contact_info=str(row['contact_info']).strip() if 'contact_info' in df.columns and pd.notna(row['contact_info']) else None,
+                        joining_date=joining_date,
+                        appointment_date=appointment_date
                     )
                     
                     success_count += 1
@@ -1868,7 +1877,9 @@ def bulk_upload_staff(request):
                 'department': ['Nursing', 'Medical'],  # Example departments
                 'subdepartment': ['Emergency', 'General'],  # Example subdepartments
                 'qualification': ['BSc Nursing', 'MBBS'],  # Example qualifications
-                'contact_info': ['1234567890', '9876543210']  # Example contact info
+                'contact_info': ['1234567890', '9876543210'],  # Example contact info
+                'joining_date': ['12.05.2024', '15.05.2024'],  # Example joining dates in DD.MM.YYYY format
+                'appointment_date': ['12.05.2024', '15.05.2024']  # Example appointment dates in DD.MM.YYYY format
             }
             
             df = pd.DataFrame(template_data)
@@ -1897,12 +1908,30 @@ def bulk_upload_staff(request):
                     worksheet.set_column(col_num, col_num, 15)  # Set column width
                 
                 # Add data validation for required fields
-                required_fields = ['name', 'employee_id', 'position', 'department']
+                required_fields = ['name', 'employee_id', 'position', 'department', 'joining_date']
                 for col_num, value in enumerate(df.columns.values):
                     if value in required_fields:
                         worksheet.data_validation(1, col_num, 1000, col_num, {
                             'validate': 'not_blank',
                             'error_message': f'{value} is required'
+                        })
+                    
+                    # Add date format and validation for date columns
+                    if value in ['joining_date', 'appointment_date']:
+                        # Set date format to DD.MM.YYYY
+                        date_format = workbook.add_format({'num_format': 'dd.mm.yyyy'})
+                        worksheet.set_column(col_num, col_num, 15, date_format)
+                        
+                        # Add date validation
+                        worksheet.data_validation(1, col_num, 1000, col_num, {
+                            'validate': 'date',
+                            'criteria': 'between',
+                            'minimum': '01.01.2000',
+                            'maximum': '31.12.2100',
+                            'error_message': 'Please enter a valid date in DD.MM.YYYY format',
+                            'error_title': 'Invalid Date',
+                            'input_message': 'Enter date in DD.MM.YYYY format',
+                            'input_title': 'Date Format'
                         })
             
             # Set up the response
