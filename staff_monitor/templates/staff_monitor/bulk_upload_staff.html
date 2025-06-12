@@ -17,16 +17,14 @@
                             <h5><i class="fas fa-info-circle me-2"></i>Instructions</h5>
                             <p>Upload an Excel file with staff details to add multiple staff members at once. The file should contain the following columns:</p>
                             <ul>
-                                <li><strong>First name</strong> - Staff member's first name</li>
-                                <li><strong>Last name</strong> - Staff member's last name</li>
-                                <li><strong>Email</strong> - <em>Optional:</em> Staff member's email address (leave blank, "nil", or "N/A" if not available)</li>
-                                <li><strong>Employee ID</strong> - Staff member's employee ID (must be unique)</li>
-                                <li><strong>Designation</strong> - Staff member's position/designation</li>
-                                <li><strong>Department</strong> - Department name or subdepartment name (see formats below)</li>
-                                <li><strong>Qualification</strong> - <em>Optional:</em> Staff member's educational qualification</li>
-                                <li><strong>Joining date</strong> - Date when the staff member joined (YYYY-MM-DD format)</li>
-                                <li><strong>Date of appointment</strong> - <em>Optional:</em> Date of appointment (YYYY-MM-DD format)</li>
-                                <li>Contact Information (optional)</li>
+                                <li><strong>name</strong> - Full name of the staff member</li>
+                                <li><strong>employee_id</strong> - Unique employee ID</li>
+                                <li><strong>email</strong> (optional) - Email address</li>
+                                <li><strong>position</strong> - Staff position/designation</li>
+                                <li><strong>department</strong> - Department name</li>
+                                <li><strong>subdepartment</strong> (optional) - Subdepartment name</li>
+                                <li><strong>qualification</strong> (optional) - Educational qualification</li>
+                                <li><strong>contact_info</strong> (optional) - Contact information</li>
                             </ul>
                             <div class="alert alert-warning mt-3">
                                 <h6><i class="fas fa-exclamation-triangle me-2"></i>Department/Subdepartment Formats</h6>
@@ -38,11 +36,19 @@
                                 </ol>
                                 <p>The system will attempt to match to existing departments and subdepartments. If a subdepartment is specified with its parent department (format #3), and the subdepartment doesn't exist, it will be created automatically.</p>
                             </div>
-                            <p class="mb-0">
-                                <a href="#" class="btn btn-sm btn-success download-template-btn">
-                                    <i class="fas fa-download me-1"></i>Download Template
-                                </a>
-                            </p>
+                            <div class="d-flex justify-content-between align-items-center mb-3">
+                                <div>
+                                    <a href="?download_template=1" class="btn btn-success">
+                                        <i class="fas fa-download me-2"></i>Download Template
+                                    </a>
+                                </div>
+                                <div class="text-muted">
+                                    <small>
+                                        <i class="fas fa-info-circle me-1"></i>
+                                        Required fields are marked with *
+                                    </small>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -50,12 +56,17 @@
                 <form method="post" enctype="multipart/form-data" class="needs-validation" novalidate>
                     {% csrf_token %}
                     <div class="mb-4">
-                        <label class="form-label">Excel File</label>
-                        {{ form.excel_file }}
-                        <div class="form-text">{{ form.excel_file.help_text }}</div>
-                        {% if form.excel_file.errors %}
-                            <div class="invalid-feedback d-block">{{ form.excel_file.errors.0 }}</div>
-                        {% endif %}
+                        <h5 class="card-title mb-3">
+                            <i class="fas fa-file-upload me-2"></i>Upload Staff Data
+                        </h5>
+                        <div class="mb-3">
+                            {{ form.excel_file }}
+                            {% if form.excel_file.errors %}
+                                <div class="invalid-feedback d-block">
+                                    {{ form.excel_file.errors.0 }}
+                                </div>
+                            {% endif %}
+                        </div>
                     </div>
 
                     <div class="d-grid gap-2 d-md-flex justify-content-md-end">
@@ -63,7 +74,7 @@
                             <i class="fas fa-times me-1"></i>Cancel
                         </a>
                         <button type="submit" class="btn btn-primary">
-                            <i class="fas fa-upload me-1"></i>Upload Staff
+                            <i class="fas fa-upload me-1"></i>Upload Staff Data
                         </button>
                     </div>
                 </form>

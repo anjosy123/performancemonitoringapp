@@ -363,18 +363,11 @@ class DepartmentHeadForm(forms.ModelForm):
             return head
 
 class StaffForm(forms.ModelForm):
-    first_name = forms.CharField(
+    name = forms.CharField(
         required=True,
         widget=forms.TextInput(attrs={
             'class': 'form-control',
-            'placeholder': 'Enter first name'
-        })
-    )
-    last_name = forms.CharField(
-        required=True,
-        widget=forms.TextInput(attrs={
-            'class': 'form-control',
-            'placeholder': 'Enter last name'
+            'placeholder': 'Enter full name'
         })
     )
     email = forms.EmailField(
@@ -553,66 +546,45 @@ class StaffForm(forms.ModelForm):
 
     def save(self, commit=True):
         # Check if we're updating an existing user
-        if self.instance_user:
-            # Update existing user information
-            self.instance_user.first_name = self.cleaned_data['first_name']
-            self.instance_user.last_name = self.cleaned_data['last_name']
-            
-            # Update email if provided and different from current
-            new_email = self.cleaned_data.get('email')
-            if new_email and new_email != self.instance_user.email:
-                self.instance_user.email = new_email
-                self.instance_user.username = new_email  # Also update username as it's based on email
-            
-            if commit:
-                self.instance_user.save()
-                
-            # Update Staff instance
-            staff = super().save(commit=False)
-            
-            # Ensure employee_id remains unchanged when editing
-            if self.instance and self.instance.pk:
-                staff.employee_id = self.instance.employee_id
-                
-            if commit:
-                staff.save()
-                
-            return staff
+        if self.instance.pk:
+            # Update existing user
+            user = self.instance.user
+            user.email = self.cleaned_data.get('email', '')
+            user.first_name = self.cleaned_data.get('name', '')  # Store full name in first_name
+            user.last_name = ''  # Clear last_name
+            user.save()
         else:
-            # Create new user with or without login credentials based on email availability
-            email = self.cleaned_data.get('email')
+            # Create new user
+            username = self.cleaned_data.get('employee_id')
+            email = self.cleaned_data.get('email', '')
+            name = self.cleaned_data.get('name', '')
             
-            # Create a User instance
-            if email:
-                # Create user with email and username (email is available)
-                user = User.objects.create_user(
-                    username=email,
-                    email=email,
-                    password=None,  # No password set, user cannot login until password reset
-                    first_name=self.cleaned_data['first_name'],
-                    last_name=self.cleaned_data['last_name'],
-                    is_active=False  # User account is inactive
-                )
-            else:
-                # Create user with generated username (no email available)
-                username = f"staff_{uuid.uuid4().hex[:8]}"  # Generate a unique username
-                user = User.objects.create_user(
-                    username=username,
-                    email=None,  # No email
-                    password=None,  # No password
-                    first_name=self.cleaned_data['first_name'],
-                    last_name=self.cleaned_data['last_name'],
-                    is_active=False  # User account is inactive
-                )
+            # Generate a random password
+            password = User.objects.make_random_password()
             
-            # Create Staff instance
-            staff = super().save(commit=False)
-            staff.user = user
+            # Create the user
+            user = User.objects.create_user(
+                username=username,
+                email=email,
+                password=password,
+                first_name=name,  # Store full name in first_name
+                last_name=''  # Empty last_name
+            )
             
-            if commit:
-                staff.save()
-            
-            return staff
+            # Store credentials in session for display
+            self.instance.user = user
+            self.instance.credentials = {
+                'username': username,
+                'password': password,
+                'name': name,
+                'email': email
+            }
+        
+        # Save the staff instance
+        if commit:
+            self.instance.save()
+        
+        return self.instance
 
 class DepartmentForm(forms.ModelForm):
     name = forms.CharField(

@@ -20,3 +20,4 @@ typing_extensions==4.13.2
 tzdata==2025.2
 whitenoise==6.9.0
 whitespace==1.0.0b8
+XlsxWriter==3.2.3

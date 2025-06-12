@@ -16,31 +16,9 @@
                     {% csrf_token %}
                     <div class="row">
                         <div class="col-md-6 mb-3">
-                            <label class="form-label">First Name</label>
-                            {{ form.first_name }}
+                            <label class="form-label">Full Name</label>
+                            {{ form.name }}
                         </div>
-                        <div class="col-md-6 mb-3">
-                            <label class="form-label">Last Name</label>
-                            {{ form.last_name }}
-                        </div>
-                    </div>
-
-                    <div class="mb-3">
-                        <label class="form-label">Email</label>
-                        {{ form.email }}
-                        <small class="text-muted">
-                            {% if edit_mode %}
-                                You can update the email address if needed.
-                            {% else %}
-                                {% comment %} Login credentials will be sent to this email address if provided. {% endcomment %}
-                            {% endif %}
-                        </small>
-                        {% if form.email.errors %}
-                            <div class="invalid-feedback d-block">{{ form.email.errors.0 }}</div>
-                        {% endif %}
-                    </div>
-
-                    <div class="row">
                         <div class="col-md-6 mb-3">
                             <label class="form-label">Employee ID</label>
                             {{ form.employee_id }}
@@ -50,17 +28,29 @@
                             </small>
                             {% endif %}
                         </div>
-                        <div class="col-md-6 mb-3">
-                            <label class="form-label">Designation</label>
-                            {{ form.position }}
-                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">Email</label>
+                        {{ form.email }}
+                        <small class="text-muted">Optional. If provided, login credentials will be sent to this email address.</small>
+                        {% if form.email.errors %}
+                            <div class="invalid-feedback d-block">{{ form.email.errors.0 }}</div>
+                        {% endif %}
                     </div>
 
                     <div class="row">
                         <div class="col-md-6 mb-3">
+                            <label class="form-label">Designation</label>
+                            {{ form.position }}
+                        </div>
+                        <div class="col-md-6 mb-3">
                             <label class="form-label">Department</label>
                             {{ form.department }}
                         </div>
+                    </div>
+
+                    <div class="row">
                         <div class="col-md-6 mb-3" id="subdepartment-container">
                             <label class="form-label">Sub Department</label>
                             {{ form.subdepartment }}
