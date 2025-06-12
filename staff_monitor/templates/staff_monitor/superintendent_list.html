@@ -92,6 +92,19 @@
                                                 <a href="{% url 'feedback_form_department_head' head.id %}" class="btn btn-success btn-sm">
                                                     <i class="fas fa-comment-dots me-1 d-none d-sm-inline"></i>Incident
                                                 </a>
+                                                {% if is_admin or is_hr_head and department_head.privileges.can_edit_department_head %}
+                                                <a href="{% url 'edit_superintendent' head.id %}" class="btn btn-warning btn-sm">
+                                                    <i class="fas fa-edit me-1 d-none d-sm-inline"></i>Edit
+                                                </a>
+                                                {% endif %}
+                                                {% if is_admin or is_hr_head and department_head.privileges.can_delete_department_head %}
+                                                <form method="post" action="{% url 'delete_superintendent' head.id %}" style="display:inline;" id="delete-form-{{ head.id }}">
+                                                    {% csrf_token %}
+                                                    <button type="button" class="btn btn-danger btn-sm" onclick="confirmDelete({{ head.id }})">
+                                                        <i class="fas fa-trash me-1 d-none d-sm-inline"></i>Delete
+                                                    </button>
+                                                </form>
+                                                {% endif %}
                                             </div>
                                         </td>
                                     </tr>
@@ -142,6 +155,19 @@
                                 <a href="{% url 'feedback_form_department_head' head.id %}" class="btn btn-success btn-sm">
                                     <i class="fas fa-comment-dots me-1 d-none d-sm-inline"></i>Incident
                                 </a>
+                                {% if is_admin or is_hr_head and department_head.privileges.can_edit_department_head %}
+                                <a href="{% url 'edit_superintendent' head.id %}" class="btn btn-warning btn-sm">
+                                    <i class="fas fa-edit me-1 d-none d-sm-inline"></i>Edit
+                                </a>
+                                {% endif %}
+                                {% if is_admin or is_hr_head and department_head.privileges.can_delete_department_head %}
+                                <form method="post" action="{% url 'delete_superintendent' head.id %}" style="display:inline;" id="delete-form-{{ head.id }}">
+                                    {% csrf_token %}
+                                    <button type="button" class="btn btn-danger btn-sm" onclick="confirmDelete({{ head.id }})">
+                                        <i class="fas fa-trash me-1 d-none d-sm-inline"></i>Delete
+                                    </button>
+                                </form>
+                                {% endif %}
                             </div>
                         </td>
                     </tr>
@@ -255,45 +281,80 @@ document.addEventListener('DOMContentLoaded', function() {
     const searchInput = document.getElementById('superintendentSearch');
     const departmentFilter = document.getElementById('departmentFilter');
     const resetButton = document.getElementById('resetFilters');
-    const table = document.querySelector('table');
-    const rows = table ? table.querySelectorAll('tbody tr') : [];
-    
-    function filterTable() {
+    const tables = document.querySelectorAll('table');
+    const noResultsMsgId = 'noSuperintendentResults';
+
+    function filterRows(rows) {
         const searchTerm = searchInput.value.toLowerCase();
         const selectedDepartment = departmentFilter ? departmentFilter.value.toLowerCase() : '';
-        
-                rows.forEach(row => {
+        let visibleCount = 0;
+        rows.forEach(row => {
+            // Get all relevant text for search
             const name = row.cells[0].textContent.toLowerCase();
             const department = row.cells[1] ? row.cells[1].textContent.toLowerCase() : '';
-            const designation = row.cells[2].textContent.toLowerCase();
-            const contact = row.cells[3].textContent.toLowerCase();
-            
-            const matchesSearch = name.includes(searchTerm) || 
-                                department.includes(searchTerm) || 
-                                designation.includes(searchTerm) ||
-                                contact.includes(searchTerm);
-                                
+            const subdepartments = row.cells[2] ? row.cells[2].textContent.toLowerCase() : '';
+            const contact = row.cells[3] ? row.cells[3].textContent.toLowerCase() : '';
+            // Designation is not a column here, so skip
+            const matchesSearch = name.includes(searchTerm) || department.includes(searchTerm) || subdepartments.includes(searchTerm) || contact.includes(searchTerm);
             const matchesDepartment = !selectedDepartment || department === selectedDepartment;
-            
-            row.style.display = matchesSearch && matchesDepartment ? '' : 'none';
-            });
+            if (matchesSearch && matchesDepartment) {
+                row.style.display = '';
+                visibleCount++;
+            } else {
+                row.style.display = 'none';
+            }
+        });
+        return visibleCount;
+    }
+
+    function filterAllTables() {
+        let totalVisible = 0;
+        tables.forEach(table => {
+            const rows = table.querySelectorAll('tbody tr');
+            totalVisible += filterRows(rows);
+        });
+        // Show/hide no results message
+        let noResultsMsg = document.getElementById(noResultsMsgId);
+        if (!noResultsMsg) {
+            noResultsMsg = document.createElement('div');
+            noResultsMsg.id = noResultsMsgId;
+            noResultsMsg.className = 'text-center py-4 text-muted';
+            noResultsMsg.innerHTML = '<i class="fas fa-search fa-2x mb-3"></i><br>No matching department heads found';
+            tables[0].parentNode.appendChild(noResultsMsg);
         }
-    
+        noResultsMsg.style.display = totalVisible === 0 ? '' : 'none';
+        tables.forEach(table => table.style.display = totalVisible === 0 ? 'none' : '');
+    }
+
     if (searchInput) {
-        searchInput.addEventListener('input', filterTable);
+        searchInput.addEventListener('input', filterAllTables);
     }
-    
     if (departmentFilter) {
-        departmentFilter.addEventListener('change', filterTable);
+        departmentFilter.addEventListener('change', filterAllTables);
     }
-    
     if (resetButton) {
         resetButton.addEventListener('click', function() {
             if (searchInput) searchInput.value = '';
             if (departmentFilter) departmentFilter.value = '';
-            filterTable();
+            filterAllTables();
         });
     }
 });
+
+function confirmDelete(headId) {
+    Swal.fire({
+        title: 'Are you sure?',
+        text: "You won't be able to revert this!",
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#d33',
+        cancelButtonColor: '#3085d6',
+        confirmButtonText: 'Yes, delete it!'
+    }).then((result) => {
+        if (result.isConfirmed) {
+            document.getElementById('delete-form-' + headId).submit();
+        }
+    });
+}
 </script>
 {% endblock %} 

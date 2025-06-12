@@ -923,17 +923,16 @@ def superintendent_list(request):
             for head in dept_heads:
                 # Get the base query for staff in this head's department
                 staff_query = Staff.objects.filter(department=head.department)
-            
+                staff_count = 0
                 # If the head has managed subdepartments, count staff in those subdepartments
                 if head.managed_subdepartments.exists():
                     staff_count = staff_query.filter(subdepartment__in=head.managed_subdepartments.all()).count()
                 # If no managed subdepartments but has a primary subdepartment, use that
                 elif head.subdepartment:
                     staff_count = staff_query.filter(subdepartment=head.subdepartment).count()
-            else:
+                else:
                     # If no subdepartments assigned, count all staff in the department
-                staff_count = staff_query.count()
-            
+                    staff_count = staff_query.count()
                 # Attach the count to the head object
                 head.staff_count = staff_count
             
@@ -977,7 +976,7 @@ def superintendent_list(request):
                     for head in dept_heads:
                         # Get the base query for staff in this head's department
                         staff_query = Staff.objects.filter(department=head.department)
-                        
+                        staff_count = 0
                         # If the head has managed subdepartments, count staff in those subdepartments
                         if head.managed_subdepartments.exists():
                             staff_count = staff_query.filter(subdepartment__in=head.managed_subdepartments.all()).count()
@@ -987,7 +986,6 @@ def superintendent_list(request):
                         else:
                             # If no subdepartments assigned, count all staff in the department
                             staff_count = staff_query.count()
-                        
                         # Attach the count to the head object
                         head.staff_count = staff_count
                     
