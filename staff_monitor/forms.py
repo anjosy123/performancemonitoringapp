@@ -4,11 +4,12 @@ from .models import DepartmentHead, Staff, PerformanceReport, Department, SubDep
 from django.forms import inlineformset_factory
 import random
 import string
-from datetime import date
+from datetime import date, datetime
 
 # Add required imports for bulk upload functionality
 import pandas as pd
 from django.core.exceptions import ValidationError
+import openpyxl
 import uuid
 import os
 
@@ -99,11 +100,6 @@ class DepartmentHeadForm(forms.ModelForm):
             'id': 'subdepartment-select'
         })
     )
-    # Hidden field to store additional subdepartments
-    additional_subdepartments = forms.CharField(
-        required=False,
-        widget=forms.HiddenInput()
-    )
     designation = forms.CharField(
         required=True,
         initial="Department Head",
@@ -175,12 +171,6 @@ class DepartmentHeadForm(forms.ModelForm):
         department = cleaned_data.get('department')
         subdepartment = cleaned_data.get('subdepartment')
         
-        # Get additional subdepartments from POST data
-        additional_subdepartments = self.data.getlist('additional_subdepartments')
-        
-        # Store for later use in save method
-        self.additional_subdepartments_ids = additional_subdepartments
-        
         # If subdepartment is selected, make sure it belongs to the selected department
         if subdepartment and department and subdepartment.department != department:
             # If there's a mismatch, raise validation error
@@ -188,16 +178,6 @@ class DepartmentHeadForm(forms.ModelForm):
             
             # Reset subdepartment queryset to show valid choices
             self.fields['subdepartment'].queryset = SubDepartment.objects.filter(department=department)
-        
-        # Validate additional subdepartments if any
-        if additional_subdepartments:
-            for subdept_id in additional_subdepartments:
-                try:
-                    subdept = SubDepartment.objects.get(id=subdept_id)
-                    if subdept.department != department:
-                        self.add_error(None, f'Subdepartment {subdept.name} does not belong to the selected department.')
-                except SubDepartment.DoesNotExist:
-                    self.add_error(None, f'Subdepartment with ID {subdept_id} does not exist.')
         
         return cleaned_data
 
@@ -241,31 +221,6 @@ class DepartmentHeadForm(forms.ModelForm):
             
             # Update DepartmentHead instance
             head = super().save(commit)
-            
-            # Process additional subdepartments if any
-            if hasattr(self, 'additional_subdepartments_ids') and self.additional_subdepartments_ids and commit:
-                # Get all selected subdepartments
-                subdepartments = []
-                
-                # Add primary subdepartment if selected
-                primary_subdept = self.cleaned_data.get('subdepartment')
-                if primary_subdept:
-                    subdepartments.append(primary_subdept)
-                
-                # Add additional subdepartments
-                for subdept_id in self.additional_subdepartments_ids:
-                    try:
-                        subdept = SubDepartment.objects.get(id=subdept_id)
-                        if subdept not in subdepartments:  # Avoid duplicates
-                            subdepartments.append(subdept)
-                    except SubDepartment.DoesNotExist:
-                        pass
-                
-                # Clear existing and add new
-                head.managed_subdepartments.clear()
-                for subdept in subdepartments:
-                    head.managed_subdepartments.add(subdept)
-            
             return head
         else:
             # Create new user for a new department head
@@ -287,29 +242,6 @@ class DepartmentHeadForm(forms.ModelForm):
             
             if commit:
                 head.save()
-                
-                # Process additional subdepartments if any
-                if hasattr(self, 'additional_subdepartments_ids') and self.additional_subdepartments_ids:
-                    # Get all selected subdepartments
-                    subdepartments = []
-                    
-                    # Add primary subdepartment if selected
-                    primary_subdept = self.cleaned_data.get('subdepartment')
-                    if primary_subdept:
-                        subdepartments.append(primary_subdept)
-                    
-                    # Add additional subdepartments
-                    for subdept_id in self.additional_subdepartments_ids:
-                        try:
-                            subdept = SubDepartment.objects.get(id=subdept_id)
-                            if subdept not in subdepartments:  # Avoid duplicates
-                                subdepartments.append(subdept)
-                        except SubDepartment.DoesNotExist:
-                            pass
-                    
-                    # Add all subdepartments
-                    for subdept in subdepartments:
-                        head.managed_subdepartments.add(subdept)
                 
                 # Store the generated password to inform the user
                 head.user_password = password
@@ -338,7 +270,7 @@ class DepartmentHeadForm(forms.ModelForm):
                         'last_name': user.last_name,
                         'email': user.email,
                         'password': password,
-                        'login_url': login_url 
+                        'login_url': login_url  # Use the dynamically determined URL
                     }
                     
                     html_message = render_to_string('staff_monitor/email/welcome_department_head.html', context)
@@ -347,7 +279,7 @@ class DepartmentHeadForm(forms.ModelForm):
                     send_mail(
                         'Welcome to Mariampur Hospital Performance Monitoring System',
                         plain_message,
-                        None,  
+                        None,  # Use DEFAULT_FROM_EMAIL from settings
                         [user.email],
                         html_message=html_message,
                         fail_silently=False,
@@ -363,81 +295,31 @@ class DepartmentHeadForm(forms.ModelForm):
             return head
 
 class StaffForm(forms.ModelForm):
-    name = forms.CharField(
+    first_name = forms.CharField(
         required=True,
         widget=forms.TextInput(attrs={
             'class': 'form-control',
-            'placeholder': 'Enter full name'
+            'placeholder': 'Enter first name'
+        })
+    )
+    last_name = forms.CharField(
+        required=True,
+        widget=forms.TextInput(attrs={
+            'class': 'form-control',
+            'placeholder': 'Enter last name'
         })
     )
     email = forms.EmailField(
         required=False,
         widget=forms.EmailInput(attrs={
             'class': 'form-control',
-            'placeholder': 'Enter email address'
-        })
-    )
-    employee_id = forms.CharField(
-        required=True,
-        widget=forms.TextInput(attrs={
-            'class': 'form-control',
-            'placeholder': 'Enter employee ID'
-        })
-    )
-    department = forms.ModelChoiceField(
-        queryset=Department.objects.all(),
-        widget=forms.Select(attrs={
-            'class': 'form-control',
-            'id': 'department-select'
-        })
-    )
-    subdepartment = forms.ModelChoiceField(
-        queryset=SubDepartment.objects.none(),
-        required=False,
-        widget=forms.Select(attrs={
-            'class': 'form-control',
-            'id': 'subdepartment-select'
-        })
-    )
-    position = forms.CharField(
-        required=True,
-        widget=forms.TextInput(attrs={
-            'class': 'form-control',
-            'placeholder': 'Enter position'
-        })
-    )
-    qualification = forms.CharField(
-        required=False,
-        widget=forms.TextInput(attrs={
-            'class': 'form-control',
-            'placeholder': 'Enter educational qualification'
-        })
-    )
-    joining_date = forms.DateField(
-        required=False,
-        widget=forms.DateInput(attrs={
-            'class': 'form-control',
-            'type': 'date'
-        })
-    )
-    appointment_date = forms.DateField(
-        required=False,
-        widget=forms.DateInput(attrs={
-            'class': 'form-control',
-            'type': 'date'
-        })
-    )
-    contact_info = forms.CharField(
-        required=False,
-        widget=forms.TextInput(attrs={
-            'class': 'form-control',
-            'placeholder': 'Enter contact information'
+            'placeholder': 'Enter email address (or leave blank if not available)'
         })
     )
     
     class Meta:
         model = Staff
-        fields = ['employee_id', 'department', 'subdepartment', 'position', 'qualification', 'joining_date', 'appointment_date', 'contact_info']
+        fields = ['employee_id', 'department', 'subdepartment', 'position', 'joining_date', 'appointment_date']
         widgets = {
             'employee_id': forms.TextInput(attrs={
                 'class': 'form-control',
@@ -546,45 +428,66 @@ class StaffForm(forms.ModelForm):
 
     def save(self, commit=True):
         # Check if we're updating an existing user
-        if self.instance.pk:
-            # Update existing user
-            user = self.instance.user
-            user.email = self.cleaned_data.get('email', '')
-            user.first_name = self.cleaned_data.get('name', '')  # Store full name in first_name
-            user.last_name = ''  # Clear last_name
-            user.save()
+        if self.instance_user:
+            # Update existing user information
+            self.instance_user.first_name = self.cleaned_data['first_name']
+            self.instance_user.last_name = self.cleaned_data['last_name']
+            
+            # Update email if provided and different from current
+            new_email = self.cleaned_data.get('email')
+            if new_email and new_email != self.instance_user.email:
+                self.instance_user.email = new_email
+                self.instance_user.username = new_email  # Also update username as it's based on email
+            
+            if commit:
+                self.instance_user.save()
+                
+            # Update Staff instance
+            staff = super().save(commit=False)
+            
+            # Ensure employee_id remains unchanged when editing
+            if self.instance and self.instance.pk:
+                staff.employee_id = self.instance.employee_id
+                
+            if commit:
+                staff.save()
+                
+            return staff
         else:
-            # Create new user
-            username = self.cleaned_data.get('employee_id')
-            email = self.cleaned_data.get('email', '')
-            name = self.cleaned_data.get('name', '')
+            # Create new user with or without login credentials based on email availability
+            email = self.cleaned_data.get('email')
             
-            # Generate a random password
-            password = User.objects.make_random_password()
+            # Create a User instance
+            if email:
+                # Create user with email and username (email is available)
+                user = User.objects.create_user(
+                    username=email,
+                    email=email,
+                    password=None,  # No password set, user cannot login until password reset
+                    first_name=self.cleaned_data['first_name'],
+                    last_name=self.cleaned_data['last_name'],
+                    is_active=False  # User account is inactive
+                )
+            else:
+                # Create user with generated username (no email available)
+                username = f"staff_{uuid.uuid4().hex[:8]}"  # Generate a unique username
+                user = User.objects.create_user(
+                    username=username,
+                    email=None,  # No email
+                    password=None,  # No password
+                    first_name=self.cleaned_data['first_name'],
+                    last_name=self.cleaned_data['last_name'],
+                    is_active=False  # User account is inactive
+                )
             
-            # Create the user
-            user = User.objects.create_user(
-                username=username,
-                email=email,
-                password=password,
-                first_name=name,  # Store full name in first_name
-                last_name=''  # Empty last_name
-            )
+            # Create Staff instance
+            staff = super().save(commit=False)
+            staff.user = user
             
-            # Store credentials in session for display
-            self.instance.user = user
-            self.instance.credentials = {
-                'username': username,
-                'password': password,
-                'name': name,
-                'email': email
-            }
-        
-        # Save the staff instance
-        if commit:
-            self.instance.save()
-        
-        return self.instance
+            if commit:
+                staff.save()
+            
+            return staff
 
 class DepartmentForm(forms.ModelForm):
     name = forms.CharField(
@@ -752,14 +655,14 @@ class StaffBulkUploadForm(forms.Form):
             # Read the Excel file
             df = pd.read_excel(excel_file)
             
-            # Normalize column names
-            df.columns = [col.strip().lower() for col in df.columns]
-            
             # Check if required columns are present
-            required_columns = ['name', 'employee_id', 'position', 'department', 'joining_date']
+            required_columns = [
+                'First name', 'Last name', 'Employee ID', 
+                'Designation', 'Department', 'Joining date'
+            ]
             
-            # Email and Qualification are now optional
-            recommended_columns = ['email', 'qualification']
+            # Email is now optional
+            recommended_columns = ['Email']
             
             missing_columns = [col for col in required_columns if col not in df.columns]
             if missing_columns:

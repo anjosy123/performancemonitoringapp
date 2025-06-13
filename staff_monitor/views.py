@@ -924,15 +924,17 @@ def superintendent_list(request):
                 # Get the base query for staff in this head's department
                 staff_query = Staff.objects.filter(department=head.department)
                 staff_count = 0
+                
                 # If the head has managed subdepartments, count staff in those subdepartments
                 if head.managed_subdepartments.exists():
                     staff_count = staff_query.filter(subdepartment__in=head.managed_subdepartments.all()).count()
                 # If no managed subdepartments but has a primary subdepartment, use that
                 elif head.subdepartment:
                     staff_count = staff_query.filter(subdepartment=head.subdepartment).count()
-                else:
+            else:
                     # If no subdepartments assigned, count all staff in the department
-                    staff_count = staff_query.count()
+                staff_count = staff_query.count()
+            
                 # Attach the count to the head object
                 head.staff_count = staff_count
             
@@ -977,6 +979,7 @@ def superintendent_list(request):
                         # Get the base query for staff in this head's department
                         staff_query = Staff.objects.filter(department=head.department)
                         staff_count = 0
+                        
                         # If the head has managed subdepartments, count staff in those subdepartments
                         if head.managed_subdepartments.exists():
                             staff_count = staff_query.filter(subdepartment__in=head.managed_subdepartments.all()).count()
@@ -986,6 +989,7 @@ def superintendent_list(request):
                         else:
                             # If no subdepartments assigned, count all staff in the department
                             staff_count = staff_query.count()
+                        
                         # Attach the count to the head object
                         head.staff_count = staff_count
                     
@@ -1817,7 +1821,7 @@ def bulk_upload_staff(request):
                     username = str(row['employee_id']).strip()
                     email = str(row['email']).strip() if 'email' in df.columns and pd.notna(row['email']) else None
                     name = str(row['name']).strip()
-                    
+                                    
                     # Set a default password for all staff (or leave blank if allowed)
                     password = 'changeme123'  # You can change this default as needed
                     
@@ -1835,7 +1839,7 @@ def bulk_upload_staff(request):
                         appointment_date = datetime.strptime(str(row['appointment_date']), '%d.%m.%Y').date() if 'appointment_date' in df.columns and pd.notna(row['appointment_date']) else None
                     except ValueError as e:
                         raise ValueError(f"Invalid date format. Please use DD.MM.YYYY format. Error: {str(e)}")
-                    
+                        
                     # Create staff
                     staff = Staff.objects.create(
                         user=user,
@@ -1850,7 +1854,6 @@ def bulk_upload_staff(request):
                     )
                     
                     success_count += 1
-                    
                 except Exception as e:
                     error_count += 1
                     errors.append(f"Row {index + 2}: {str(e)}")
@@ -1863,62 +1866,62 @@ def bulk_upload_staff(request):
                     messages.error(request, error)
             
             return redirect('staff_list')
-    else:
-        form = StaffBulkUploadForm()
+        else:
+            form = StaffBulkUploadForm()
+    
+    # Generate template Excel file
+    if 'download_template' in request.GET:
+        # Create a DataFrame with the required columns
+        template_data = {
+            'name': ['John Doe', 'Jane Smith'],  # Example names
+            'employee_id': ['EMP001', 'EMP002'],  # Example employee IDs
+            'email': ['john@example.com', 'jane@example.com'],  # Example emails
+            'position': ['Nurse', 'Doctor'],  # Example positions
+            'department': ['Nursing', 'Medical'],  # Example departments
+            'subdepartment': ['Emergency', 'General'],  # Example subdepartments
+            'qualification': ['BSc Nursing', 'MBBS'],  # Example qualifications
+            'contact_info': ['1234567890', '9876543210'],  # Example contact info
+            'joining_date': ['12.05.2024', '15.05.2024'],  # Example joining dates in DD.MM.YYYY format
+            'appointment_date': ['12.05.2024', '15.05.2024']  # Example appointment dates in DD.MM.YYYY format
+        }
         
-        # Generate template Excel file
-        if 'download_template' in request.GET:
-            # Create a DataFrame with the required columns
-            template_data = {
-                'name': ['John Doe', 'Jane Smith'],  # Example names
-                'employee_id': ['EMP001', 'EMP002'],  # Example employee IDs
-                'email': ['john@example.com', 'jane@example.com'],  # Example emails
-                'position': ['Nurse', 'Doctor'],  # Example positions
-                'department': ['Nursing', 'Medical'],  # Example departments
-                'subdepartment': ['Emergency', 'General'],  # Example subdepartments
-                'qualification': ['BSc Nursing', 'MBBS'],  # Example qualifications
-                'contact_info': ['1234567890', '9876543210'],  # Example contact info
-                'joining_date': ['12.05.2024', '15.05.2024'],  # Example joining dates in DD.MM.YYYY format
-                'appointment_date': ['12.05.2024', '15.05.2024']  # Example appointment dates in DD.MM.YYYY format
-            }
+        df = pd.DataFrame(template_data)
+        
+        # Create a BytesIO object to store the Excel file
+        output = BytesIO()
+        
+        # Create Excel writer object
+        with pd.ExcelWriter(output, engine='xlsxwriter') as writer:
+            df.to_excel(writer, sheet_name='Staff Template', index=False)
             
-            df = pd.DataFrame(template_data)
+            # Get the workbook and worksheet objects
+            workbook = writer.book
+            worksheet = writer.sheets['Staff Template']
             
-            # Create a BytesIO object to store the Excel file
-            output = BytesIO()
+            # Add some formatting
+            header_format = workbook.add_format({
+                'bold': True,
+                'bg_color': '#D9E1F2',
+                'border': 1
+            })
             
-            # Create Excel writer object
-            with pd.ExcelWriter(output, engine='xlsxwriter') as writer:
-                df.to_excel(writer, sheet_name='Staff Template', index=False)
-                
-                # Get the workbook and worksheet objects
-                workbook = writer.book
-                worksheet = writer.sheets['Staff Template']
-                
-                # Add some formatting
-                header_format = workbook.add_format({
-                    'bold': True,
-                    'bg_color': '#D9E1F2',
-                    'border': 1
-                })
-                
-                # Format the header row
-                for col_num, value in enumerate(df.columns.values):
-                    worksheet.write(0, col_num, value, header_format)
-                    worksheet.set_column(col_num, col_num, 15)  # Set column width
-                
-                # Add data validation for required fields
-                required_fields = ['name', 'employee_id', 'position', 'department', 'joining_date']
-                for col_num, value in enumerate(df.columns.values):
-                    if value in required_fields:
-                        worksheet.data_validation(1, col_num, 1000, col_num, {
-                            'validate': 'custom',
-                            'value': '=LEN(TRIM(A1))>0',
-                            'error_message': f'{value} is required',
-                            'error_title': 'Required Field',
-                            'input_message': f'Please enter {value}',
-                            'input_title': 'Required Field'
-                        })
+            # Format the header row
+            for col_num, value in enumerate(df.columns.values):
+                worksheet.write(0, col_num, value, header_format)
+                worksheet.set_column(col_num, col_num, 15)  # Set column width
+            
+            # Add data validation for required fields
+            required_fields = ['name', 'employee_id', 'position', 'department', 'joining_date']
+            for col_num, value in enumerate(df.columns.values):
+                if value in required_fields:
+                    worksheet.data_validation(1, col_num, 1000, col_num, {
+                        'validate': 'custom',
+                        'value': '=LEN(TRIM(A1))>0',
+                        'error_message': f'{value} is required',
+                        'error_title': 'Required Field',
+                        'input_message': f'Please enter {value}',
+                        'input_title': 'Required Field'
+                    })
                     
                     # Add date format and validation for date columns
                     if value in ['joining_date', 'appointment_date']:

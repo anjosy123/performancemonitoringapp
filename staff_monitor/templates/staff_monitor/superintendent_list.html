@@ -102,7 +102,7 @@
                                                     {% csrf_token %}
                                                     <button type="button" class="btn btn-danger btn-sm" onclick="confirmDelete({{ head.id }})">
                                                         <i class="fas fa-trash me-1 d-none d-sm-inline"></i>Delete
-                                                    </button>
+                                                </button>
                                                 </form>
                                                 {% endif %}
                                             </div>
@@ -165,7 +165,7 @@
                                     {% csrf_token %}
                                     <button type="button" class="btn btn-danger btn-sm" onclick="confirmDelete({{ head.id }})">
                                         <i class="fas fa-trash me-1 d-none d-sm-inline"></i>Delete
-                                    </button>
+                                </button>
                                 </form>
                                 {% endif %}
                             </div>
@@ -288,7 +288,7 @@ document.addEventListener('DOMContentLoaded', function() {
         const searchTerm = searchInput.value.toLowerCase();
         const selectedDepartment = departmentFilter ? departmentFilter.value.toLowerCase() : '';
         let visibleCount = 0;
-        rows.forEach(row => {
+                rows.forEach(row => {
             // Get all relevant text for search
             const name = row.cells[0].textContent.toLowerCase();
             const department = row.cells[1] ? row.cells[1].textContent.toLowerCase() : '';
@@ -298,12 +298,12 @@ document.addEventListener('DOMContentLoaded', function() {
             const matchesSearch = name.includes(searchTerm) || department.includes(searchTerm) || subdepartments.includes(searchTerm) || contact.includes(searchTerm);
             const matchesDepartment = !selectedDepartment || department === selectedDepartment;
             if (matchesSearch && matchesDepartment) {
-                row.style.display = '';
+                        row.style.display = '';
                 visibleCount++;
-            } else {
-                row.style.display = 'none';
-            }
-        });
+                    } else {
+                        row.style.display = 'none';
+                    }
+                });
         return visibleCount;
     }
 
@@ -324,7 +324,7 @@ document.addEventListener('DOMContentLoaded', function() {
         }
         noResultsMsg.style.display = totalVisible === 0 ? '' : 'none';
         tables.forEach(table => table.style.display = totalVisible === 0 ? 'none' : '');
-    }
+        }
 
     if (searchInput) {
         searchInput.addEventListener('input', filterAllTables);
@@ -342,19 +342,19 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 
 function confirmDelete(headId) {
-    Swal.fire({
+            Swal.fire({
         title: 'Are you sure?',
         text: "You won't be able to revert this!",
-        icon: 'warning',
-        showCancelButton: true,
+                icon: 'warning',
+                showCancelButton: true,
         confirmButtonColor: '#d33',
         cancelButtonColor: '#3085d6',
         confirmButtonText: 'Yes, delete it!'
-    }).then((result) => {
-        if (result.isConfirmed) {
+            }).then((result) => {
+                if (result.isConfirmed) {
             document.getElementById('delete-form-' + headId).submit();
-        }
-    });
+                }
+            });
 }
 </script>
 {% endblock %} 
