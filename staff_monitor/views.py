@@ -2277,7 +2277,9 @@ def delete_superintendent(request, superintendent_id):
     if request.method == 'POST':
         try:
             head_name = department_head.user.get_full_name()
-            department_head.delete()
+            user = department_head.user  # Store reference to user before deleting department head
+            department_head.delete()  # This will delete the department head
+            user.delete()  # This will delete the associated user account
             messages.success(request, f'Department Head "{head_name}" deleted successfully.')
             return redirect('superintendent_list')
         except Exception as e:
