@@ -844,160 +844,299 @@ def update_profile(request):
 @login_required
 @user_passes_test(lambda u: can_perform_action(u, 'can_add_staff') or u.is_staff)
 def bulk_upload_staff(request):
+    # Initialize variables for both GET and POST requests
+    success_details = []
+    success_count = 0
+    error_count = 0
+    errors = []
+    
+    # Get all departments for displaying as reference (used in both GET and POST)
+    departments = Department.objects.all().order_by('name')
+    
     if request.method == 'POST':
         form = StaffBulkUploadForm(request.POST, request.FILES)
         if form.is_valid():
             excel_file = request.FILES['excel_file']
-            df = pd.read_excel(excel_file)
             
-            # Validate required columns - using the new column names
-            required_columns = ['name', 'employee_id', 'position', 'department', 'joining_date']
-            
-            # Check if all required columns exist
-            missing_columns = [col for col in required_columns if col not in df.columns]
-            if missing_columns:
-                messages.error(request, f"Missing required columns: {', '.join(missing_columns)}")
-                return redirect('staff_list')
-            
-            success_count = 0
-            error_count = 0
-            errors = []
-            
-            for index, row in df.iterrows():
-                try:
-                    # Get or create department
-                    department_name = str(row['department']).strip()
-                    department, _ = Department.objects.get_or_create(name=department_name)
-                    
-                    # Get subdepartment if provided
-                    subdepartment = None
-                    if 'subdepartment' in df.columns and pd.notna(row['subdepartment']):
-                        subdepartment_name = str(row['subdepartment']).strip()
-                        subdepartment, _ = SubDepartment.objects.get_or_create(
-                            name=subdepartment_name,
-                            department=department
-                        )
-                    
-                    # Create user account
-                    username = str(row['employee_id']).strip()
-                    email = f"{username}@example.com"  # You can modify this as needed
-                    password = 'changeme123'  # You can change this default as needed
-                    
-                    user = User.objects.create_user(
-                        username=username,
-                        email=email,
-                        password=password,
-                        first_name=str(row['name']).strip().split()[0],
-                        last_name=' '.join(str(row['name']).strip().split()[1:]) if len(str(row['name']).strip().split()) > 1 else ''
-                    )
-                    
-                    # Create staff record
-                    staff = Staff.objects.create(
-                        user=user,
-                        employee_id=str(row['employee_id']).strip(),
-                        department=department,
-                        subdepartment=subdepartment,
-                        position=str(row['position']).strip(),
-                        joining_date=row['joining_date'] if pd.notna(row['joining_date']) else None
-                    )
-                    success_count += 1
-                except Exception as e:
-                    error_count += 1
-                    errors.append(f"Row {index + 2}: {str(e)}")
-            
-            if success_count > 0:
-                messages.success(request, f"Successfully added {success_count} staff members.")
-            if error_count > 0:
-                messages.error(request, f"Failed to add {error_count} staff members. See details below.")
-                for error in errors:
-                    messages.error(request, error)
-            
-            return redirect('staff_list')
-        else:
-            form = StaffBulkUploadForm()
-    
-    # Generate template Excel file
-    if 'download_template' in request.GET:
-        # Create a DataFrame with the required columns
-        template_data = {
-            'name': ['John Doe', 'Jane Smith'],  # Example names
-            'employee_id': ['EMP001', 'EMP002'],  # Example employee IDs
-            'email': ['john@example.com', 'jane@example.com'],  # Example emails
-            'position': ['Nurse', 'Doctor'],  # Example positions
-            'department': ['Nursing', 'Medical'],  # Example departments
-            'subdepartment': ['Emergency', 'General'],  # Example subdepartments
-            'qualification': ['BSc Nursing', 'MBBS'],  # Example qualifications
-            'contact_info': ['1234567890', '9876543210'],  # Example contact info
-            'joining_date': ['12.05.2024', '15.05.2024'],  # Example joining dates in DD.MM.YYYY format
-            'appointment_date': ['12.05.2024', '15.05.2024']  # Example appointment dates in DD.MM.YYYY format
-        }
-        
-        df = pd.DataFrame(template_data)
-        
-        # Create a BytesIO object to store the Excel file
-        output = BytesIO()
-        
-        # Create Excel writer object
-        with pd.ExcelWriter(output, engine='xlsxwriter') as writer:
-            df.to_excel(writer, sheet_name='Staff Template', index=False)
-            
-            # Get the workbook and worksheet objects
-            workbook = writer.book
-            worksheet = writer.sheets['Staff Template']
-            
-            # Add some formatting
-            header_format = workbook.add_format({
-                'bold': True,
-                'bg_color': '#D9E1F2',
-                'border': 1
-            })
-            
-            # Format the header row
-            for col_num, value in enumerate(df.columns.values):
-                worksheet.write(0, col_num, value, header_format)
-                worksheet.set_column(col_num, col_num, 15)  # Set column width
-            
-            # Add data validation for required fields
-            required_fields = ['name', 'employee_id', 'position', 'department', 'joining_date']
-            for col_num, value in enumerate(df.columns.values):
-                if value in required_fields:
-                    worksheet.data_validation(1, col_num, 1000, col_num, {
-                        'validate': 'custom',
-                        'value': '=LEN(TRIM(A1))>0',
-                        'error_message': f'{value} is required',
-                        'error_title': 'Required Field',
-                        'input_message': f'Please enter {value}',
-                        'input_title': 'Required Field'
-                    })
-                    
-                    # Add date format and validation for date columns
-                    if value in ['joining_date', 'appointment_date']:
-                        # Set date format to DD.MM.YYYY
-                        date_format = workbook.add_format({'num_format': 'dd.mm.yyyy'})
-                        worksheet.set_column(col_num, col_num, 15, date_format)
+            try:
+                # Read Excel file
+                df = pd.read_excel(excel_file)
+                
+                # Print summary of departments and subdepartments for debugging
+                print(f"Available departments: {', '.join([d.name for d in Department.objects.all()])}")
+                subdept_info = []
+                for dept in Department.objects.all():
+                    subdepts = SubDepartment.objects.filter(department=dept)
+                    if subdepts.exists():
+                        subdept_names = [sd.name for sd in subdepts]
+                        subdept_info.append(f"{dept.name}: {', '.join(subdept_names)}")
+                    else:
+                        subdept_info.append(f"{dept.name}: No subdepartments")
+                print("Department/Subdepartment structure:")
+                for info in subdept_info:
+                    print(f"  - {info}")
+                
+                # Get all departments for mapping
+                departments = {dept.name.lower(): dept for dept in Department.objects.all()}
+                
+                # Get all subdepartments for mapping - create two dictionaries for different lookup methods
+                all_subdepartments = SubDepartment.objects.all()
+                
+                # Dictionary for looking up by subdepartment name
+                subdepartments_by_name = {}
+                for subdept in all_subdepartments:
+                    subdept_key = subdept.name.lower()
+                    if subdept_key not in subdepartments_by_name:
+                        subdepartments_by_name[subdept_key] = []
+                    subdepartments_by_name[subdept_key].append(subdept)
+                
+                # Dictionary for looking up by department
+                subdepartments_by_dept = {}
+                for subdept in all_subdepartments:
+                    dept_key = subdept.department.id
+                    if dept_key not in subdepartments_by_dept:
+                        subdepartments_by_dept[dept_key] = []
+                    subdepartments_by_dept[dept_key].append(subdept)
+                
+                # Process each row in the Excel file
+                for index, row in df.iterrows():
+                    try:
+                        # Extract data from row
+                        first_name = str(row['First name']).strip()
+                        last_name = str(row['Last name']).strip()
                         
-                        # Add date validation
-                        worksheet.data_validation(1, col_num, 1000, col_num, {
-                            'validate': 'date',
-                            'criteria': 'between',
-                            'minimum': '01.01.2000',
-                            'maximum': '31.12.2100',
-                            'error_message': 'Please enter a valid date in DD.MM.YYYY format',
-                            'error_title': 'Invalid Date',
-                            'input_message': 'Enter date in DD.MM.YYYY format',
-                            'input_title': 'Date Format'
-                        })
-            
-            # Set up the response
-            output.seek(0)
-            response = HttpResponse(
-                output.read(),
-                content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
-            )
-            response['Content-Disposition'] = 'attachment; filename=staff_upload_template.xlsx'
-            return response
-    
-    return render(request, 'staff_monitor/bulk_upload_staff.html', {'form': form})
+                        # Email is now optional
+                        email = None
+                        if 'Email' in row and pd.notna(row['Email']):
+                            email = str(row['Email']).strip()
+                            # Check if email is 'nil', 'none', 'na', etc. and treat as None
+                            if email.lower() in ['nil', 'none', 'na', 'n/a', '-', '']:
+                                email = None
+                            # Validate email uniqueness only if provided
+                            elif User.objects.filter(email=email).exists():
+                                raise ValueError(f"Email '{email}' is already registered")
+                        
+                        employee_id = str(row['Employee ID']).strip()
+                        position = str(row['Designation']).strip()
+                        department_name = str(row['Department']).strip()
+                        department_name_lower = department_name.lower()
+                        
+                        # Parse dates - handle various formats
+                        try:
+                            joining_date = pd.to_datetime(row['Joining date']).date()
+                        except:
+                            joining_date = datetime.now().date()
+                            
+                        # Parse appointment date if available
+                        appointment_date = None
+                        if 'Date of appointment' in row and pd.notna(row['Date of appointment']):
+                            try:
+                                appointment_date = pd.to_datetime(row['Date of appointment']).date()
+                            except:
+                                pass
+                        
+                        # Validate employee ID (must be unique)
+                        if Staff.objects.filter(employee_id=employee_id).exists():
+                            raise ValueError(f"Employee ID '{employee_id}' is already in use")
+                        
+                        # Initialize subdepartment to None
+                        subdepartment = None
+                        
+                        # First, check if the department name is actually a subdepartment
+                        if department_name_lower in subdepartments_by_name:
+                            possible_subdepts = subdepartments_by_name[department_name_lower]
+                            if len(possible_subdepts) == 1:
+                                # Only one subdepartment with this name exists
+                                subdepartment = possible_subdepts[0]
+                                department = subdepartment.department
+                            elif len(possible_subdepts) > 1:
+                                # Multiple subdepartments with the same name exist in different departments
+                                subdept_list = ", ".join([f"{sd.name} ({sd.department.name})" for sd in possible_subdepts])
+                                raise ValueError(f"Multiple subdepartments named '{department_name}' found: {subdept_list}. Please specify the department clearly.")
+                        
+                        # If no subdepartment found, proceed with department search
+                        if subdepartment is None:
+                            # Find department or raise error
+                            if department_name_lower not in departments:
+                                # Try partial match with departments
+                                matched_dept = None
+                                for dept_name, dept in departments.items():
+                                    if dept_name in department_name_lower or department_name_lower in dept_name:
+                                        matched_dept = dept
+                                        break
+                                
+                                # If still no match, check if it's a subdepartment format like "NURSERY - MATERNITY"
+                                if not matched_dept and '-' in department_name:
+                                    parts = [p.strip().lower() for p in department_name.split('-')]
+                                    if len(parts) == 2:
+                                        # Format is "SUBDEPT - DEPT"
+                                        subdept_name, parent_dept_name = parts[0], parts[1]
+                                        
+                                        # Find parent department by name
+                                        parent_dept = None
+                                        for dept_name, dept in departments.items():
+                                            if dept_name.lower() == parent_dept_name or dept_name.lower() in parent_dept_name or parent_dept_name in dept_name.lower():
+                                                parent_dept = dept
+                                                break
+                                        
+                                        if parent_dept:
+                                            # Look for subdepartment by name within this department
+                                            subdept_query = SubDepartment.objects.filter(
+                                                department=parent_dept,
+                                                name__icontains=subdept_name
+                                            )
+                                            
+                                            if subdept_query.exists():
+                                                subdepartment = subdept_query.first()
+                                                department = parent_dept
+                                                matched_dept = parent_dept
+                                                print(f"Found subdepartment {subdepartment.name} in department {department.name}")
+                                            else:
+                                                # If subdepartment doesn't exist, create it (optional)
+                                                try:
+                                                    subdepartment = SubDepartment.objects.create(
+                                                        name=subdept_name.upper(),
+                                                        department=parent_dept
+                                                    )
+                                                    department = parent_dept
+                                                    matched_dept = parent_dept
+                                                    print(f"Created new subdepartment {subdepartment.name} in department {department.name}")
+                                                except Exception as e:
+                                                    print(f"Failed to create subdepartment: {str(e)}")
+                                
+                                # If still no match, try to find the subdepartment in any department
+                                if not matched_dept:
+                                    # Final attempt: check if it's a known subdepartment
+                                    for subdept_name, subdepts in subdepartments_by_name.items():
+                                        if subdept_name in department_name_lower:
+                                            # Found a potential subdepartment match
+                                            for sd in subdepts:
+                                                department = sd.department
+                                                subdepartment = sd
+                                                matched_dept = department
+                                                print(f"Found subdepartment {subdepartment.name} in department {department.name} via lookup")
+                                                break
+                                            if matched_dept:
+                                                break
+                                
+                                if not matched_dept:
+                                    # Prepare list of available departments and subdepartments for error message
+                                    available_depts = list(departments.values())
+                                    available_depts_str = ", ".join([dept.name for dept in available_depts])
+                                    
+                                    # Get list of all subdepartments
+                                    subdept_list = []
+                                    for subdept_name, subdepts in subdepartments_by_name.items():
+                                        for sd in subdepts:
+                                            subdept_list.append(f"{sd.name} ({sd.department.name})")
+                                    
+                                    if subdept_list:
+                                        available_subdepts_str = ", ".join(subdept_list)
+                                        raise ValueError(f"Department '{department_name}' not found in the system. Available departments: {available_depts_str}. Available subdepartments: {available_subdepts_str}. If this is a subdepartment, try format: 'Subdepartment - Department'.")
+                                    else:
+                                        raise ValueError(f"Department '{department_name}' not found in the system. Available departments: {available_depts_str}. If this is a subdepartment, try format: 'Subdepartment - Department'.")
+                                
+                                department = matched_dept
+                            else:
+                                department = departments[department_name_lower]
+                        
+                        # Create User with or without email
+                        if email:
+                            user = User.objects.create_user(
+                                username=email,
+                                email=email,
+                                password=None,  # No password set
+                                first_name=first_name,
+                                last_name=last_name,
+                                is_active=False  # Account inactive
+                            )
+                        else:
+                            # Generate a unique username if no email
+                            username = f"staff_{uuid.uuid4().hex[:8]}"
+                            user = User.objects.create_user(
+                                username=username,
+                                email=None,  # No email
+                                password=None,  # No password set
+                                first_name=first_name,
+                                last_name=last_name,
+                                is_active=False  # Account inactive
+                            )
+                        
+                        # Create Staff with department and subdepartment
+                        staff = Staff.objects.create(
+                            user=user,
+                            employee_id=employee_id,
+                            department=department,
+                            subdepartment=subdepartment,
+                            position=position,
+                            joining_date=joining_date,
+                            appointment_date=appointment_date
+                        )
+                        
+                        # Create success message with department/subdepartment info
+                        success_info = f"Added {first_name} {last_name} to department: {department.name}"
+                        if subdepartment:
+                            success_info += f", subdepartment: {subdepartment.name}"
+                        print(success_info)
+                        
+                        success_count += 1
+                        success_details.append(success_info)
+                        
+                    except Exception as e:
+                        error_count += 1
+                        errors.append(f"Row {index+2}: {str(e)}")
+                
+                # Prepare result message
+                if success_count > 0:
+                    # Build a detailed success message
+                    success_message = f"Successfully added {success_count} staff members."
+                    
+                    # Show details if there are not too many
+                    if len(success_details) <= 5:
+                        success_message += "<ul class='mt-2 mb-0'>"
+                        for detail in success_details:
+                            success_message += f"<li>{detail}</li>"
+                        success_message += "</ul>"
+                    else:
+                        # Just show the first few
+                        success_message += "<ul class='mt-2 mb-0'>"
+                        for detail in success_details[:3]:
+                            success_message += f"<li>{detail}</li>"
+                        success_message += f"<li>...and {len(success_details) - 3} more staff members.</li>"
+                        success_message += "</ul>"
+                    
+                    messages.success(request, success_message)
+                    
+                if error_count > 0:
+                    error_message = f"Failed to add {error_count} staff members. Errors: "
+                    for i, error in enumerate(errors[:5]):  # Show only first 5 errors
+                        error_message += f"<br>{error}"
+                    
+                    if len(errors) > 5:
+                        error_message += f"<br>...and {len(errors) - 5} more errors."
+                        
+                    messages.error(request, error_message)
+                    
+                return redirect('staff_list')
+                
+            except Exception as e:
+                messages.error(request, f"Error processing the file: {str(e)}")
+        else:
+            for field, errors in form.errors.items():
+                for error in errors:
+                    messages.error(request, f"{field}: {error}")
+    else:
+        form = StaffBulkUploadForm()
+        
+    return render(request, 'staff_monitor/bulk_upload_staff.html', {
+        'form': form,
+        'departments': departments,
+        'success_details': success_details,
+        'success_count': success_count,
+        'error_count': error_count,
+        'errors': errors
+    })
+
 
 @login_required
 def heartbeat(request):
