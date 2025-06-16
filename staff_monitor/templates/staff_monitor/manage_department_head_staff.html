@@ -155,6 +155,7 @@
                                                 <tr>
                                                     <th>Name</th>
                                                     <th>Position</th>
+                                                    <th>Department</th>
                                                     <th>Actions</th>
                                                 </tr>
                                             </thead>
@@ -163,6 +164,16 @@
                                                 <tr>
                                                     <td>{{ staff.user.get_full_name }}</td>
                                                     <td>{{ staff.position }}</td>
+                                                    <td>
+                                                        {{ staff.department.name }}
+                                                        {% if staff.subdepartment %}
+                                                        <br>
+                                                        <small class="text-muted">
+                                                            <i class="fas fa-level-down-alt me-1"></i>
+                                                            {{ staff.subdepartment.name }}
+                                                        </small>
+                                                        {% endif %}
+                                                    </td>
                                                     <td>
                                                         <form method="post" action="{% url 'assign_staff_to_head' current_head.id staff.id %}" class="d-inline">
                                                             {% csrf_token %}
@@ -174,7 +185,7 @@
                                                 </tr>
                                                 {% empty %}
                                                 <tr>
-                                                    <td colspan="3" class="text-center">No available staff found</td>
+                                                    <td colspan="4" class="text-center">No available staff found</td>
                                                 </tr>
                                                 {% endfor %}
                                             </tbody>
@@ -199,6 +210,7 @@
                                                 <tr>
                                                     <th>Name</th>
                                                     <th>Position</th>
+                                                    <th>Department</th>
                                                     <th>Actions</th>
                                                 </tr>
                                             </thead>
@@ -207,6 +219,16 @@
                                                 <tr>
                                                     <td>{{ staff.user.get_full_name }}</td>
                                                     <td>{{ staff.position }}</td>
+                                                    <td>
+                                                        {{ staff.department.name }}
+                                                        {% if staff.subdepartment %}
+                                                        <br>
+                                                        <small class="text-muted">
+                                                            <i class="fas fa-level-down-alt me-1"></i>
+                                                            {{ staff.subdepartment.name }}
+                                                        </small>
+                                                        {% endif %}
+                                                    </td>
                                                     <td>
                                                         <form method="post" action="{% url 'unassign_staff_from_head' current_head.id staff.id %}" class="d-inline">
                                                             {% csrf_token %}
@@ -218,7 +240,7 @@
                                                 </tr>
                                                 {% empty %}
                                                 <tr>
-                                                    <td colspan="3" class="text-center">No staff assigned</td>
+                                                    <td colspan="4" class="text-center">No staff assigned</td>
                                                 </tr>
                                                 {% endfor %}
                                             </tbody>

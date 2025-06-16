@@ -1153,14 +1153,28 @@ def manage_subdepartment_staff(request, subdepartment_head_id):
             messages.error(request, 'You do not have permission to manage staff assignments.')
             return redirect('dashboard')
     
-    # Get all staff in the same department
-    all_department_staff = Staff.objects.filter(
-        department=subdepartment_head.department,
-        subdepartment=subdepartment_head.subdepartment
-    )
+    # Get available staff based on department head type
+    if subdepartment_head.subdepartment:
+        # For subdepartment heads - show ONLY staff from their specific subdepartment
+        available_staff = Staff.objects.filter(
+            department=subdepartment_head.department,
+            subdepartment=subdepartment_head.subdepartment  # This ensures only staff from this specific subdepartment
+        ).exclude(
+            managed_by=subdepartment_head
+        ).order_by('user__first_name', 'user__last_name')  # Order by name for better display
+        
+        # Add a message to show which subdepartment's staff is being displayed
+        messages.info(request, f'Showing staff from {subdepartment_head.subdepartment.name} subdepartment')
+    else:
+        # For main department heads - show all staff from their department
+        available_staff = Staff.objects.filter(
+            department=subdepartment_head.department
+        ).exclude(
+            managed_by=subdepartment_head
+        ).order_by('user__first_name', 'user__last_name')
     
     # Get currently assigned staff
-    assigned_staff = subdepartment_head.managed_staff.all()
+    assigned_staff = subdepartment_head.managed_staff.all().order_by('user__first_name', 'user__last_name')
     
     if request.method == 'POST':
         # Get list of staff IDs from form submission
@@ -1178,11 +1192,16 @@ def manage_subdepartment_staff(request, subdepartment_head_id):
         messages.success(request, f'Staff assignments updated for {subdepartment_head.user.get_full_name()}')
         return redirect('dashboard')
     
-    return render(request, 'staff_monitor/manage_subdepartment_staff.html', {
+    # Prepare context with additional information
+    context = {
         'subdepartment_head': subdepartment_head,
-        'all_staff': all_department_staff,
-        'assigned_staff': assigned_staff
-    })
+        'all_staff': available_staff,
+        'assigned_staff': assigned_staff,
+        'is_subdepartment_head': bool(subdepartment_head.subdepartment),
+        'subdepartment_name': subdepartment_head.subdepartment.name if subdepartment_head.subdepartment else None
+    }
+    
+    return render(request, 'staff_monitor/manage_subdepartment_staff.html', context)
 
 @login_required
 def hr_privileges_view(request):
