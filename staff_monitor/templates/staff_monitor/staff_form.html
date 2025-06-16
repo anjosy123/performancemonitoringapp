@@ -1,0 +1,202 @@
+{% extends 'staff_monitor/base.html' %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header bg-primary text-white">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <h5 class="mb-0">
+                            <i class="fas fa-user-edit me-2"></i>
+                            {% if staff %}Edit Staff Member{% else %}Add New Staff Member{% endif %}
+                        </h5>
+                        <a href="{% url 'staff_list' %}" class="btn btn-light btn-sm">
+                            <i class="fas fa-arrow-left me-1"></i>Back to Staff List
+                        </a>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <form method="post" class="needs-validation" novalidate>
+                        {% csrf_token %}
+                        
+                        <!-- Personal Information -->
+                        <div class="card mb-4">
+                            <div class="card-header bg-light">
+                                <h6 class="mb-0">Personal Information</h6>
+                            </div>
+                            <div class="card-body">
+                                <div class="row">
+                                    <div class="col-md-12 mb-3">
+                                        <label class="form-label">Full Name</label>
+                                        {{ form.name }}
+                                        {% if form.name.errors %}
+                                        <div class="invalid-feedback d-block">
+                                            {{ form.name.errors }}
+                                        </div>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                                <div class="row">
+                                    <div class="col-md-6 mb-3">
+                                        <label class="form-label">Email</label>
+                                        {{ form.email }}
+                                        {% if form.email.errors %}
+                                        <div class="invalid-feedback d-block">
+                                            {{ form.email.errors }}
+                                        </div>
+                                        {% endif %}
+                                    </div>
+                                    <div class="col-md-6 mb-3">
+                                        <label class="form-label">Contact Number</label>
+                                        {{ form.contact_number }}
+                                        {% if form.contact_number.errors %}
+                                        <div class="invalid-feedback d-block">
+                                            {{ form.contact_number.errors }}
+                                        </div>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Employment Information -->
+                        <div class="card mb-4">
+                            <div class="card-header bg-light">
+                                <h6 class="mb-0">Employment Information</h6>
+                            </div>
+                            <div class="card-body">
+                                <div class="row">
+                                    <div class="col-md-6 mb-3">
+                                        <label class="form-label">Employee ID</label>
+                                        {{ form.employee_id }}
+                                        {% if form.employee_id.errors %}
+                                        <div class="invalid-feedback d-block">
+                                            {{ form.employee_id.errors }}
+                                        </div>
+                                        {% endif %}
+                                    </div>
+                                    <div class="col-md-6 mb-3">
+                                        <label class="form-label">Position</label>
+                                        {{ form.position }}
+                                        {% if form.position.errors %}
+                                        <div class="invalid-feedback d-block">
+                                            {{ form.position.errors }}
+                                        </div>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                                <div class="row">
+                                    <div class="col-md-6 mb-3">
+                                        <label class="form-label">Department</label>
+                                        {{ form.department }}
+                                        {% if form.department.errors %}
+                                        <div class="invalid-feedback d-block">
+                                            {{ form.department.errors }}
+                                        </div>
+                                        {% endif %}
+                                    </div>
+                                    <div class="col-md-6 mb-3" id="subdepartment-container">
+                                        <label class="form-label">Subdepartment</label>
+                                        {{ form.subdepartment }}
+                                        <small class="text-muted" id="no-subdepts-msg" style="display: none;">
+                                            No subdepartments available for the selected department
+                                        </small>
+                                        {% if form.subdepartment.errors %}
+                                        <div class="invalid-feedback d-block">
+                                            {{ form.subdepartment.errors }}
+                                        </div>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                                <div class="row">
+                                    <div class="col-md-6 mb-3">
+                                        <label class="form-label">Qualification</label>
+                                        {{ form.qualification }}
+                                        {% if form.qualification.errors %}
+                                        <div class="invalid-feedback d-block">
+                                            {{ form.qualification.errors }}
+                                        </div>
+                                        {% endif %}
+                                    </div>
+                                    <div class="col-md-6 mb-3">
+                                        <label class="form-label">Status</label>
+                                        {{ form.status }}
+                                        {% if form.status.errors %}
+                                        <div class="invalid-feedback d-block">
+                                            {{ form.status.errors }}
+                                        </div>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Form Actions -->
+                        <div class="d-flex justify-content-end gap-2">
+                            <a href="{% url 'staff_list' %}" class="btn btn-secondary">
+                                <i class="fas fa-times me-1"></i>Cancel
+                            </a>
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-save me-1"></i>Save Changes
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Get the department and subdepartment select elements
+    const departmentSelect = document.querySelector('#id_department');
+    const subdepartmentContainer = document.querySelector('#subdepartment-container');
+    const subdepartmentSelect = document.querySelector('#id_subdepartment');
+    const noSubdeptsMsg = document.querySelector('#no-subdepts-msg');
+
+    // Function to load subdepartments
+    function loadSubdepartments(departmentId) {
+        if (!departmentId) {
+            subdepartmentSelect.innerHTML = '<option value="">Select Subdepartment</option>';
+            subdepartmentContainer.style.display = 'none';
+            return;
+        }
+
+        fetch(`/get-subdepartments/${departmentId}/`)
+            .then(response => response.json())
+            .then(data => {
+                if (data.subdepartments && data.subdepartments.length > 0) {
+                    subdepartmentSelect.innerHTML = '<option value="">Select Subdepartment</option>' +
+                        data.subdepartments.map(subdept => 
+                            `<option value="${subdept.id}">${subdept.name}</option>`
+                        ).join('');
+                    subdepartmentContainer.style.display = 'block';
+                    noSubdeptsMsg.style.display = 'none';
+                } else {
+                    subdepartmentSelect.innerHTML = '<option value="">No Subdepartments</option>';
+                    subdepartmentContainer.style.display = 'block';
+                    noSubdeptsMsg.style.display = 'block';
+                }
+            })
+            .catch(error => {
+                console.error('Error loading subdepartments:', error);
+                subdepartmentSelect.innerHTML = '<option value="">Error loading subdepartments</option>';
+            });
+    }
+
+    // Add change event listener to department select
+    if (departmentSelect) {
+        departmentSelect.addEventListener('change', function() {
+            loadSubdepartments(this.value);
+        });
+
+        // Load subdepartments on page load if department is selected
+        if (departmentSelect.value) {
+            loadSubdepartments(departmentSelect.value);
+        }
+    }
+});
+</script>
+{% endblock %} 
