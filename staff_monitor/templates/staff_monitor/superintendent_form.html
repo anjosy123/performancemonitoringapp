@@ -1,0 +1,192 @@
+{% extends 'staff_monitor/base.html' %}
+{% load static %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header bg-primary text-white">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <h5 class="mb-0">
+                            <i class="fas fa-user-md me-2"></i>
+                            {% if department_head %}Edit{% else %}Add{% endif %} Department Head
+                        </h5>
+                        <a href="{% url 'superintendent_list' %}" class="btn btn-light btn-sm">
+                            <i class="fas fa-arrow-left me-1"></i>Back to List
+                        </a>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <form method="post" class="needs-validation" novalidate>
+                        {% csrf_token %}
+                        
+                        <!-- User Information -->
+                        <div class="row mb-4">
+                            <div class="col-md-6">
+                                <div class="form-group mb-3">
+                                    <label for="first_name" class="form-label">First Name</label>
+                                    <input type="text" class="form-control" id="first_name" name="first_name" 
+                                           value="{{ department_head.user.first_name }}" required>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="form-group mb-3">
+                                    <label for="last_name" class="form-label">Last Name</label>
+                                    <input type="text" class="form-control" id="last_name" name="last_name" 
+                                           value="{{ department_head.user.last_name }}" required>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="row mb-4">
+                            <div class="col-md-6">
+                                <div class="form-group mb-3">
+                                    <label for="email" class="form-label">Email</label>
+                                    <input type="email" class="form-control" id="email" name="email" 
+                                           value="{{ department_head.user.email }}" required>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="form-group mb-3">
+                                    <label for="contact_number" class="form-label">Contact Number</label>
+                                    <input type="tel" class="form-control" id="contact_number" name="contact_number" 
+                                           value="{{ department_head.contact_number }}" required>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Department Information -->
+                        <div class="row mb-4">
+                            <div class="col-md-6">
+                                <div class="form-group mb-3">
+                                    <label for="department" class="form-label">Department</label>
+                                    <select class="form-select" id="department" name="department" required>
+                                        <option value="">Select Department</option>
+                                        {% for dept in departments %}
+                                        <option value="{{ dept.id }}" {% if department_head.department.id == dept.id %}selected{% endif %}>
+                                            {{ dept.name }}
+                                        </option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="form-group mb-3">
+                                    <label for="subdepartment" class="form-label">Subdepartment</label>
+                                    <select class="form-select" id="subdepartment" name="subdepartment">
+                                        <option value="">Select Subdepartment</option>
+                                        {% for subdept in subdepartments %}
+                                        <option value="{{ subdept.id }}" {% if department_head.subdepartment.id == subdept.id %}selected{% endif %}>
+                                            {{ subdept.name }}
+                                        </option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Status Information -->
+                        <div class="row mb-4">
+                            <div class="col-md-6">
+                                <div class="form-group mb-3">
+                                    <label for="status" class="form-label">Status</label>
+                                    <select class="form-select" id="status" name="status" required>
+                                        <option value="active" {% if department_head.status == 'active' %}selected{% endif %}>Active</option>
+                                        <option value="on_leave" {% if department_head.status == 'on_leave' %}selected{% endif %}>On Leave</option>
+                                        <option value="left_service" {% if department_head.status == 'left_service' %}selected{% endif %}>Left Service</option>
+                                        <option value="inactive" {% if department_head.status == 'inactive' %}selected{% endif %}>Inactive</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="form-group mb-3">
+                                    <label for="designation" class="form-label">Designation</label>
+                                    <input type="text" class="form-control" id="designation" name="designation" 
+                                           value="{{ department_head.designation }}" required>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Password Section (only for new department heads) -->
+                        {% if not department_head %}
+                        <div class="row mb-4">
+                            <div class="col-md-6">
+                                <div class="form-group mb-3">
+                                    <label for="password" class="form-label">Password</label>
+                                    <input type="password" class="form-control" id="password" name="password" required>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="form-group mb-3">
+                                    <label for="confirm_password" class="form-label">Confirm Password</label>
+                                    <input type="password" class="form-control" id="confirm_password" name="confirm_password" required>
+                                </div>
+                            </div>
+                        </div>
+                        {% endif %}
+
+                        <!-- Submit Button -->
+                        <div class="text-center">
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-save me-2"></i>Save Changes
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Form validation
+    const form = document.querySelector('form');
+    form.addEventListener('submit', function(event) {
+        if (!form.checkValidity()) {
+            event.preventDefault();
+            event.stopPropagation();
+        }
+        form.classList.add('was-validated');
+    });
+
+    // Dynamic subdepartment loading
+    const departmentSelect = document.getElementById('department');
+    const subdepartmentSelect = document.getElementById('subdepartment');
+
+    departmentSelect.addEventListener('change', function() {
+        const departmentId = this.value;
+        if (departmentId) {
+            fetch(`/get-subdepartments/${departmentId}/`)
+                .then(response => response.json())
+                .then(data => {
+                    subdepartmentSelect.innerHTML = '<option value="">Select Subdepartment</option>';
+                    data.forEach(subdept => {
+                        const option = document.createElement('option');
+                        option.value = subdept.id;
+                        option.textContent = subdept.name;
+                        subdepartmentSelect.appendChild(option);
+                    });
+                });
+        } else {
+            subdepartmentSelect.innerHTML = '<option value="">Select Subdepartment</option>';
+        }
+    });
+
+    // Password confirmation validation
+    const password = document.getElementById('password');
+    const confirmPassword = document.getElementById('confirm_password');
+    
+    if (password && confirmPassword) {
+        confirmPassword.addEventListener('input', function() {
+            if (this.value !== password.value) {
+                this.setCustomValidity('Passwords do not match');
+            } else {
+                this.setCustomValidity('');
+            }
+        });
+    }
+});
+</script>
+{% endblock %} 

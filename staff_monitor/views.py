@@ -2248,9 +2248,15 @@ def edit_superintendent(request, superintendent_id):
     else:
         form = DepartmentHeadForm(instance=department_head)
     
+    # Get all departments and subdepartments
+    departments = Department.objects.all()
+    subdepartments = SubDepartment.objects.filter(department=department_head.department)
+    
     context = {
         'form': form,
         'department_head': department_head,
+        'departments': departments,
+        'subdepartments': subdepartments,
         'is_admin': request.user.is_staff,
         'is_hr_head': is_hr_head(request.user),
         'title': f'Edit Department Head: {department_head.user.get_full_name()}'
