@@ -125,7 +125,7 @@
         {% endif %}
 
         {% if show_by_department %}
-        <!-- HR Head View - Staff Grouped by Department -->
+        <!-- HR/Admin View - Staff Grouped by Department -->
         <div class="accordion" id="departmentsAccordion">
             {% for dept_id, dept_data in staff_by_department.items %}
             <div class="accordion-item mb-3 department-section" data-department="{{ dept_data.name }}">
@@ -135,83 +135,61 @@
                         <span class="badge bg-primary ms-2">{{ dept_data.staff.count }} Staff</span>
                     </button>
                 </h2>
-                <div id="collapse{{ dept_id }}" class="accordion-collapse collapse show" aria-labelledby="heading{{ dept_id }}" data-bs-parent="#departmentsAccordion">
-                    <div class="accordion-body p-0">
-                        <div class="table-responsive">
-                            <table class="table table-hover table-mobile">
-                                <thead class="table-light">
-                                    <tr>
-                                        <th>Name</th>
-                                        <th>Employee ID</th>
-                                        <th>Subdepartment</th>
-                                        <th>Position</th>
-                                        {% comment %} <th>Contact</th> {% endcomment %}
-                                        <th>Contact Information</th>
-                                        <th>Qualification</th>
-                                        <th>Actions</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    {% for staff in dept_data.staff %}
-                                    <tr class="staff-row">
-                                        <td data-label="Name">{{ staff.user.get_full_name }}</td>
-                                        <td data-label="Employee ID">{{ staff.employee_id }}</td>
-                                        <td data-label="Subdepartment">
-                                            {% if staff.subdepartment %}
-                                                {{ staff.subdepartment.name }}
-                                            {% else %}
-                                                <span class="text-muted">N/A</span>
+                <div id="collapse{{ dept_id }}" class="accordion-collapse collapse" aria-labelledby="heading{{ dept_id }}" data-bs-parent="#departmentsAccordion">
+                    <div class="table-responsive">
+                        <table class="table table-hover table-mobile">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>Name</th>
+                                    <th>Employee ID</th>
+                                    <th>Subdepartment</th>
+                                    <th>Position</th>
+                                    <th>Contact Number</th>
+                                    <th>Qualification</th>
+                                    <th>Status</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for staff in dept_data.staff %}
+                                <tr class="staff-row">
+                                    <td data-label="Name">{{ staff.user.get_full_name }}</td>
+                                    <td data-label="Employee ID">{{ staff.employee_id }}</td>
+                                    <td data-label="Subdepartment">{% if staff.subdepartment %}{{ staff.subdepartment.name }}{% else %}<span class="text-muted">N/A</span>{% endif %}</td>
+                                    <td data-label="Position">{{ staff.position }}</td>
+                                    <td data-label="Contact Number">{% if staff.contact_number %}{{ staff.contact_number }}{% else %}<span class="text-muted">-</span>{% endif %}</td>
+                                    <td data-label="Qualification">{% if staff.qualification %}{{ staff.qualification }}{% else %}<span class="text-muted">-</span>{% endif %}</td>
+                                    <td data-label="Status"><span class="badge {% if staff.status == 'active' %}bg-success{% elif staff.status == 'on_leave' %}bg-warning{% else %}bg-danger{% endif %}">{{ staff.get_status_display }}</span></td>
+                                    <td data-label="Actions">
+                                        <div class="btn-group">
+                                            <a href="{% url 'performance_form' staff.id %}" class="btn btn-primary btn-sm"><i class="fas fa-clipboard-check me-1"></i>Evaluate</a>
+                                            <a href="{% url 'feedback_form' staff.id %}" class="btn btn-success btn-sm"><i class="fas fa-comment-dots me-1"></i>Incident</a>
+                                            {% if is_admin or is_hr_head %}
+                                            <a href="{% url 'edit_staff' staff.id %}" class="btn btn-warning btn-sm"><i class="fas fa-edit me-1"></i>Edit</a>
+                                            <form method="post" action="{% url 'delete_staff' staff.id %}" class="delete-staff-form d-inline">
+                                                {% csrf_token %}
+                                                <button type="submit" class="btn btn-danger btn-sm"><i class="fas fa-trash me-1"></i>Delete</button>
+                                            </form>
                                             {% endif %}
-                                        </td>
-                                        <td data-label="Position">{{ staff.position }}</td>
-                                        <td data-label="Contact Information">{% if staff.contact_info %}{{ staff.contact_info }}{% else %}<span class="text-muted">-</span>{% endif %}</td>
-                                        <td data-label="Qualification">{% if staff.qualification %}{{ staff.qualification }}{% else %}<span class="text-muted">-</span>{% endif %}</td>
-                                        <td data-label="Actions">
-                                            <div class="btn-group">
-                                                <a href="{% url 'performance_form' staff.id %}" class="btn btn-primary btn-sm">
-                                                    <i class="fas fa-clipboard-check me-1"></i>Evaluate
-                                                </a>
-                                                <a href="{% url 'feedback_form' staff.id %}" class="btn btn-success btn-sm">
-                                                    <i class="fas fa-comment-dots me-1"></i>Incident
-                                                </a>
-                                                {% if is_hr_head and department_head.privileges.can_edit_staff %}
-                                                <a href="{% url 'edit_staff' staff.id %}" class="btn btn-warning btn-sm">
-                                                    <i class="fas fa-edit me-1"></i>Edit
-                                                </a>
-                                                {% endif %}
-                                                {% if is_admin %}
-                                                <button class="btn btn-danger btn-sm delete-staff" 
-                                                        data-staff-id="{{ staff.id }}"
-                                                        data-staff-name="{{ staff.user.get_full_name }}">
-                                                    <i class="fas fa-trash me-1"></i>Delete
-                                                </button>
-                                                {% elif is_hr_head and department_head.privileges.can_delete_staff %}
-                                                <button class="btn btn-danger btn-sm delete-staff" 
-                                                        data-staff-id="{{ staff.id }}"
-                                                        data-staff-name="{{ staff.user.get_full_name }}">
-                                                    <i class="fas fa-trash me-1"></i>Delete
-                                                </button>
-                                                {% endif %}
-                                            </div>
-                                        </td>
-                                    </tr>
-                                    {% empty %}
-                                    <tr>
-                                        <td colspan="6" class="text-center py-4">
-                                            <i class="fas fa-users text-muted me-2"></i>No staff members found
-                                        </td>
-                                    </tr>
-                                    {% endfor %}
-                                </tbody>
-                            </table>
-                        </div>
+                                        </div>
+                                    </td>
+                                </tr>
+                                {% empty %}
+                                <tr>
+                                    <td colspan="8" class="text-center py-4">
+                                        <i class="fas fa-users text-muted me-2"></i>No staff members found
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
                     </div>
                 </div>
             </div>
             {% endfor %}
         </div>
         {% else %}
-        <!-- Regular Staff Table View -->
+        <!-- Department Head View - Flat Table -->
         <div class="table-responsive">
             <table class="table table-hover table-mobile">
                 <thead class="table-light">
@@ -221,59 +199,40 @@
                         <th>Department</th>
                         <th>Subdepartment</th>
                         <th>Position</th>
-                        <th>Contact Information</th>
+                        <th>Contact Number</th>
                         <th>Qualification</th>
+                        <th>Status</th>
                         <th>Actions</th>
                     </tr>
                 </thead>
                 <tbody>
-                    {% for staff in staff_members %}
+                    {% for staff in staff_list %}
                     <tr class="staff-row">
                         <td data-label="Name">{{ staff.user.get_full_name }}</td>
                         <td data-label="Employee ID">{{ staff.employee_id }}</td>
                         <td data-label="Department">{{ staff.department }}</td>
-                        <td data-label="Subdepartment">
-                            {% if staff.subdepartment %}
-                                {{ staff.subdepartment.name }}
-                            {% else %}
-                                <span class="text-muted">N/A</span>
-                            {% endif %}
-                        </td>
+                        <td data-label="Subdepartment">{% if staff.subdepartment %}{{ staff.subdepartment.name }}{% else %}<span class="text-muted">N/A</span>{% endif %}</td>
                         <td data-label="Position">{{ staff.position }}</td>
-                        <td data-label="Contact Information">{% if staff.contact_info %}{{ staff.contact_info }}{% else %}<span class="text-muted">-</span>{% endif %}</td>
+                        <td data-label="Contact Number">{% if staff.contact_number %}{{ staff.contact_number }}{% else %}<span class="text-muted">-</span>{% endif %}</td>
                         <td data-label="Qualification">{% if staff.qualification %}{{ staff.qualification }}{% else %}<span class="text-muted">-</span>{% endif %}</td>
+                        <td data-label="Status"><span class="badge {% if staff.status == 'active' %}bg-success{% elif staff.status == 'on_leave' %}bg-warning{% else %}bg-danger{% endif %}">{{ staff.get_status_display }}</span></td>
                         <td data-label="Actions">
                             <div class="btn-group">
-                                <a href="{% url 'performance_form' staff.id %}" class="btn btn-primary btn-sm">
-                                    <i class="fas fa-clipboard-check me-1"></i>Evaluate
-                                </a>
-                                <a href="{% url 'feedback_form' staff.id %}" class="btn btn-success btn-sm">
-                                    <i class="fas fa-comment-dots me-1"></i>Incident
-                                </a>
-                                {% if is_admin or is_hr_head and department_head.privileges.can_edit_staff %}
-                                <a href="{% url 'edit_staff' staff.id %}" class="btn btn-warning btn-sm">
-                                    <i class="fas fa-edit me-1"></i>Edit
-                                </a>
-                                {% endif %}
-                                {% if is_admin %}
-                                <button class="btn btn-danger btn-sm delete-staff" 
-                                        data-staff-id="{{ staff.id }}"
-                                        data-staff-name="{{ staff.user.get_full_name }}">
-                                    <i class="fas fa-trash me-1"></i>Delete
-                                </button>
-                                {% elif is_hr_head and department_head.privileges.can_delete_staff %}
-                                <button class="btn btn-danger btn-sm delete-staff" 
-                                        data-staff-id="{{ staff.id }}"
-                                        data-staff-name="{{ staff.user.get_full_name }}">
-                                    <i class="fas fa-trash me-1"></i>Delete
-                                </button>
+                                <a href="{% url 'performance_form' staff.id %}" class="btn btn-primary btn-sm"><i class="fas fa-clipboard-check me-1"></i>Evaluate</a>
+                                <a href="{% url 'feedback_form' staff.id %}" class="btn btn-success btn-sm"><i class="fas fa-comment-dots me-1"></i>Incident</a>
+                                {% if is_admin or is_hr_head %}
+                                <a href="{% url 'edit_staff' staff.id %}" class="btn btn-warning btn-sm"><i class="fas fa-edit me-1"></i>Edit</a>
+                                <form method="post" action="{% url 'delete_staff' staff.id %}" class="delete-staff-form d-inline">
+                                    {% csrf_token %}
+                                    <button type="submit" class="btn btn-danger btn-sm"><i class="fas fa-trash me-1"></i>Delete</button>
+                                </form>
                                 {% endif %}
                             </div>
                         </td>
                     </tr>
                     {% empty %}
                     <tr>
-                        <td colspan="7" class="text-center py-4">
+                        <td colspan="9" class="text-center py-4">
                             <i class="fas fa-users text-muted me-2"></i>No staff members found
                         </td>
                     </tr>
@@ -385,6 +344,7 @@
     }
 </style>
 
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 <script>
 document.addEventListener('DOMContentLoaded', function() {
     const staffSearch = document.getElementById('staffSearch');
@@ -486,35 +446,22 @@ document.addEventListener('DOMContentLoaded', function() {
     }
     
     // Delete staff confirmation dialog
-    document.querySelectorAll('.delete-staff').forEach(button => {
-        button.addEventListener('click', function(e) {
+    document.querySelectorAll('.delete-staff-form').forEach(function(form) {
+        form.addEventListener('submit', function(e) {
             e.preventDefault();
-            const staffId = this.dataset.staffId;
-            const staffName = this.dataset.staffName;
-            
+            const staffName = form.closest('tr').querySelector('td').textContent.trim();
             Swal.fire({
-                title: 'Delete Staff Member?',
-                html: `Are you sure you want to delete <strong>${staffName}</strong>?<br>This action cannot be undone.`,
+                title: 'Are you sure?',
+                html: `<b>${staffName}</b> will be permanently deleted!`,
                 icon: 'warning',
                 showCancelButton: true,
+                confirmButtonColor: '#d33',
+                cancelButtonColor: '#3085d6',
                 confirmButtonText: 'Yes, delete',
-                cancelButtonText: 'No, cancel',
-                confirmButtonColor: '#dc3545',
-                cancelButtonColor: '#6c757d',
+                cancelButtonText: 'Cancel',
+                focusCancel: true
             }).then((result) => {
                 if (result.isConfirmed) {
-                    // Create and submit form for deletion
-                    const form = document.createElement('form');
-                    form.method = 'POST';
-                    form.action = `{% url 'delete_staff' 999 %}`.replace('999', staffId);
-                    
-                    const csrfInput = document.createElement('input');
-                    csrfInput.type = 'hidden';
-                    csrfInput.name = 'csrfmiddlewaretoken';
-                    csrfInput.value = document.querySelector('input[name="csrfmiddlewaretoken"]').value;
-                    
-                    form.appendChild(csrfInput);
-                    document.body.appendChild(form);
                     form.submit();
                 }
             });

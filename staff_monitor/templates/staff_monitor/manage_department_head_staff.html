@@ -1,0 +1,242 @@
+{% extends 'staff_monitor/base.html' %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header bg-primary text-white">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <h5 class="mb-0">
+                            <i class="fas fa-users-cog me-2"></i>Manage Staff Assignments
+                        </h5>
+                        <a href="{% url 'superintendent_list' %}" class="btn btn-light btn-sm">
+                            <i class="fas fa-arrow-left me-1"></i>Back to Department Heads
+                        </a>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <!-- Department Head Details -->
+                    <div class="row mb-4">
+                        <div class="col-md-12">
+                            <div class="card mb-4">
+                                <div class="card-header bg-primary text-white">
+                                    <h5 class="mb-0">
+                                        <i class="fas fa-user-md me-2"></i>Department Head Details
+                                    </h5>
+                                </div>
+                                <div class="card-body">
+                                    <div class="row">
+                                        <div class="col-md-6">
+                                            <p><strong>Name:</strong> {{ current_head.user.get_full_name }}</p>
+                                            <p><strong>Department:</strong> {{ current_head.department.name }}</p>
+                                            {% if current_head.subdepartment %}
+                                            <p><strong>Subdepartment:</strong> {{ current_head.subdepartment.name }}</p>
+                                            {% endif %}
+                                            <p><strong>Designation:</strong> {{ current_head.designation }}</p>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <p><strong>Status:</strong> 
+                                                {% if current_head.status == 'active' %}
+                                                <span class="badge bg-success">Active</span>
+                                                {% elif current_head.status == 'on_leave' %}
+                                                <span class="badge bg-warning">On Leave</span>
+                                                {% elif current_head.status == 'left_service' %}
+                                                <span class="badge bg-danger">Left Service</span>
+                                                {% else %}
+                                                <span class="badge bg-secondary">Inactive</span>
+                                                {% endif %}
+                                            </p>
+                                            <p><strong>Contact:</strong> {{ current_head.contact_number }}</p>
+                                            <p><strong>Email:</strong> {{ current_head.user.email }}</p>
+                                            <p><strong>Staff Assigned:</strong> {{ assigned_staff.count }}</p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Department Head Selection -->
+                    {% if department_heads|length > 1 %}
+                    <div class="row mb-4">
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label for="departmentHeadSelect" class="form-label">Select Department Head:</label>
+                                <select class="form-select" id="departmentHeadSelect" onchange="changeDepartmentHead(this.value)">
+                                    {% for head in department_heads %}
+                                    <option value="{{ head.id }}" {% if head.id == current_head.id %}selected{% endif %}>
+                                        {{ head.user.get_full_name }} - {{ head.department.name }}
+                                        {% if head.subdepartment %}
+                                        ({{ head.subdepartment.name }})
+                                        {% endif %}
+                                    </option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                    {% endif %}
+
+                    <!-- Transfer Staff Section -->
+                    {% if assigned_staff.count > 0 %}
+                    <div class="row mb-4">
+                        <div class="col-md-12">
+                            <div class="card border-warning">
+                                <div class="card-header bg-warning text-dark">
+                                    <h6 class="mb-0">
+                                        <i class="fas fa-exchange-alt me-2"></i>Transfer Staff to New Department Head
+                                    </h6>
+                                </div>
+                                <div class="card-body">
+                                    <form method="post" action="{% url 'transfer_staff' current_head.id %}" class="row g-3">
+                                        {% csrf_token %}
+                                        <div class="col-md-6">
+                                            <label for="newHeadSelect" class="form-label">Select New Department Head:</label>
+                                            <select class="form-select" id="newHeadSelect" name="new_head_id" required>
+                                                <option value="">Select a department head...</option>
+                                                {% for head in department_heads %}
+                                                {% if head.id != current_head.id %}
+                                                <option value="{{ head.id }}">
+                                                    {{ head.user.get_full_name }} - {{ head.department.name }}
+                                                    {% if head.subdepartment %}
+                                                    ({{ head.subdepartment.name }})
+                                                    {% endif %}
+                                                </option>
+                                                {% endif %}
+                                                {% endfor %}
+                                            </select>
+                                        </div>
+                                        <div class="col-md-6 d-flex align-items-end">
+                                            <button type="submit" class="btn btn-warning">
+                                                <i class="fas fa-exchange-alt me-2"></i>Transfer All Staff
+                                            </button>
+                                        </div>
+                                    </form>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    {% endif %}
+
+                    <!-- Bulk Action Buttons -->
+                    <div class="row mb-4">
+                        <div class="col-md-6">
+                            <form method="post" action="{% url 'assign_all_staff' current_head.id %}" class="d-inline">
+                                {% csrf_token %}
+                                <button type="submit" class="btn btn-success">
+                                    <i class="fas fa-users me-2"></i>Assign All Available Staff
+                                </button>
+                            </form>
+                        </div>
+                        <div class="col-md-6 text-end">
+                            <form method="post" action="{% url 'unassign_all_staff' current_head.id %}" class="d-inline">
+                                {% csrf_token %}
+                                <button type="submit" class="btn btn-danger">
+                                    <i class="fas fa-user-minus me-2"></i>Unassign All Staff
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <!-- Available Staff -->
+                        <div class="col-md-6">
+                            <div class="card h-100">
+                                <div class="card-header bg-success text-white">
+                                    <h6 class="mb-0">
+                                        <i class="fas fa-user-plus me-2"></i>Available Staff
+                                    </h6>
+                                </div>
+                                <div class="card-body">
+                                    <div class="table-responsive">
+                                        <table class="table table-hover">
+                                            <thead>
+                                                <tr>
+                                                    <th>Name</th>
+                                                    <th>Position</th>
+                                                    <th>Actions</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                {% for staff in available_staff %}
+                                                <tr>
+                                                    <td>{{ staff.user.get_full_name }}</td>
+                                                    <td>{{ staff.position }}</td>
+                                                    <td>
+                                                        <form method="post" action="{% url 'assign_staff_to_head' current_head.id staff.id %}" class="d-inline">
+                                                            {% csrf_token %}
+                                                            <button type="submit" class="btn btn-success btn-sm">
+                                                                <i class="fas fa-plus me-1"></i>Assign
+                                                            </button>
+                                                        </form>
+                                                    </td>
+                                                </tr>
+                                                {% empty %}
+                                                <tr>
+                                                    <td colspan="3" class="text-center">No available staff found</td>
+                                                </tr>
+                                                {% endfor %}
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Assigned Staff -->
+                        <div class="col-md-6">
+                            <div class="card h-100">
+                                <div class="card-header bg-primary text-white">
+                                    <h6 class="mb-0">
+                                        <i class="fas fa-user-check me-2"></i>Assigned Staff
+                                    </h6>
+                                </div>
+                                <div class="card-body">
+                                    <div class="table-responsive">
+                                        <table class="table table-hover">
+                                            <thead>
+                                                <tr>
+                                                    <th>Name</th>
+                                                    <th>Position</th>
+                                                    <th>Actions</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                {% for staff in assigned_staff %}
+                                                <tr>
+                                                    <td>{{ staff.user.get_full_name }}</td>
+                                                    <td>{{ staff.position }}</td>
+                                                    <td>
+                                                        <form method="post" action="{% url 'unassign_staff_from_head' current_head.id staff.id %}" class="d-inline">
+                                                            {% csrf_token %}
+                                                            <button type="submit" class="btn btn-danger btn-sm">
+                                                                <i class="fas fa-minus me-1"></i>Remove
+                                                            </button>
+                                                        </form>
+                                                    </td>
+                                                </tr>
+                                                {% empty %}
+                                                <tr>
+                                                    <td colspan="3" class="text-center">No staff assigned</td>
+                                                </tr>
+                                                {% endfor %}
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function changeDepartmentHead(headId) {
+    window.location.href = `/department-heads/${headId}/manage-staff/`;
+}
+</script>
+{% endblock %} 

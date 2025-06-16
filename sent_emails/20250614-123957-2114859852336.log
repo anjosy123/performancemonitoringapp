@@ -1,13 +1,13 @@
 Content-Type: multipart/alternative;
- boundary="===============4270047989509174596=="
+ boundary="===============1445057997055855035=="
 MIME-Version: 1.0
 Subject: Welcome to Mariampur Hospital Performance Monitoring System
 From: Mariampur Hospital IT Team <mhitdeptsw@gmail.com>
-To: shellyumi@gmail.com
-Date: Wed, 11 Jun 2025 09:05:57 -0000
-Message-ID: <174963275759.13660.12084768648257638022@ASPIRE7-03PORSC.bbrouter>
+To: mary@gmail.com
+Date: Sat, 14 Jun 2025 07:09:57 -0000
+Message-ID: <174988499745.4308.15628632088324291411@ASPIRE7-03PORSC.bbrouter>
 
---===============4270047989509174596==
+--===============1445057997055855035==
 Content-Type: text/plain; charset="utf-8"
 MIME-Version: 1.0
 Content-Transfer-Encoding: 7bit
@@ -70,15 +70,15 @@ Content-Transfer-Encoding: 7bit
     
     
     
-        Hello Sr Shelly umi,
+        Hello Mrs. Mary George,
         
         Welcome to the Mariampur Hospital Staff Performance Monitoring System. You have been registered as a Department Head in our system.
         
         Your account has been created with the following credentials:
         
         
-            Username/Email: shellyumi@gmail.com
-            Password: vEzjk1Ez
+            Username/Email: mary@gmail.com
+            Password: g7SaHBiY
         
         
         For security reasons, we recommend changing your password after your first login.
@@ -99,7 +99,7 @@ Content-Transfer-Encoding: 7bit
     
 
  
---===============4270047989509174596==
+--===============1445057997055855035==
 Content-Type: text/html; charset="utf-8"
 MIME-Version: 1.0
 Content-Transfer-Encoding: 7bit
@@ -162,15 +162,15 @@ Content-Transfer-Encoding: 7bit
     </div>
     
     <div class="content">
-        <h2>Hello Sr Shelly umi,</h2>
+        <h2>Hello Mrs. Mary George,</h2>
         
         <p>Welcome to the Mariampur Hospital Staff Performance Monitoring System. You have been registered as a <strong>Department Head</strong> in our system.</p>
         
         <p>Your account has been created with the following credentials:</p>
         
         <div class="credentials">
-            <p><strong>Username/Email:</strong> shellyumi@gmail.com</p>
-            <p><strong>Password:</strong> vEzjk1Ez</p>
+            <p><strong>Username/Email:</strong> mary@gmail.com</p>
+            <p><strong>Password:</strong> g7SaHBiY</p>
         </div>
         
         <p>For security reasons, we recommend changing your password after your first login.</p>
@@ -191,6 +191,6 @@ Content-Transfer-Encoding: 7bit
     </div>
 </body>
 </html> 
---===============4270047989509174596==--
+--===============1445057997055855035==--
 
 -------------------------------------------------------------------------------

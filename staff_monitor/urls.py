@@ -100,4 +100,15 @@ urlpatterns = [
     
     # Debug views (temporary)
     path('debug/db-connection/', views.debug_db_connection, name='debug_db_connection'),
+    
+    # New staff assignment views
+    path('department-heads/<int:department_head_id>/manage-staff/', views.manage_department_head_staff, name='manage_department_head_staff'),
+    path('department-heads/<int:department_head_id>/assign-staff/<int:staff_id>/', views.assign_staff_to_head, name='assign_staff_to_head'),
+    path('department-heads/<int:department_head_id>/unassign-staff/<int:staff_id>/', views.unassign_staff_from_head, name='unassign_staff_from_head'),
+    path('department-heads/<int:department_head_id>/assign-all-staff/', views.assign_all_staff, name='assign_all_staff'),
+    path('department-heads/<int:department_head_id>/unassign-all-staff/', views.unassign_all_staff, name='unassign_all_staff'),
+    path('department-heads/<int:department_head_id>/transfer-staff/', views.transfer_staff, name='transfer_staff'),
+    path('center-management/', views.center_management, name='center_management'),
+    path('update-staff-status/<int:staff_id>/', views.update_staff_status, name='update_staff_status'),
+    path('update-department-head-status/<int:head_id>/', views.update_department_head_status, name='update_department_head_status'),
 ]

@@ -1,0 +1,398 @@
+{% extends 'staff_monitor/base.html' %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-12">
+        <div class="card">
+            <div class="card-header bg-primary text-white">
+                <h3 class="mb-0">
+                    <i class="fas fa-hospital-user me-2"></i>Status Marker
+                    {% if is_admin %}
+                    <span class="badge bg-light text-dark ms-2">Admin View</span>
+                    {% elif is_hr_head %}
+                    <span class="badge bg-light text-dark ms-2">HR View</span>
+                    {% endif %}
+                </h3>
+            </div>
+            <div class="card-body">
+                {% if is_admin %}
+                <div class="alert alert-info mb-4">
+                    <i class="fas fa-info-circle me-2"></i>
+                    As an administrator, you can manage the status of all staff members and department heads across all departments.
+                </div>
+                {% elif is_hr_head %}
+                <div class="alert alert-info mb-4">
+                    <i class="fas fa-info-circle me-2"></i>
+                    As an HR department head, you can manage the status of all staff members and department heads.
+                </div>
+                {% endif %}
+                <!-- Tabs Navigation -->
+                <ul class="nav nav-tabs mb-4" id="managementTabs" role="tablist">
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link active" id="staff-tab" data-bs-toggle="tab" data-bs-target="#staff" type="button" role="tab">
+                            <i class="fas fa-users me-2"></i>Staff Status
+                        </button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link" id="heads-tab" data-bs-toggle="tab" data-bs-target="#heads" type="button" role="tab">
+                            <i class="fas fa-user-md me-2"></i>Department Heads Status
+                        </button>
+                    </li>
+                </ul>
+
+                <!-- Tabs Content -->
+                <div class="tab-content" id="managementTabsContent">
+                    <!-- Staff Status Tab -->
+                    <div class="tab-pane fade show active" id="staff" role="tabpanel">
+                        <div class="card">
+                            <div class="card-header bg-light">
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <h5 class="mb-0">Staff Status Management</h5>
+                                    <div class="d-flex gap-2">
+                                        <div class="input-group">
+                                            <span class="input-group-text">
+                                                <i class="fas fa-search"></i>
+                                            </span>
+                                            <input type="text" id="staffSearch" class="form-control" placeholder="Search staff...">
+                                        </div>
+                                        <select id="staffDepartmentFilter" class="form-select">
+                                            <option value="">All Departments</option>
+                                            {% for dept in departments %}
+                                                <option value="{{ dept.name }}">{{ dept.name }}</option>
+                                            {% endfor %}
+                                        </select>
+                                        <select id="staffStatusFilter" class="form-select">
+                                            <option value="">All Status</option>
+                                            <option value="active">Active</option>
+                                            <option value="on_leave">On Leave</option>
+                                            <option value="left_service">Left Service</option>
+                                        </select>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="card-body">
+                                <div class="table-responsive">
+                                    <table class="table table-hover" id="staffTable">
+                                        <thead>
+                                            <tr>
+                                                <th>Name</th>
+                                                <th>Employee ID</th>
+                                                <th>Department</th>
+                                                <th>Position</th>
+                                                <th>Current Status</th>
+                                                <th>Actions</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {% for staff in staff_list %}
+                                            <tr>
+                                                <td>{{ staff.user.get_full_name }}</td>
+                                                <td>{{ staff.employee_id }}</td>
+                                                <td>{{ staff.department.name }}</td>
+                                                <td>{{ staff.position }}</td>
+                                                <td>
+                                                    <span class="badge {% if staff.status == 'active' %}bg-success{% elif staff.status == 'on_leave' %}bg-warning{% else %}bg-danger{% endif %}">
+                                                        {{ staff.get_status_display }}
+                                                    </span>
+                                                </td>
+                                                <td>
+                                                    <div class="btn-group">
+                                                        <button type="button" class="btn btn-primary btn-sm dropdown-toggle" data-bs-toggle="dropdown">
+                                                            Change Status
+                                                        </button>
+                                                        <ul class="dropdown-menu">
+                                                            <li>
+                                                                <form method="post" action="{% url 'update_staff_status' staff.id %}" class="d-inline">
+                                                                    {% csrf_token %}
+                                                                    <input type="hidden" name="status" value="active">
+                                                                    <button type="submit" class="dropdown-item">
+                                                                        <i class="fas fa-check-circle me-2"></i>Set Active
+                                                                    </button>
+                                                                </form>
+                                                            </li>
+                                                            <li>
+                                                                <form method="post" action="{% url 'update_staff_status' staff.id %}" class="d-inline">
+                                                                    {% csrf_token %}
+                                                                    <input type="hidden" name="status" value="on_leave">
+                                                                    <button type="submit" class="dropdown-item">
+                                                                        <i class="fas fa-calendar-alt me-2"></i>Set On Leave
+                                                                    </button>
+                                                                </form>
+                                                            </li>
+                                                            <li>
+                                                                <form method="post" action="{% url 'update_staff_status' staff.id %}" class="d-inline">
+                                                                    {% csrf_token %}
+                                                                    <input type="hidden" name="status" value="left_service">
+                                                                    <button type="submit" class="dropdown-item">
+                                                                        <i class="fas fa-user-times me-2"></i>Set Left Service
+                                                                    </button>
+                                                                </form>
+                                                            </li>
+                                                        </ul>
+                                                    </div>
+                                                </td>
+                                            </tr>
+                                            {% empty %}
+                                            <tr>
+                                                <td colspan="6" class="text-center py-4">
+                                                    <i class="fas fa-users text-muted me-2"></i>No staff members found
+                                                </td>
+                                            </tr>
+                                            {% endfor %}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Department Heads Status Tab -->
+                    <div class="tab-pane fade" id="heads" role="tabpanel">
+                        <div class="card">
+                            <div class="card-header bg-light">
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <h5 class="mb-0">Department Heads Status Management</h5>
+                                    <div class="d-flex gap-2">
+                                        <div class="input-group">
+                                            <span class="input-group-text">
+                                                <i class="fas fa-search"></i>
+                                            </span>
+                                            <input type="text" id="headSearch" class="form-control" placeholder="Search department heads...">
+                                        </div>
+                                        <select id="headDepartmentFilter" class="form-select">
+                                            <option value="">All Departments</option>
+                                            {% for dept in departments %}
+                                                <option value="{{ dept.name }}">{{ dept.name }}</option>
+                                            {% endfor %}
+                                        </select>
+                                        <select id="headStatusFilter" class="form-select">
+                                            <option value="">All Status</option>
+                                            <option value="active">Active</option>
+                                            <option value="on_leave">On Leave</option>
+                                            <option value="left_service">Left Service</option>
+                                        </select>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="card-body">
+                                <div class="table-responsive">
+                                    <table class="table table-hover" id="headTable">
+                                        <thead>
+                                            <tr>
+                                                <th>Name</th>
+                                                <th>Department</th>
+                                                <th>Subdepartment</th>
+                                                <th>Current Status</th>
+                                                <th>Actions</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {% for head in department_heads %}
+                                            <tr>
+                                                <td>{{ head.user.get_full_name }}</td>
+                                                <td>{{ head.department.name }}</td>
+                                                <td>
+                                                    {% if head.subdepartment %}
+                                                        {{ head.subdepartment.name }}
+                                                    {% else %}
+                                                        <span class="text-muted">Main</span>
+                                                    {% endif %}
+                                                </td>
+                                                <td>
+                                                    <span class="badge {% if head.status == 'active' %}bg-success{% elif head.status == 'on_leave' %}bg-warning{% else %}bg-danger{% endif %}">
+                                                        {{ head.get_status_display }}
+                                                    </span>
+                                                </td>
+                                                <td>
+                                                    <div class="btn-group">
+                                                        <button type="button" class="btn btn-primary btn-sm dropdown-toggle" data-bs-toggle="dropdown">
+                                                            Change Status
+                                                        </button>
+                                                        <ul class="dropdown-menu">
+                                                            <li>
+                                                                <form method="post" action="{% url 'update_department_head_status' head.id %}" class="d-inline">
+                                                                    {% csrf_token %}
+                                                                    <input type="hidden" name="status" value="active">
+                                                                    <button type="submit" class="dropdown-item">
+                                                                        <i class="fas fa-check-circle me-2"></i>Set Active
+                                                                    </button>
+                                                                </form>
+                                                            </li>
+                                                            <li>
+                                                                <form method="post" action="{% url 'update_department_head_status' head.id %}" class="d-inline">
+                                                                    {% csrf_token %}
+                                                                    <input type="hidden" name="status" value="on_leave">
+                                                                    <button type="submit" class="dropdown-item">
+                                                                        <i class="fas fa-calendar-alt me-2"></i>Set On Leave
+                                                                    </button>
+                                                                </form>
+                                                            </li>
+                                                            <li>
+                                                                <form method="post" action="{% url 'update_department_head_status' head.id %}" class="d-inline">
+                                                                    {% csrf_token %}
+                                                                    <input type="hidden" name="status" value="left_service">
+                                                                    <button type="submit" class="dropdown-item">
+                                                                        <i class="fas fa-user-times me-2"></i>Set Left Service
+                                                                    </button>
+                                                                </form>
+                                                            </li>
+                                                        </ul>
+                                                    </div>
+                                                </td>
+                                            </tr>
+                                            {% empty %}
+                                            <tr>
+                                                <td colspan="5" class="text-center py-4">
+                                                    <i class="fas fa-user-md text-muted me-2"></i>No department heads found
+                                                </td>
+                                            </tr>
+                                            {% endfor %}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.nav-tabs .nav-link {
+    color: #000000 !important;
+    font-weight: 500;
+    padding: 0.75rem 1.25rem;
+}
+
+.nav-tabs .nav-link.active {
+    color: #0d6efd !important;
+    font-weight: 600;
+}
+
+.table th {
+    background-color: #f8f9fa;
+    font-weight: 600;
+}
+
+.badge {
+    font-size: 0.875rem;
+    padding: 0.5em 0.75em;
+}
+
+.dropdown-item {
+    padding: 0.5rem 1rem;
+}
+
+.dropdown-item i {
+    width: 1.25rem;
+}
+
+.form-select, .form-control {
+    border-radius: 0.375rem;
+}
+
+.input-group-text {
+    background-color: #f8f9fa;
+}
+
+@media (max-width: 768px) {
+    .card-header .d-flex {
+        flex-direction: column;
+        gap: 1rem;
+    }
+    
+    .input-group, .form-select {
+        width: 100%;
+    }
+}
+</style>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Apply black color to tab labels
+    const tabLinks = document.querySelectorAll('.nav-tabs .nav-link');
+    tabLinks.forEach(link => {
+        link.style.color = '#000000';
+    });
+
+    // Staff table search and filter functionality
+    const staffSearch = document.getElementById('staffSearch');
+    const staffDepartmentFilter = document.getElementById('staffDepartmentFilter');
+    const staffStatusFilter = document.getElementById('staffStatusFilter');
+    const staffTable = document.getElementById('staffTable');
+    
+    if (staffTable) {
+        function filterStaffTable() {
+            const searchTerm = staffSearch.value.toLowerCase();
+            const departmentFilter = staffDepartmentFilter.value.toLowerCase();
+            const statusFilter = staffStatusFilter.value.toLowerCase();
+            
+            const rows = staffTable.getElementsByTagName('tbody')[0].getElementsByTagName('tr');
+            
+            for (let row of rows) {
+                const name = row.cells[0].textContent.toLowerCase();
+                const department = row.cells[2].textContent.toLowerCase();
+                const status = row.cells[4].textContent.toLowerCase();
+                
+                const matchesSearch = name.includes(searchTerm);
+                const matchesDepartment = !departmentFilter || department === departmentFilter;
+                const matchesStatus = !statusFilter || status.includes(statusFilter);
+                
+                row.style.display = matchesSearch && matchesDepartment && matchesStatus ? '' : 'none';
+            }
+        }
+        
+        staffSearch.addEventListener('input', filterStaffTable);
+        staffDepartmentFilter.addEventListener('change', filterStaffTable);
+        staffStatusFilter.addEventListener('change', filterStaffTable);
+    }
+    
+    // Department heads table search and filter functionality
+    const headSearch = document.getElementById('headSearch');
+    const headDepartmentFilter = document.getElementById('headDepartmentFilter');
+    const headStatusFilter = document.getElementById('headStatusFilter');
+    const headTable = document.getElementById('headTable');
+    
+    if (headTable) {
+        function filterHeadTable() {
+            const searchTerm = headSearch.value.toLowerCase();
+            const departmentFilter = headDepartmentFilter.value.toLowerCase();
+            const statusFilter = headStatusFilter.value.toLowerCase();
+            
+            const rows = headTable.getElementsByTagName('tbody')[0].getElementsByTagName('tr');
+            
+            for (let row of rows) {
+                const name = row.cells[0].textContent.toLowerCase();
+                const department = row.cells[1].textContent.toLowerCase();
+                const status = row.cells[3].textContent.toLowerCase();
+                
+                const matchesSearch = name.includes(searchTerm);
+                const matchesDepartment = !departmentFilter || department === departmentFilter;
+                const matchesStatus = !statusFilter || status.includes(statusFilter);
+                
+                row.style.display = matchesSearch && matchesDepartment && matchesStatus ? '' : 'none';
+            }
+        }
+        
+        headSearch.addEventListener('input', filterHeadTable);
+        headDepartmentFilter.addEventListener('change', filterHeadTable);
+        headStatusFilter.addEventListener('change', filterHeadTable);
+    }
+
+    // Add event listener for tab changes to maintain black color
+    const tabButtons = document.querySelectorAll('[data-bs-toggle="tab"]');
+    tabButtons.forEach(button => {
+        button.addEventListener('shown.bs.tab', function (e) {
+            // Reset all tab colors to black
+            tabLinks.forEach(link => {
+                link.style.color = '#000000';
+            });
+            // Set active tab to blue
+            e.target.style.color = '#0d6efd';
+        });
+    });
+});
+</script>
+{% endblock %} 

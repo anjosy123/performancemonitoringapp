@@ -246,6 +246,21 @@ class DepartmentHeadForm(forms.ModelForm):
                 # Store the generated password to inform the user
                 head.user_password = password
                 
+                # Handle additional subdepartments if any
+                additional_subdepts = self.data.getlist('additional_subdepartments')
+                if additional_subdepts:
+                    # Add the primary subdepartment to the list if it exists
+                    if head.subdepartment:
+                        additional_subdepts.append(str(head.subdepartment.id))
+                    
+                    # Add all subdepartments to managed_subdepartments
+                    for subdept_id in additional_subdepts:
+                        try:
+                            subdept = SubDepartment.objects.get(id=subdept_id)
+                            head.managed_subdepartments.add(subdept)
+                        except SubDepartment.DoesNotExist:
+                            continue
+                
                 # Try to send email with login credentials
                 try:
                     from django.core.mail import send_mail
@@ -295,18 +310,11 @@ class DepartmentHeadForm(forms.ModelForm):
             return head
 
 class StaffForm(forms.ModelForm):
-    first_name = forms.CharField(
+    name = forms.CharField(
         required=True,
         widget=forms.TextInput(attrs={
             'class': 'form-control',
-            'placeholder': 'Enter first name'
-        })
-    )
-    last_name = forms.CharField(
-        required=True,
-        widget=forms.TextInput(attrs={
-            'class': 'form-control',
-            'placeholder': 'Enter last name'
+            'placeholder': 'Enter full name'
         })
     )
     email = forms.EmailField(
@@ -316,10 +324,30 @@ class StaffForm(forms.ModelForm):
             'placeholder': 'Enter email address (or leave blank if not available)'
         })
     )
+    contact_number = forms.CharField(
+        required=False,
+        widget=forms.TextInput(attrs={
+            'class': 'form-control',
+            'placeholder': 'Enter contact number'
+        })
+    )
+    qualification = forms.CharField(
+        required=False,
+        widget=forms.TextInput(attrs={
+            'class': 'form-control',
+            'placeholder': 'Enter qualification'
+        })
+    )
+    status = forms.ChoiceField(
+        choices=Staff.STATUS_CHOICES,
+        widget=forms.Select(attrs={
+            'class': 'form-control'
+        })
+    )
     
     class Meta:
         model = Staff
-        fields = ['employee_id', 'department', 'subdepartment', 'position', 'joining_date', 'appointment_date']
+        fields = ['employee_id', 'department', 'subdepartment', 'position', 'joining_date', 'appointment_date', 'status']
         widgets = {
             'employee_id': forms.TextInput(attrs={
                 'class': 'form-control',
@@ -371,6 +399,14 @@ class StaffForm(forms.ModelForm):
             self.fields['employee_id'].required = False
             # Store the original employee_id to use in save method
             self.initial['employee_id'] = self.instance.employee_id
+            
+            # Set initial values for additional fields
+            if self.instance_user:
+                self.initial['name'] = self.instance_user.get_full_name()
+                self.initial['email'] = self.instance_user.email
+                self.initial['contact_number'] = self.instance.contact_number
+                self.initial['qualification'] = self.instance.qualification
+                self.initial['status'] = self.instance.status
         
         # If we have form data and 'department' in it
         if 'department' in self.data:
@@ -430,8 +466,9 @@ class StaffForm(forms.ModelForm):
         # Check if we're updating an existing user
         if self.instance_user:
             # Update existing user information
-            self.instance_user.first_name = self.cleaned_data['first_name']
-            self.instance_user.last_name = self.cleaned_data['last_name']
+            name_parts = self.cleaned_data['name'].split()
+            self.instance_user.first_name = name_parts[0]
+            self.instance_user.last_name = ' '.join(name_parts[1:]) if len(name_parts) > 1 else ''
             
             # Update email if provided and different from current
             new_email = self.cleaned_data.get('email')
@@ -449,6 +486,11 @@ class StaffForm(forms.ModelForm):
             if self.instance and self.instance.pk:
                 staff.employee_id = self.instance.employee_id
                 
+            # Update additional fields
+            staff.contact_number = self.cleaned_data.get('contact_number', '')
+            staff.qualification = self.cleaned_data.get('qualification', '')
+            staff.status = self.cleaned_data.get('status', 'active')
+                
             if commit:
                 staff.save()
                 
@@ -456,6 +498,9 @@ class StaffForm(forms.ModelForm):
         else:
             # Create new user with or without login credentials based on email availability
             email = self.cleaned_data.get('email')
+            name_parts = self.cleaned_data['name'].split()
+            first_name = name_parts[0]
+            last_name = ' '.join(name_parts[1:]) if len(name_parts) > 1 else ''
             
             # Create a User instance
             if email:
@@ -464,8 +509,8 @@ class StaffForm(forms.ModelForm):
                     username=email,
                     email=email,
                     password=None,  # No password set, user cannot login until password reset
-                    first_name=self.cleaned_data['first_name'],
-                    last_name=self.cleaned_data['last_name'],
+                    first_name=first_name,
+                    last_name=last_name,
                     is_active=False  # User account is inactive
                 )
             else:
@@ -475,14 +520,17 @@ class StaffForm(forms.ModelForm):
                     username=username,
                     email=None,  # No email
                     password=None,  # No password
-                    first_name=self.cleaned_data['first_name'],
-                    last_name=self.cleaned_data['last_name'],
+                    first_name=first_name,
+                    last_name=last_name,
                     is_active=False  # User account is inactive
                 )
             
             # Create Staff instance
             staff = super().save(commit=False)
             staff.user = user
+            staff.contact_number = self.cleaned_data.get('contact_number', '')
+            staff.qualification = self.cleaned_data.get('qualification', '')
+            staff.status = self.cleaned_data.get('status', 'active')
             
             if commit:
                 staff.save()

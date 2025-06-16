@@ -26,9 +26,15 @@ class SubDepartment(models.Model):
         unique_together = ['name', 'department']  # Prevent duplicate subdepartment names within a department
 
 class DepartmentHead(models.Model):
+    STATUS_CHOICES = [
+        ('active', 'Active'),
+        ('on_leave', 'On Leave'),
+        ('left_service', 'Left Service'),
+    ]
+    
     user = models.OneToOneField(User, on_delete=models.CASCADE)
-    department = models.ForeignKey(Department, on_delete=models.PROTECT)
-    subdepartment = models.ForeignKey(SubDepartment, on_delete=models.PROTECT, null=True, blank=True)
+    department = models.ForeignKey(Department, on_delete=models.CASCADE)
+    subdepartment = models.ForeignKey(SubDepartment, on_delete=models.SET_NULL, null=True, blank=True)
     designation = models.CharField(max_length=100, default="Department Head")
     contact_number = models.CharField(max_length=15)
     joining_date = models.DateField(null=True, blank=True)
@@ -36,6 +42,7 @@ class DepartmentHead(models.Model):
     managed_staff = models.ManyToManyField('Staff', related_name='supervisors', blank=True)
     is_hr_head = models.BooleanField(default=False)
     managed_subdepartments = models.ManyToManyField(SubDepartment, related_name='department_heads', blank=True)
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='active')
 
     def __str__(self):
         return f"{self.user.get_full_name()} - {self.department}"
@@ -62,6 +69,12 @@ class HRPrivileges(models.Model):
         verbose_name_plural = "HR Privileges"
 
 class Staff(models.Model):
+    STATUS_CHOICES = [
+        ('active', 'Active'),
+        ('on_leave', 'On Leave'),
+        ('left_service', 'Left Service'),
+    ]
+    
     user = models.OneToOneField(User, on_delete=models.CASCADE)
     employee_id = models.CharField(max_length=50, unique=True)
     department = models.ForeignKey(Department, on_delete=models.CASCADE)
@@ -70,8 +83,9 @@ class Staff(models.Model):
     joining_date = models.DateField(null=True, blank=True)
     appointment_date = models.DateField(null=True, blank=True)
     qualification = models.CharField(max_length=200, null=True, blank=True, help_text="Staff member's educational qualification")
-    contact_info = models.CharField(max_length=200, null=True, blank=True, help_text="Staff member's contact information")
-    managed_by = models.ForeignKey(DepartmentHead, on_delete=models.SET_NULL, null=True, blank=True, related_name='assigned_staff')
+    contact_number = models.CharField(max_length=15, null=True, blank=True, help_text="Staff member's contact number")
+    managed_by = models.ManyToManyField(DepartmentHead, related_name='assigned_staff', blank=True)
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='active')
 
     def __str__(self):
         return f"{self.user.get_full_name()} - {self.position}"

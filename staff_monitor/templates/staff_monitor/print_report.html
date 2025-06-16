@@ -1,5 +1,6 @@
 {% extends 'staff_monitor/base_print.html' %}
 {% load custom_filters %}
+{% load static %}
 
 {% block content %}
 <div class="container print-container">
@@ -10,74 +11,30 @@
         </a>
     </div>
 
-    <!-- Header -->
+    <!-- Header with Logo -->
     <div class="text-center mb-4">
+        <img src="{% static 'images/hospital-logo.png' %}" alt="Hospital Logo" style="height:80px; margin-bottom:10px;">
         <h2 class="hospital-name">MARIAMPUR HOSPITAL</h2>
-        <h3 class="report-title">PERFORMANCE APPRAISAL REPORT</h3>
+        <h3 class="report-title">STAFF PERFORMANCE APPRAISAL FORM</h3>
+        <div class="text-muted" style="font-size:1rem;">Report Generated: {{ now|date:'d M Y, H:i' }}</div>
     </div>
 
     <!-- Basic Information -->
     <div class="row mb-4">
         <div class="col-6">
             <table class="table table-bordered">
-                <tr>
-                    <th width="40%">Name:</th>
-                    <td>
-                        {% if report.staff %}
-                            {{ report.staff.user.get_full_name }}
-                        {% elif report.department_head %}
-                            {{ report.department_head.user.get_full_name }}
-                        {% endif %}
-                    </td>
-                </tr>
-                <tr>
-                    <th>Employee Code:</th>
-                    <td>
-                        {% if report.staff %}
-                            {{ report.staff.employee_id }}
-                        {% elif report.department_head %}
-                            DH-{{ report.department_head.id }}
-                        {% endif %}
-                    </td>
-                </tr>
-                <tr>
-                    <th>Department:</th>
-                    <td>
-                        {% if report.staff %}
-                            {{ report.staff.department }}
-                        {% elif report.department_head %}
-                            {{ report.department_head.department }}
-                        {% endif %}
-                    </td>
-                </tr>
+                <tr><th>Appraisee Name:</th><td>{% if report.staff %}{{ report.staff.user.get_full_name }}{% endif %}</td></tr>
+                <tr><th>Designation:</th><td>{% if report.staff %}{{ report.staff.position }}{% endif %}</td></tr>
+                <tr><th>Employee Code:</th><td>{% if report.staff %}{{ report.staff.employee_id }}{% endif %}</td></tr>
+                <tr><th>Qualification:</th><td>{% if report.staff %}{{ report.staff.qualification|default:"-" }}{% endif %}</td></tr>
+                <tr><th>Date of Joining:</th><td>{% if report.staff and report.staff.joining_date %}{{ report.staff.joining_date|date:'d M, Y' }}{% else %}-{% endif %}</td></tr>
             </table>
         </div>
         <div class="col-6">
             <table class="table table-bordered">
-                <tr>
-                    <th width="40%">Evaluation Date:</th>
-                    <td>{{ report.date }}</td>
-                </tr>
-                <tr>
-                    <th>Evaluator:</th>
-                    <td>
-                        {% if report.evaluator.is_staff %}
-                            HR Director - {{ report.evaluator.get_full_name }}
-                        {% else %}
-                            Medical Superintendent - {{ report.evaluator.get_full_name }}
-                        {% endif %}
-                    </td>
-                </tr>
-                <tr>
-                    <th>Position:</th>
-                    <td>
-                        {% if report.staff %}
-                            {{ report.staff.position }}
-                        {% elif report.department_head %}
-                            {{ report.department_head.designation }}
-                        {% endif %}
-                    </td>
-                </tr>
+                <tr><th>Appraiser Name:</th><td>{% if report.evaluator.is_staff %}HR Director - {{ report.evaluator.get_full_name }}{% else %}Medical Superintendent - {{ report.evaluator.get_full_name }}{% endif %}</td></tr>
+                <tr><th>Department:</th><td>{% if report.staff %}{{ report.staff.department }}{% endif %}</td></tr>
+                <tr><th>Evaluation Date:</th><td>{{ report.date|date:'d-m-Y' }}</td></tr>
             </table>
         </div>
     </div>
@@ -87,8 +44,8 @@
         <strong>Rating Scale:</strong> 1 - Poor, 2 - Fair, 3 - Good, 4 - Very Good, 5 - Excellent
     </div>
 
-    <!-- Performance Sections -->
-    {% for section, params in sections.items %}
+    <!-- Performance Sections: Dynamic -->
+    {% for section, questions in section_field_map.items %}
     <div class="section-card mb-4">
         <h5 class="section-header bg-secondary text-white p-2">{{ section }}</h5>
         <table class="table table-bordered">
@@ -96,24 +53,18 @@
                 <tr>
                     <th width="5%">No.</th>
                     <th>Parameters</th>
-                    <th width="15%">Rating</th>
+                    <th width="15%">Rating (1-5)</th>
                 </tr>
             </thead>
             <tbody>
-                {% for param in params %}
+                {% for question, field in questions %}
                 <tr>
                     <td>{{ forloop.counter }}</td>
-                    <td>{{ param.name }}</td>
-                    <td class="text-center">{{ param.value }}</td>
+                    <td>{{ question }}</td>
+                    <td class="text-center">{% with value=report|get_attr:field %}{{ value|default:"-" }}{% endwith %}</td>
                 </tr>
                 {% endfor %}
             </tbody>
-            <tfoot>
-                <tr class="table-secondary">
-                    <th colspan="2">Section Total</th>
-                    <td class="text-center">{{ section_totals|get_item:section }}/{{ params|length|multiply:5 }}</td>
-                </tr>
-            </tfoot>
         </table>
     </div>
     {% endfor %}
@@ -125,18 +76,9 @@
                 <div class="card-body">
                     <h5>Performance Summary</h5>
                     <table class="table table-bordered">
-                        <tr>
-                            <th>Total Score:</th>
-                            <td>{{ report.total_score }}/210</td>
-                        </tr>
-                        <tr>
-                            <th>Percentage:</th>
-                            <td>{{ report.percentage|floatformat:2 }}%</td>
-                        </tr>
-                        <tr>
-                            <th>Status:</th>
-                            <td>{{ report.get_performance_status }}</td>
-                        </tr>
+                        <tr><th>Total Marks Obtained:</th><td>{{ report.total_score }}/210</td></tr>
+                        <tr><th>Percentage:</th><td>{{ report.percentage|floatformat:2 }}%</td></tr>
+                        <tr><th>Status:</th><td>{{ report.get_performance_status }}</td></tr>
                     </table>
                 </div>
             </div>
@@ -151,6 +93,18 @@
         </div>
     </div>
 
+    <!-- Goals/Recommendations Section -->
+    <div class="row mt-4">
+        <div class="col-md-12">
+            <div class="card">
+                <div class="card-body">
+                    <h5>Goals / Recommendations / Training Needs</h5>
+                    <p>{% if report.goals %}{{ report.goals }}{% else %}<span class="text-muted">No goals or recommendations provided.</span>{% endif %}</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- Signatures -->
     <div class="row mt-5">
         <div class="col-md-4 text-center">
@@ -159,18 +113,18 @@
         </div>
         <div class="col-md-4 text-center">
             <div class="signature-line"></div>
-            <p>
-                {% if report.staff %}
-                    Staff Member's Signature
-                {% elif report.department_head %}
-                    Department Head's Signature
-                {% endif %}
-            </p>
+            <p>Staff Member's Signature</p>
         </div>
         <div class="col-md-4 text-center">
             <div class="signature-line"></div>
             <p>HR Director's Signature</p>
         </div>
+    </div>
+
+    <!-- Footer -->
+    <div class="text-center mt-5 text-muted" style="font-size:0.95rem;">
+        <hr>
+        <p>Mariampur Hospital, Kanpur &mdash; Performance Appraisal Report &copy; {{ now|date:'Y' }}</p>
     </div>
 </div>
 
@@ -238,21 +192,14 @@
 
 <script>
 function shareReport() {
-    // Create shareable link
     const reportUrl = window.location.href;
-    
-    // Create a temporary input element
     const tempInput = document.createElement('input');
     tempInput.value = reportUrl;
     document.body.appendChild(tempInput);
-    
-    // Copy the link
     tempInput.select();
     document.execCommand('copy');
     document.body.removeChild(tempInput);
-    
-    // Show success message
     alert('Report link copied to clipboard!');
 }
 </script>
-{% endblock %} 
+{% endblock content %} 

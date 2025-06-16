@@ -332,6 +332,15 @@ document.addEventListener('DOMContentLoaded', function() {
             subdepartmentContainer.style.display = 'none';
         }
     }
+
+    // Add form submit handler to ensure subdepartment selection is properly saved
+    const form = document.querySelector('form');
+    if (form) {
+        form.addEventListener('submit', function(event) {
+            // Update the hidden select field one last time before submission
+            updateHiddenSelect();
+        });
+    }
 });
 </script>
 {% endblock %}

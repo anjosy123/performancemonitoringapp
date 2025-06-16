@@ -29,9 +29,25 @@ from django.core.files.base import ContentFile
 import sys
 from io import BytesIO
 from PIL import Image
+from django.db import models
+from django.db.models import Q
 
 # Create logger
 logger = logging.getLogger(__name__)
+
+# Helper functions
+def is_admin(user):
+    return user.is_staff
+
+def is_hr_head(user):
+    try:
+        department_head = DepartmentHead.objects.get(user=user)
+        # Check if user is from HR department or has HR privileges
+        return (department_head.department.name.lower() == 'hr' or 
+                department_head.is_hr_head or 
+                (department_head.subdepartment and department_head.subdepartment.name.lower() == 'hr'))
+    except DepartmentHead.DoesNotExist:
+        return False
 
 # Helper function to check if user is admin or HR head with appropriate privilege
 def has_privilege(user, privilege_name=None):
@@ -120,10 +136,6 @@ def can_perform_action(user, privilege_name):
         
     return False
 
-# Original is_admin function for compatibility
-def is_admin(user):
-    return user.is_staff
-
 @login_required
 @user_passes_test(lambda u: can_perform_action(u, 'can_delete_reports') or u.is_staff)
 def delete_report(request, report_id):
@@ -146,90 +158,102 @@ def delete_report(request, report_id):
 
 @login_required
 def dashboard(request):
-    if request.user.is_staff:
-        # Admin sees all staff and superintendents
-        staff_list = Staff.objects.all()
-        superintendents = DepartmentHead.objects.all()
-        departments = Department.objects.all()
-        
-        # Calculate staff count for each superintendent
-        for superintendent in superintendents:
-            # Count staff members in the superintendent's department
-            superintendent.staff_count = Staff.objects.filter(department=superintendent.department).count()
-        
-        return render(request, 'staff_monitor/dashboard.html', {
-            'staff_list': staff_list,
-            'superintendents': superintendents,
-            'departments': departments,
-            'is_admin': True  # Flag to indicate admin role
-        })
-    else:
+    # Get user's role and permissions
+    is_admin = request.user.is_staff
+    user_is_hr_head = is_hr_head(request.user)
+    
+    # For department heads
+    if not is_admin and not user_is_hr_head:
         try:
-            # Check if the user is a department head
             department_head = DepartmentHead.objects.get(user=request.user)
-            
-            # Check if this is an HR head
-            if department_head.is_hr_head:
-                # Get available privileges
-                try:
-                    privileges = department_head.privileges
-                except HRPrivileges.DoesNotExist:
-                    privileges = None
-                    
-                # Get data based on privileges
-                staff_list = Staff.objects.all()
-                superintendents = DepartmentHead.objects.all()
-                departments = Department.objects.all()
-                
-                # Calculate staff count for each superintendent
-                for superintendent in superintendents:
-                    superintendent.staff_count = Staff.objects.filter(department=superintendent.department).count()
-                
-                return render(request, 'staff_monitor/dashboard.html', {
-                    'staff_list': staff_list,
-                    'superintendents': superintendents,
-                    'departments': departments,
-                    'is_hr_head': True,
-                    'department_head': department_head,
-                    'privileges': privileges
-                })
-            
-            # Determine if this is a main department head or subdepartment head
             is_main_department_head = department_head.subdepartment is None
             
+            # Get assigned staff based on department head type
             if is_main_department_head:
-                # Main department head sees all staff from their department
-                staff_list = Staff.objects.filter(department=department_head.department)
+                # For main department heads - get only directly assigned staff
+                assigned_staff = Staff.objects.filter(
+                    managed_by=department_head  # Only directly assigned staff
+                )
                 
-                # Get subdepartment heads under this department
+                # Get subdepartment heads
                 subdepartment_heads = DepartmentHead.objects.filter(
                     department=department_head.department, 
                     subdepartment__isnull=False
                 )
                 
-                return render(request, 'staff_monitor/dashboard.html', {
-                    'staff_list': staff_list,
-                    'department_head': department_head,
-                    'is_main_department_head': True,
-                    'subdepartment_heads': subdepartment_heads
-                })
+                # Get all staff in department for reference (but not for management)
+                department_staff = Staff.objects.filter(
+                    department=department_head.department
+                ).exclude(managed_by=department_head)
             else:
-                # Subdepartment head sees only staff assigned to them
-                staff_list = department_head.managed_staff.all()
+                # For subdepartment heads - get only directly assigned staff
+                assigned_staff = Staff.objects.filter(
+                    managed_by=department_head  # Only directly assigned staff
+                )
                 
-                return render(request, 'staff_monitor/dashboard.html', {
-                    'staff_list': staff_list,
+                # Get all staff in subdepartment for reference (but not for management)
+                department_staff = Staff.objects.filter(
+                    department=department_head.department,
+                    subdepartment=department_head.subdepartment
+                ).exclude(managed_by=department_head)
+                
+                subdepartment_heads = []  # Subdepartment heads don't have subdepartment heads
+            
+            # Debug information
+            print(f"Department Head: {department_head.user.get_full_name()}")
+            print(f"Is Main Department Head: {is_main_department_head}")
+            print(f"Department: {department_head.department}")
+            print(f"Subdepartment: {department_head.subdepartment}")
+            print(f"Directly Assigned Staff Count: {assigned_staff.count()}")
+            print(f"Department/Subdepartment Staff Count: {department_staff.count()}")
+            
+            context = {
+                'is_main_department_head': is_main_department_head,
                     'department_head': department_head,
-                    'is_main_department_head': False
-                })
-                
+                'assigned_staff': assigned_staff,
+                'department_staff': department_staff,  # Staff in department/subdepartment but not assigned
+                'subdepartment_heads': subdepartment_heads,
+                'show_welcome': True,  # Show welcome message on login
+                'has_assigned_staff': assigned_staff.exists(),  # Flag for directly assigned staff
+                'has_department_staff': department_staff.exists()  # Flag for other staff in department
+            }
+            return render(request, 'staff_monitor/dashboard.html', context)
         except DepartmentHead.DoesNotExist:
-            # If the user is neither admin nor department head, show empty list
-            staff_list = Staff.objects.none()
-            return render(request, 'staff_monitor/dashboard.html', {
+            messages.warning(request, 'You are not registered as a department head. Please contact the administrator.')
+            return redirect('profile')
+    
+    # For admin users
+    if is_admin:
+        departments = Department.objects.all()
+        superintendents = DepartmentHead.objects.filter(is_hr_head=False)
+        staff_list = Staff.objects.all().select_related('user', 'department', 'subdepartment')
+        context = {
+            'is_admin': True,
+            'departments': departments,
+            'superintendents': superintendents,
+            'staff_list': staff_list,
+        }
+        return render(request, 'staff_monitor/dashboard.html', context)
+    
+    # For HR heads
+    if user_is_hr_head:
+        try:
+            department_head = DepartmentHead.objects.get(user=request.user)
+            privileges = department_head.privileges
+            staff_list = Staff.objects.all().select_related('user', 'department', 'subdepartment')
+            context = {
+                'is_hr_head': True,
+                'department_head': department_head,
+                'privileges': privileges,
                 'staff_list': staff_list,
-                'is_admin': False
-            })
+            }
+            return render(request, 'staff_monitor/dashboard.html', context)
+        except DepartmentHead.DoesNotExist:
+            messages.error(request, 'HR head profile not found. Please contact the administrator.')
+            return redirect('profile')
+    
+    # Default case - no permissions
+    return render(request, 'staff_monitor/dashboard.html', {'is_admin': False})
 
 @login_required
 def performance_form(request, staff_id):
@@ -353,971 +377,6 @@ def performance_form(request, staff_id):
 
 @login_required
 def performance_form_department_head(request, department_head_id):
-    department_head = get_object_or_404(DepartmentHead, id=department_head_id)
-    
-    # Check if user has permission to evaluate this department head
-    if not request.user.is_staff:  # If not admin
-        try:
-            main_department_head = DepartmentHead.objects.get(user=request.user)
-            
-            # HR heads can evaluate any department head
-            if main_department_head.is_hr_head or main_department_head.department.name.lower() == "hr" or (main_department_head.subdepartment and main_department_head.subdepartment.name.lower() == "hr"):
-                # Continue with evaluation
-                pass
-            # Regular department heads can only evaluate subdepartment heads in their department
-            elif department_head.department != main_department_head.department or main_department_head.subdepartment is not None:
-                messages.error(request, 'You do not have permission to evaluate department heads from other departments.')
-                return redirect('dashboard')
-        except DepartmentHead.DoesNotExist:
-            messages.error(request, 'You do not have permission to evaluate department heads.')
-            return redirect('dashboard')
-
-    if request.method == 'POST':
-        try:
-            # Check if report exists for the date
-            evaluation_date = request.POST.get('date')
-            if PerformanceReport.objects.filter(department_head=department_head, date=evaluation_date).exists():
-                messages.error(request, 'A performance report already exists for this date.')
-                return redirect('performance_form_department_head', department_head_id=department_head_id)
-
-            # Function to safely convert string to integer
-            def get_rating(key):
-                try:
-                    return int(request.POST.get(key, 0))
-                except (ValueError, TypeError):
-                    return 0
-
-            # Create new performance report
-            report = PerformanceReport(
-                department_head=department_head,
-                evaluator=request.user,
-                date=evaluation_date,
-                
-                # Section A: Job Knowledge/Professionalism
-                job_responsibility=get_rating('a1'),
-                communication_skills=get_rating('a2'),
-                patient_requirements=get_rating('a3'),
-                negotiation_skills=get_rating('a4'),
-                management_relationship=get_rating('a5'),
-                policy_adherence=get_rating('a6'),
-                ethical_behavior=get_rating('a7'),
-                honesty_transparency=get_rating('a8'),
-
-                # Section B: Productivity
-                workload_management=get_rating('b1'),
-                additional_responsibilities=get_rating('b2'),
-                work_procedure=get_rating('b3'),
-
-                # Section C: Quality of Work
-                accuracy_reliability=get_rating('c1'),
-                clear_communication=get_rating('c2'),
-                attendance_punctuality=get_rating('c3'),
-                responsibility_accountability=get_rating('c4'),
-
-                # Section D: Interpersonal & Working Relationships
-                interaction_effectiveness=get_rating('d1'),
-                interpersonal_skills=get_rating('d2'),
-                team_cooperation=get_rating('d3'),
-                sensitivity=get_rating('d4'),
-                cross_functional_collaboration=get_rating('d5'),
-
-                # Section E: Leadership
-                proactive_behavior=get_rating('e1'),
-                work_ideas=get_rating('e2'),
-                resource_competence=get_rating('e3'),
-                mentoring_skills=get_rating('e4'),
-                delegation_skills=get_rating('e5'),
-                decision_making=get_rating('e6'),
-
-                # Section F: Planning & Organizing
-                work_prioritization=get_rating('f1'),
-                timely_completion=get_rating('f2'),
-                policy_compliance=get_rating('f3'),
-                behavior_consistency=get_rating('f4'),
-                pressure_handling=get_rating('f5'),
-
-                # Section G: Adaptability
-                change_adaptability=get_rating('g1'),
-                learning_attitude=get_rating('g2'),
-                emotional_intelligence=get_rating('g3'),
-
-                # Section H: Result Orientation
-                commitment_drive=get_rating('h1'),
-                timely_decisions=get_rating('h2'),
-                obstacle_handling=get_rating('h3'),
-
-                # Section I: Clarity of Vision
-                hospital_vision=get_rating('i1'),
-                department_vision=get_rating('i2'),
-
-                # Section J: Problem Solving
-                problem_identification=get_rating('j1'),
-                solution_approach=get_rating('j2'),
-                pressure_case_handling=get_rating('j3'),
-
-                # Additional fields
-                special_remarks=request.POST.get('remarks', '')
-            )
-            report.save()
-            messages.success(request, 'Performance evaluation submitted successfully.')
-            return redirect('dashboard')
-
-        except Exception as e:
-            messages.error(request, f'Error submitting evaluation: {str(e)}')
-            return redirect('performance_form_department_head', department_head_id=department_head_id)
-
-    return render(request, 'staff_monitor/performance_form.html', {
-        'department_head': department_head,
-        'today': date.today(),
-        'is_department_head_evaluation': True
-    })
-
-@login_required
-@user_passes_test(lambda u: can_perform_action(u, 'can_delete_reports') or u.is_staff)
-def delete_report(request, report_id):
-    try:
-        report = get_object_or_404(PerformanceReport, id=report_id)
-        
-        # Create appropriate success message based on whether it's a staff or department head report
-        if report.staff:
-            report_info = f"Performance report for {report.staff.user.get_full_name()} on {report.date}"
-        elif report.department_head:
-            report_info = f"Performance report for {report.department_head.user.get_full_name()} on {report.date}"
-        else:
-            report_info = f"Performance report on {report.date}"
-            
-        report.delete()
-        messages.success(request, f'{report_info} deleted successfully.')
-    except PerformanceReport.DoesNotExist:
-        messages.error(request, 'Report not found.')
-    return redirect('report_list')
-
-@login_required
-def check_report_exists(request, staff_id, date):
-    staff = get_object_or_404(Staff, id=staff_id)
-    
-    # Check if user has permission to check this staff member's reports
-    if not request.user.is_staff:
-        try:
-            superintendent = DepartmentHead.objects.get(user=request.user)
-            if staff.department != superintendent.department:
-                return JsonResponse({'error': 'Permission denied'}, status=403)
-        except DepartmentHead.DoesNotExist:
-            return JsonResponse({'error': 'Permission denied'}, status=403)
-
-    exists = PerformanceReport.objects.filter(
-        staff_id=staff_id,
-        date=date
-    ).exists()
-    return JsonResponse({'exists': exists})
-
-@login_required
-@user_passes_test(lambda u: can_perform_action(u, 'can_manage_departments') or u.is_staff)
-def add_department(request):
-    if request.method == 'POST':
-        form = DepartmentForm(request.POST)
-        formset = SubDepartmentFormSet(request.POST)
-        
-        if form.is_valid() and formset.is_valid():
-            department = form.save()
-            # Set the department for each subdepartment and save
-            formset.instance = department
-            formset.save()
-            messages.success(request, 'Department added successfully.')
-            return redirect('department_list')
-    else:
-        form = DepartmentForm()
-        formset = SubDepartmentFormSet()
-    
-    return render(request, 'staff_monitor/add_department.html', {
-        'form': form,
-        'formset': formset
-    })
-
-@login_required
-@user_passes_test(lambda u: can_perform_action(u, 'can_manage_departments') or u.is_staff)
-def department_list(request):
-    departments = Department.objects.all().order_by('name')
-    return render(request, 'staff_monitor/department_list.html', {
-        'departments': departments
-    })
-
-@login_required
-@user_passes_test(lambda u: can_perform_action(u, 'can_manage_departments') or u.is_staff)
-def edit_department(request, department_id):
-    department = get_object_or_404(Department, id=department_id)
-    if request.method == 'POST':
-        form = DepartmentForm(request.POST, instance=department)
-        formset = SubDepartmentFormSet(request.POST, instance=department)
-        
-        if form.is_valid() and formset.is_valid():
-            form.save()
-            formset.save()
-            messages.success(request, 'Department updated successfully.')
-            return redirect('department_list')
-    else:
-        form = DepartmentForm(instance=department)
-        formset = SubDepartmentFormSet(instance=department)
-    
-    return render(request, 'staff_monitor/add_department.html', {
-        'form': form,
-        'formset': formset,
-        'department': department
-    })
-
-@login_required
-@user_passes_test(lambda u: can_perform_action(u, 'can_manage_departments') or u.is_staff)
-def delete_department(request, department_id):
-    department = get_object_or_404(Department, id=department_id)
-    try:
-        department.delete()
-        messages.success(request, 'Department deleted successfully.')
-    except ProtectedError:
-        messages.error(
-            request, 
-            'Cannot delete this department as it has associated staff members.'
-        )
-    return redirect('department_list')
-
-@login_required
-@user_passes_test(lambda u: can_perform_action(u, 'can_edit_department_head') or u.is_staff)
-def edit_superintendent(request, superintendent_id):
-    superintendent = get_object_or_404(DepartmentHead, id=superintendent_id)
-    if request.method == 'POST':
-        # Get a copy of POST data to modify
-        post_data = request.POST.copy()
-        
-        # Ensure email is included (since it might be disabled in the form)
-        if 'email' not in post_data or not post_data['email']:
-            post_data['email'] = superintendent.user.email
-        
-        # Create form with modified POST data
-        form = DepartmentHeadForm(post_data, instance=superintendent)
-        
-        # Check if the form is valid
-        if form.is_valid():
-            # Save the form
-            department_head = form.save()
-            
-            # Log info about the update
-            print(f"Updated department head: {department_head.user.get_full_name()} - Dept: {department_head.department.name}")
-            if department_head.subdepartment:
-                print(f"Primary Subdepartment: {department_head.subdepartment.name}")
-            
-            # Log managed subdepartments
-            managed_subdepts = department_head.managed_subdepartments.all()
-            if managed_subdepts.exists():
-                subdept_names = [sd.name for sd in managed_subdepts]
-                print(f"Managing subdepartments: {', '.join(subdept_names)}")
-                
-            messages.success(request, 'Department Head updated successfully.')
-            
-            if request.user.is_staff:
-                return redirect('superintendent_list')
-            else:
-                return redirect('dashboard')
-        else:
-            # Log validation errors for debugging
-            print(f"Form errors: {form.errors}")
-    else:
-        # When loading the form initially, populate with existing data
-        form = DepartmentHeadForm(instance=superintendent, initial={
-            'first_name': superintendent.user.first_name,
-            'last_name': superintendent.user.last_name,
-            'email': superintendent.user.email,
-            'department': superintendent.department.id,
-            'subdepartment': superintendent.subdepartment.id if superintendent.subdepartment else None,
-        })
-        
-    return render(request, 'staff_monitor/add_department_head.html', {
-        'form': form,
-        'edit_mode': True,
-        'superintendent': superintendent
-    })
-
-@login_required
-@user_passes_test(lambda u: can_perform_action(u, 'can_delete_department_head') or u.is_staff)
-def delete_superintendent(request, superintendent_id):
-    superintendent = get_object_or_404(DepartmentHead, id=superintendent_id)
-    if request.method == 'POST':
-        user = superintendent.user
-        superintendent.delete()
-        user.delete()
-        messages.success(request, 'Department Head deleted successfully.')
-    return redirect('dashboard')
-
-@login_required
-@user_passes_test(lambda u: can_perform_action(u, 'can_edit_staff') or u.is_staff)
-def edit_staff(request, staff_id):
-    staff = get_object_or_404(Staff, id=staff_id)
-    if request.method == 'POST':
-        # Get a copy of POST data to modify
-        post_data = request.POST.copy()
-        
-        # Ensure email is included (since it might be disabled in the form)
-        if 'email' not in post_data or not post_data['email']:
-            post_data['email'] = staff.user.email
-            
-        # Ensure employee_id is included (since it is disabled in the form)
-        if 'employee_id' not in post_data or not post_data['employee_id']:
-            post_data['employee_id'] = staff.employee_id
-            
-        form = StaffForm(post_data, instance=staff)
-        if form.is_valid():
-            try:
-                staff = form.save()
-                
-                # Log info about the update
-                print(f"Updated staff: {staff.user.get_full_name()} - Dept: {staff.department.name}")
-                if staff.subdepartment:
-                    print(f"Subdepartment: {staff.subdepartment.name}")
-                    
-                messages.success(request, 'Staff member updated successfully.')
-                
-                if request.user.is_staff:
-                    return redirect('staff_list')
-                else:
-                    return redirect('dashboard')
-                    
-            except forms.ValidationError as e:
-                # Add validation errors back to the form
-                form.add_error(None, str(e))
-            except Exception as e:
-                # Handle any other unexpected errors
-                messages.error(request, f"An error occurred: {str(e)}")
-        else:
-            # Log validation errors for debugging
-            print(f"Form errors: {form.errors}")
-    else:
-        form = StaffForm(instance=staff, initial={
-            'first_name': staff.user.first_name,
-            'last_name': staff.user.last_name,
-            'email': staff.user.email,
-            'department': staff.department.id,
-            'subdepartment': staff.subdepartment.id if staff.subdepartment else None,
-        })
-    return render(request, 'staff_monitor/add_staff.html', {
-        'form': form,
-        'edit_mode': True,
-        'staff': staff
-    })
-
-@login_required
-@user_passes_test(lambda u: can_perform_action(u, 'can_delete_staff') or u.is_staff)
-def delete_staff(request, staff_id):
-    try:
-        staff = get_object_or_404(Staff, id=staff_id)
-        
-        # Store information for success message
-        staff_name = staff.user.get_full_name()
-        
-        if request.method == 'POST':
-            # Get the user associated with this staff
-            user = staff.user
-            
-            # Delete the staff record
-            staff.delete()
-            
-            # Delete the associated user account
-            user.delete()
-            
-            messages.success(request, f'Staff member {staff_name} deleted successfully.')
-            
-            # Redirect to the appropriate page based on user type
-            if request.user.is_staff:  # Admin user
-                return redirect('staff_list')
-            else:
-                # Check if HR head
-                try:
-                    department_head = DepartmentHead.objects.get(user=request.user)
-                    if department_head.is_hr_head or department_head.department.name.lower() == "hr":
-                        return redirect('staff_list')
-                except DepartmentHead.DoesNotExist:
-                    pass
-                
-                return redirect('dashboard')
-        else:
-            messages.error(request, 'Invalid request method. Staff deletion requires POST method.')
-            return redirect('staff_list')
-            
-    except Staff.DoesNotExist:
-        messages.error(request, 'Staff member not found.')
-        return redirect('staff_list')
-    except Exception as e:
-        messages.error(request, f'Error deleting staff member: {str(e)}')
-        return redirect('staff_list')
-
-@login_required
-def view_report(request, report_id):
-    report = get_object_or_404(PerformanceReport, id=report_id)
-    
-    # Check permissions
-    if not request.user.is_staff:
-        try:
-            department_head = DepartmentHead.objects.get(user=request.user)
-            
-            # Prevent department heads from viewing their own reports
-            if report.department_head and report.department_head.id == department_head.id:
-                messages.error(request, 'You cannot view your own performance reports.')
-                return redirect('report_list')
-            
-            # HR heads can view any report (except their own, handled above)
-            if department_head.is_hr_head or department_head.department.name.lower() == "hr" or (department_head.subdepartment and department_head.subdepartment.name.lower() == "hr"):
-                # Continue with viewing the report
-                pass
-            # Regular department heads can only view reports from their department
-            elif (report.staff and report.staff.department != department_head.department) or \
-                 (report.department_head and report.department_head.department != department_head.department):
-                messages.error(request, 'You do not have permission to view this report.')
-                return redirect('report_list')
-            # Subdepartment heads can only view reports for staff assigned to them
-            elif department_head.subdepartment is not None:
-                if report.staff and report.staff not in department_head.managed_staff.all():
-                    messages.error(request, 'You do not have permission to view this report.')
-                    return redirect('report_list')
-        except DepartmentHead.DoesNotExist:
-            messages.error(request, 'You do not have permission to view reports.')
-            return redirect('dashboard')
-
-    return render(request, 'staff_monitor/print_report.html', {
-        'report': report,
-        'sections': get_report_sections(report),
-        'section_totals': get_section_totals(report)
-    })
-
-@login_required
-def print_report(request, report_id):
-    # Reuse the view_report logic but with print template
-    return view_report(request, report_id)
-
-def get_report_sections(report):
-    """Helper function to organize report data into sections"""
-    sections = {
-        'A. JOB KNOWLEDGE/PROFESSIONALISM': [
-            {'name': 'Understanding of job responsibility', 'value': report.job_responsibility},
-            {'name': 'Good communications skills', 'value': report.communication_skills},
-            {'name': 'Identifies & understand patient requirements', 'value': report.patient_requirements},
-            {'name': 'Negotiation skills & ability to address queries', 'value': report.negotiation_skills},
-            {'name': 'Effective Relationship with management', 'value': report.management_relationship},
-            {'name': 'Respect for policies, rules & hospital values', 'value': report.policy_adherence},
-            {'name': 'Has ethical behavior & positive attitude', 'value': report.ethical_behavior},
-            {'name': 'Honesty and transparency', 'value': report.honesty_transparency}
-        ],
-        'B. PRODUCTIVITY': [
-            {'name': 'Manages a fair work load', 'value': report.workload_management},
-            {'name': 'Takes additional responsibilities', 'value': report.additional_responsibilities},
-            {'name': 'Develops and follows work procedure', 'value': report.work_procedure}
-        ],
-        'C. QUALITY OF WORK': [
-            {'name': 'Demonstrates accuracy, thoroughness and reliability', 'value': report.accuracy_reliability},
-            {'name': 'Communicates views clearly & logically', 'value': report.clear_communication},
-            {'name': 'Attendance & punctuality', 'value': report.attendance_punctuality},
-            {'name': 'Has good responsibility & accountability', 'value': report.responsibility_accountability}
-        ],
-        'D. INTERPERSONAL & WORKING RELATIONSHIPS': [
-            {'name': 'Interacts effectively with patients, co-workers & public', 'value': report.interaction_effectiveness},
-            {'name': 'Has good interpersonal skills', 'value': report.interpersonal_skills},
-            {'name': 'Seeks & provides help & cooperation', 'value': report.team_cooperation},
-            {'name': 'Exhibits appropriate sensitivity to others feelings', 'value': report.sensitivity},
-            {'name': 'Collaborates effectively with cross-functional teams', 'value': report.cross_functional_collaboration}
-        ],
-        'E. LEADERSHIP, INITIATIVES & RESOURCEFULNESS': [
-            {'name': 'Displays proactive behavior', 'value': report.proactive_behavior},
-            {'name': 'Is meticulous in following through work ideas', 'value': report.work_ideas},
-            {'name': 'Displays competence of working within resources', 'value': report.resource_competence},
-            {'name': 'Displays mentoring or guiding others', 'value': report.mentoring_skills},
-            {'name': 'Has work delegation skills', 'value': report.delegation_skills},
-            {'name': 'Has good decision-making skills', 'value': report.decision_making}
-        ],
-        'F. PLANNING & ORGANIZING EFFECTIVENESS': [
-            {'name': 'Effectively prioritizes work & establishes work plans', 'value': report.work_prioritization},
-            {'name': 'Performs tasks thoroughly on time', 'value': report.timely_completion},
-            {'name': 'Works within organizational policies & guidelines', 'value': report.policy_compliance},
-            {'name': 'Consistency in behavior', 'value': report.behavior_consistency},
-            {'name': 'Displays ability to work under pressure', 'value': report.pressure_handling}
-        ],
-        'G. ADAPTABILITY': [
-            {'name': 'Displays adaptability to change', 'value': report.change_adaptability},
-            {'name': 'Willing to learn from mistakes', 'value': report.learning_attitude},
-            {'name': 'Displays good emotional intelligence', 'value': report.emotional_intelligence}
-        ],
-        'H. RESULT ORIENTATION': [
-            {'name': 'Demonstrates strong commitment & drive', 'value': report.commitment_drive},
-            {'name': 'Takes timely decisions', 'value': report.timely_decisions},
-            {'name': 'Can be relied on to deliver despite obstacles', 'value': report.obstacle_handling}
-        ],
-        'I. CLARITY OF VISION': [
-            {'name': 'Understands the philosophy of vision & mission', 'value': report.hospital_vision},
-            {'name': 'Displays clarity of vision with respect to departments', 'value': report.department_vision}
-        ],
-        'J. PROBLEM SOLVING': [
-            {'name': 'Has the ability to identify problems', 'value': report.problem_identification},
-            {'name': 'Identifies alternate approaches/solutions', 'value': report.solution_approach},
-            {'name': 'Ability to handle cases under pressure', 'value': report.pressure_case_handling}
-        ]
-    }
-    return sections
-
-def get_section_totals(report):
-    """Helper function to calculate section totals"""
-    return {
-        'A. JOB KNOWLEDGE/PROFESSIONALISM': sum([
-            report.job_responsibility, report.communication_skills,
-            report.patient_requirements, report.negotiation_skills,
-            report.management_relationship, report.policy_adherence,
-            report.ethical_behavior, report.honesty_transparency
-        ]),
-        'B. PRODUCTIVITY': sum([
-            report.workload_management, report.additional_responsibilities,
-            report.work_procedure
-        ]),
-        'C. QUALITY OF WORK': sum([
-            report.accuracy_reliability, report.clear_communication,
-            report.attendance_punctuality, report.responsibility_accountability
-        ]),
-        'D. INTERPERSONAL & WORKING RELATIONSHIPS': sum([
-            report.interaction_effectiveness, report.interpersonal_skills,
-            report.team_cooperation, report.sensitivity,
-            report.cross_functional_collaboration
-        ]),
-        'E. LEADERSHIP, INITIATIVES & RESOURCEFULNESS': sum([
-            report.proactive_behavior, report.work_ideas,
-            report.resource_competence, report.mentoring_skills,
-            report.delegation_skills, report.decision_making
-        ]),
-        'F. PLANNING & ORGANIZING EFFECTIVENESS': sum([
-            report.work_prioritization, report.timely_completion,
-            report.policy_compliance, report.behavior_consistency,
-            report.pressure_handling
-        ]),
-        'G. ADAPTABILITY': sum([
-            report.change_adaptability, report.learning_attitude,
-            report.emotional_intelligence
-        ]),
-        'H. RESULT ORIENTATION': sum([
-            report.commitment_drive, report.timely_decisions,
-            report.obstacle_handling
-        ]),
-        'I. CLARITY OF VISION': sum([
-            report.hospital_vision, report.department_vision
-        ]),
-        'J. PROBLEM SOLVING': sum([
-            report.problem_identification, report.solution_approach,
-            report.pressure_case_handling
-        ])
-    }
-
-@login_required
-def superintendent_list(request):
-    # For admin users - show all department heads
-    if request.user.is_staff:
-        superintendents = DepartmentHead.objects.all()
-        departments = Department.objects.all()
-        
-        # Group department heads by department for easier viewing
-        superintendents_by_department = {}
-        for dept in departments:
-            dept_heads = DepartmentHead.objects.filter(department=dept)
-            
-            # Calculate staff counts for each department head
-            for head in dept_heads:
-                # Get the base query for staff in this head's department
-                staff_query = Staff.objects.filter(department=head.department)
-                staff_count = 0
-                
-                # If the head has managed subdepartments, count staff in those subdepartments
-                if head.managed_subdepartments.exists():
-                    staff_count = staff_query.filter(subdepartment__in=head.managed_subdepartments.all()).count()
-                # If no managed subdepartments but has a primary subdepartment, use that
-                elif head.subdepartment:
-                    staff_count = staff_query.filter(subdepartment=head.subdepartment).count()
-            else:
-                    # If no subdepartments assigned, count all staff in the department
-                staff_count = staff_query.count()
-            
-                # Attach the count to the head object
-                head.staff_count = staff_count
-            
-            if dept_heads.exists():
-                superintendents_by_department[dept.id] = {
-                    'name': dept.name,
-                    'department_heads': dept_heads
-                }
-        
-        return render(request, 'staff_monitor/superintendent_list.html', {
-            'superintendents': superintendents,
-            'departments': departments,
-            'is_admin': True,
-            'superintendents_by_department': superintendents_by_department,
-            'show_by_department': True  # Flag to enable department-wise view
-        })
-    else:
-        try:
-            # Check if user is a department head
-            department_head = DepartmentHead.objects.get(user=request.user)
-            
-            # Special case for HR department heads
-            if department_head.is_hr_head or department_head.department.name.lower() == "hr":
-                # Ensure the department head is marked as HR head if from HR department
-                if not department_head.is_hr_head and department_head.department.name.lower() == "hr":
-                    department_head.is_hr_head = True
-                    department_head.save()
-                
-                # Get all departments except HR
-                departments = Department.objects.exclude(name__iexact='HR')
-                
-                # Get all department heads except HR department heads
-                superintendents = DepartmentHead.objects.exclude(department__name__iexact='HR')
-                
-                # Group department heads by department for easier viewing
-                superintendents_by_department = {}
-                for dept in departments:
-                    dept_heads = DepartmentHead.objects.filter(department=dept)
-                    
-                    # Calculate staff counts for each department head
-                    for head in dept_heads:
-                        # Get the base query for staff in this head's department
-                        staff_query = Staff.objects.filter(department=head.department)
-                        staff_count = 0
-                        
-                        # If the head has managed subdepartments, count staff in those subdepartments
-                        if head.managed_subdepartments.exists():
-                            staff_count = staff_query.filter(subdepartment__in=head.managed_subdepartments.all()).count()
-                        # If no managed subdepartments but has a primary subdepartment, use that
-                        elif head.subdepartment:
-                            staff_count = staff_query.filter(subdepartment=head.subdepartment).count()
-                        else:
-                            # If no subdepartments assigned, count all staff in the department
-                            staff_count = staff_query.count()
-                        
-                        # Attach the count to the head object
-                        head.staff_count = staff_count
-                    
-                    if dept_heads.exists():
-                        superintendents_by_department[dept.id] = {
-                            'name': dept.name,
-                            'department_heads': dept_heads
-                        }
-                
-                return render(request, 'staff_monitor/superintendent_list.html', {
-                    'superintendents': superintendents,
-                    'departments': departments,
-                    'is_hr_head': True,
-                    'department_head': department_head,
-                    'superintendents_by_department': superintendents_by_department,
-                    'show_by_department': True  # Flag to enable department-wise view
-                })
-            else:
-                # Regular department head doesn't see the department heads list
-                messages.warning(request, "You don't have permission to view this page.")
-                return redirect('dashboard')
-                
-        except DepartmentHead.DoesNotExist:
-            messages.warning(request, "You don't have permission to view this page.")
-            return redirect('dashboard')
-
-@login_required
-def staff_list(request):
-    # For admin users - show all staff
-    if request.user.is_staff:
-        staff_members = Staff.objects.all()
-        departments = Department.objects.all()
-        return render(request, 'staff_monitor/staff_list.html', {
-            'staff_members': staff_members,
-            'departments': departments,
-            'is_admin': True
-        })
-    else:
-        try:
-            # Check if user is a department head
-            department_head = DepartmentHead.objects.get(user=request.user)
-            
-            # Special case for HR department heads - they see all staff
-            if department_head.is_hr_head or department_head.department.name.lower() == "hr":
-                # Ensure the department head is marked as HR head if from HR department
-                if not department_head.is_hr_head and department_head.department.name.lower() == "hr":
-                    department_head.is_hr_head = True
-                    department_head.save()
-                
-                # HR head sees all staff, get all departments for filtering
-                staff_members = Staff.objects.all()
-                departments = Department.objects.all()
-                
-                # Group staff by department for easier viewing
-                staff_by_department = {}
-                for dept in departments:
-                    staff_by_department[dept.id] = {
-                        'name': dept.name,
-                        'staff': Staff.objects.filter(department=dept)
-                    }
-                
-                return render(request, 'staff_monitor/staff_list.html', {
-                    'staff_members': staff_members,
-                    'departments': departments,
-                    'is_hr_head': True,
-                    'department_head': department_head,
-                    'staff_by_department': staff_by_department,
-                    'show_by_department': True  # Flag to enable department-wise view
-                })
-            
-            # Determine if this is a main department head or a subdepartment head
-            is_main_department_head = department_head.subdepartment is None
-            
-            if is_main_department_head:
-                # Main department head sees all staff in their department
-                staff_members = Staff.objects.filter(department=department_head.department)
-                subdepartment_heads = DepartmentHead.objects.filter(
-                    department=department_head.department,
-                    subdepartment__isnull=False
-                )
-                departments = [department_head.department]
-                
-                return render(request, 'staff_monitor/staff_list.html', {
-                    'staff_members': staff_members,
-                    'departments': departments,
-                    'is_main_department_head': True,
-                    'department_head': department_head,
-                    'subdepartment_heads': subdepartment_heads
-                })
-            else:
-                # Subdepartment head sees only their assigned staff
-                staff_members = department_head.managed_staff.all()
-                return render(request, 'staff_monitor/staff_list.html', {
-                    'staff_members': staff_members,
-                    'is_main_department_head': False,
-                    'department_head': department_head
-                })
-                
-        except DepartmentHead.DoesNotExist:
-            # User is neither admin nor department head
-            return redirect('dashboard')
-
-@login_required
-def get_subdepartments(request, department_id):
-    """Get all subdepartments for a specific department"""
-    try:
-        department = Department.objects.get(pk=department_id)
-        subdepartments = SubDepartment.objects.filter(department=department)
-        
-        return JsonResponse({
-            'subdepartments': list(subdepartments.values('id', 'name'))
-        })
-    except Department.DoesNotExist:
-        return JsonResponse({'error': 'Department not found'}, status=404)
-    except Exception as e:
-        print(f"Error in get_subdepartments: {str(e)}")
-        return JsonResponse({'error': str(e)}, status=500)
-
-def handle_incident_photo_upload(photo, report_number):
-    """
-    Custom handler for incident photo uploads. 
-    This function renames the uploaded photo using the incident report number.
-    
-    Args:
-        photo: The uploaded file object
-        report_number: The incident report number to use in the filename
-        
-    Returns:
-        A new InMemoryUploadedFile object with the renamed file
-    """
-    if not photo:
-        return None
-    
-    # Format the new filename - replace any special characters that could cause issues
-    # in filenames with underscores
-    safe_report_number = report_number.replace('/', '_').replace('-', '_').replace(' ', '_')
-    file_extension = os.path.splitext(photo.name)[1].lower()
-    new_filename = f"incident_{safe_report_number}{file_extension}"
-    
-    # For images, we can process them to ensure proper format
-    try:
-        # If it's an image, we'll process it using PIL
-        img = Image.open(photo)
-        
-        # Create a BytesIO object to hold the processed image
-        output = BytesIO()
-        
-        # Save the image to the BytesIO object in its original format
-        if file_extension == '.jpg' or file_extension == '.jpeg':
-            img.save(output, format='JPEG', quality=90)
-        elif file_extension == '.png':
-            img.save(output, format='PNG')
-        elif file_extension == '.gif':
-            img.save(output, format='GIF')
-        else:
-            # For other formats, default to JPEG
-            img.save(output, format='JPEG', quality=90)
-            file_extension = '.jpg'
-            new_filename = f"incident_{safe_report_number}{file_extension}"
-            
-        # Get the file content from the BytesIO object
-        output.seek(0)
-        
-        # Create a new InMemoryUploadedFile with the processed image
-        new_photo = InMemoryUploadedFile(
-            output,
-            'ImageField',
-            new_filename,
-            f'image/{file_extension[1:]}',
-            sys.getsizeof(output),
-            None
-        )
-        return new_photo
-        
-    except Exception as e:
-        # If processing fails for any reason, just rename the original file
-        print(f"Error processing image: {str(e)}")
-        content = photo.read()
-        photo.seek(0)
-        return InMemoryUploadedFile(
-            ContentFile(content),
-            'ImageField',
-            new_filename,
-            photo.content_type,
-            len(content),
-            None
-        )
-
-@login_required
-def feedback_form(request, staff_id):
-    staff = get_object_or_404(Staff, id=staff_id)
-    
-    # Check if user has permission to report incidents for this staff member
-    if not request.user.is_staff:  # If not admin
-        try:
-            department_head = DepartmentHead.objects.get(user=request.user)
-            
-            # HR heads can report incidents for any staff
-            if department_head.is_hr_head or department_head.department.name.lower() == "hr" or (department_head.subdepartment and department_head.subdepartment.name.lower() == "hr"):
-                # Continue with reporting
-                pass
-            # Regular department heads can only report incidents for staff in their department
-            elif staff.department != department_head.department:
-                messages.error(request, 'You do not have permission to report incidents for staff from other departments.')
-                return redirect('dashboard')
-        except DepartmentHead.DoesNotExist:
-            messages.error(request, 'You do not have permission to report incidents for staff.')
-            return redirect('dashboard')
-
-    # Initialize form with user data
-    initial_data = {'prepared_by': request.user.get_full_name()}
-    
-    if request.method == 'POST':
-        form = IncidentReportForm(request.POST, request.FILES, initial={'user': request.user})
-        
-        if form.is_valid():
-            try:
-                # Get incident types and related parties (not in the form)
-                incident_types = request.POST.getlist('incident_type')
-                other_incident_type = request.POST.get('other_incident_type', '')
-                incident_description = request.POST.get('incident_description', '')
-                related_parties = request.POST.getlist('related_party')
-                
-                # Process individuals involved
-                individual_names = request.POST.getlist('individual_name[]')
-                individual_departments = request.POST.getlist('individual_department[]')
-                individual_positions = request.POST.getlist('individual_position[]')
-                individual_roles = request.POST.getlist('individual_role[]')
-                
-                # Create a list of individual dictionaries
-                individuals = []
-                for i in range(len(individual_names)):
-                    if individual_names[i]:  # Only add if name is provided
-                        individuals.append({
-                            'name': individual_names[i],
-                            'department': individual_departments[i] if i < len(individual_departments) else '',
-                            'position': individual_positions[i] if i < len(individual_positions) else '',
-                            'role': individual_roles[i] if i < len(individual_roles) else ''
-                        })
-                
-                # Create incident report from form data but don't save yet
-                incident_report = form.save(commit=False)
-                incident_report.staff = staff
-                incident_report.reporter = request.user
-                incident_report.incident_description = incident_description
-                
-                # Set reporter position based on user role
-                if request.user.is_staff:
-                    reporter_position = "HR Director"
-                else:
-                    try:
-                        department_head = DepartmentHead.objects.get(user=request.user)
-                        if department_head.is_hr_head:
-                            reporter_position = f"HR Head - {department_head.department.name}"
-                        else:
-                            reporter_position = f"Department Head - {department_head.department.name}"
-                    except DepartmentHead.DoesNotExist:
-                        reporter_position = staff.position
-                
-                incident_report.reporter_position = reporter_position
-                
-                # Generate a report number if not provided
-                if not incident_report.report_number:
-                    # Format: IR-YYYYMMDD-StaffID-Count
-                    date_str = incident_report.incident_date.strftime('%Y%m%d')
-                    
-                    # Get the count of reports for this staff member on this date
-                    existing_count = IncidentReport.objects.filter(
-                        staff=staff,
-                        incident_date=incident_report.incident_date
-                    ).count()
-                    
-                    # Create the report number
-                    incident_report.report_number = f"IR-{date_str}-{staff.id}-{existing_count + 1:03d}"
-                
-                # Process the uploaded photo and rename it based on the report number
-                if 'incident_photo' in request.FILES:
-                    photo = request.FILES['incident_photo']
-                    processed_photo = handle_incident_photo_upload(photo, incident_report.report_number)
-                    if processed_photo:
-                        incident_report.incident_photo = processed_photo
-                
-                # Set status
-                incident_report.status = 'reported'
-                
-                # Save the report to get an ID
-                incident_report.save()
-                
-                # Set JSON fields using helper methods
-                incident_report.set_incident_types(incident_types)
-                incident_report.set_related_parties(related_parties)
-                incident_report.set_individuals_involved(individuals)
-                
-                # Save again with the JSON fields
-                incident_report.save()
-                
-                messages.success(request, 'Incident report submitted successfully.')
-                return redirect('dashboard')
-            except Exception as e:
-                messages.error(request, f'Error submitting incident report: {str(e)}')
-        else:
-            # Form validation failed
-            for field, errors in form.errors.items():
-                for error in errors:
-                    messages.error(request, f"{field}: {error}")
-    else:
-        # GET request, initialize empty form
-        form = IncidentReportForm(initial={'user': request.user})
-
-    # Prepare context for template
-    context = {
-        'staff': staff,
-        'today': date.today(),
-        'form': form,
-    }
-    
-    # Add department head to context if applicable
-    if not request.user.is_staff:
-        try:
-            department_head = DepartmentHead.objects.get(user=request.user)
-            context['department_head'] = department_head
-        except DepartmentHead.DoesNotExist:
-            pass
-
-    return render(request, 'staff_monitor/feedback_form.html', context)
-
-@login_required
-def feedback_form_department_head(request, department_head_id):
     department_head = get_object_or_404(DepartmentHead, id=department_head_id)
     
     # Check if user has permission to evaluate this department head
@@ -1793,10 +852,12 @@ def bulk_upload_staff(request):
             
             # Validate required columns - using the new column names
             required_columns = ['name', 'employee_id', 'position', 'department', 'joining_date']
+            
+            # Check if all required columns exist
             missing_columns = [col for col in required_columns if col not in df.columns]
             if missing_columns:
                 messages.error(request, f"Missing required columns: {', '.join(missing_columns)}")
-                return render(request, 'staff_monitor/bulk_upload_staff.html', {'form': form})
+                return redirect('staff_list')
             
             success_count = 0
             error_count = 0
@@ -1817,42 +878,28 @@ def bulk_upload_staff(request):
                             department=department
                         )
                     
-                    # Create user
+                    # Create user account
                     username = str(row['employee_id']).strip()
-                    email = str(row['email']).strip() if 'email' in df.columns and pd.notna(row['email']) else None
-                    name = str(row['name']).strip()
-                                    
-                    # Set a default password for all staff (or leave blank if allowed)
+                    email = f"{username}@example.com"  # You can modify this as needed
                     password = 'changeme123'  # You can change this default as needed
                     
                     user = User.objects.create_user(
                         username=username,
                         email=email,
                         password=password,
-                        first_name=name,
-                        last_name=''
+                        first_name=str(row['name']).strip().split()[0],
+                        last_name=' '.join(str(row['name']).strip().split()[1:]) if len(str(row['name']).strip().split()) > 1 else ''
                     )
                     
-                    # Parse dates
-                    try:
-                        joining_date = datetime.strptime(str(row['joining_date']), '%d.%m.%Y').date()
-                        appointment_date = datetime.strptime(str(row['appointment_date']), '%d.%m.%Y').date() if 'appointment_date' in df.columns and pd.notna(row['appointment_date']) else None
-                    except ValueError as e:
-                        raise ValueError(f"Invalid date format. Please use DD.MM.YYYY format. Error: {str(e)}")
-                        
-                    # Create staff
+                    # Create staff record
                     staff = Staff.objects.create(
                         user=user,
-                        employee_id=username,
+                        employee_id=str(row['employee_id']).strip(),
                         department=department,
                         subdepartment=subdepartment,
                         position=str(row['position']).strip(),
-                        qualification=str(row['qualification']).strip() if 'qualification' in df.columns and pd.notna(row['qualification']) else None,
-                        contact_info=str(row['contact_info']).strip() if 'contact_info' in df.columns and pd.notna(row['contact_info']) else None,
-                        joining_date=joining_date,
-                        appointment_date=appointment_date
+                        joining_date=row['joining_date'] if pd.notna(row['joining_date']) else None
                     )
-                    
                     success_count += 1
                 except Exception as e:
                     error_count += 1
@@ -2392,3 +1439,853 @@ def add_staff(request):
     else:
         form = StaffForm()
     return render(request, 'staff_monitor/add_staff.html', {'form': form})
+
+@login_required
+@user_passes_test(lambda u: can_perform_action(u, 'can_edit_department_head') or u.is_staff)
+def manage_department_head_staff(request, department_head_id):
+    current_head = get_object_or_404(DepartmentHead, id=department_head_id)
+    
+    # Get all department heads in the same department
+    department_heads = DepartmentHead.objects.filter(department=current_head.department)
+    
+    # Get available and assigned staff
+    available_staff = Staff.objects.filter(
+        department=current_head.department
+    ).exclude(
+        managed_by=current_head
+    )
+    
+    assigned_staff = Staff.objects.filter(managed_by=current_head)
+    
+    context = {
+        'current_head': current_head,
+        'department_heads': department_heads,
+        'available_staff': available_staff,
+        'assigned_staff': assigned_staff,
+    }
+    
+    return render(request, 'staff_monitor/manage_department_head_staff.html', context)
+
+@login_required
+@user_passes_test(lambda u: can_perform_action(u, 'can_edit_department_head') or u.is_staff)
+def assign_staff_to_head(request, department_head_id, staff_id):
+    if request.method == 'POST':
+        department_head = get_object_or_404(DepartmentHead, id=department_head_id)
+        staff = get_object_or_404(Staff, id=staff_id)
+        
+        # Verify staff is in the same department
+        if staff.department != department_head.department:
+            messages.error(request, f"Cannot assign staff from different department.")
+            return redirect('manage_department_head_staff', department_head_id=department_head_id)
+        
+        # Add staff to department head's managed staff
+        staff.managed_by.add(department_head)
+        
+        messages.success(request, f"Successfully assigned {staff.user.get_full_name()} to {department_head.user.get_full_name()}")
+    
+    return redirect('manage_department_head_staff', department_head_id=department_head_id)
+
+@login_required
+@user_passes_test(lambda u: can_perform_action(u, 'can_edit_department_head') or u.is_staff)
+def unassign_staff_from_head(request, department_head_id, staff_id):
+    if request.method == 'POST':
+        department_head = get_object_or_404(DepartmentHead, id=department_head_id)
+        staff = get_object_or_404(Staff, id=staff_id)
+        
+        # Remove staff from department head's managed staff
+        staff.managed_by.remove(department_head)
+        
+        messages.success(request, f"Successfully removed {staff.user.get_full_name()} from {department_head.user.get_full_name()}")
+    
+    return redirect('manage_department_head_staff', department_head_id=department_head_id)
+
+@login_required
+@user_passes_test(lambda u: can_perform_action(u, 'can_edit_department_head') or u.is_staff)
+def assign_all_staff(request, department_head_id):
+    department_head = get_object_or_404(DepartmentHead, id=department_head_id)
+    
+    # Get all available staff in the same department
+    available_staff = Staff.objects.filter(
+        department=department_head.department
+    ).exclude(
+        managed_by=department_head
+    )
+    
+    # Assign all available staff
+    for staff in available_staff:
+        staff.managed_by.add(department_head)
+    
+    messages.success(request, f'Successfully assigned {available_staff.count()} staff members.')
+    return redirect('manage_department_head_staff', department_head_id=department_head_id)
+
+@login_required
+@user_passes_test(lambda u: can_perform_action(u, 'can_edit_department_head') or u.is_staff)
+def unassign_all_staff(request, department_head_id):
+    department_head = get_object_or_404(DepartmentHead, id=department_head_id)
+    
+    # Get all assigned staff
+    assigned_staff = Staff.objects.filter(managed_by=department_head)
+    count = assigned_staff.count()
+    
+    # Unassign all staff
+    for staff in assigned_staff:
+        staff.managed_by.remove(department_head)
+    
+    messages.success(request, f'Successfully unassigned {count} staff members.')
+    return redirect('manage_department_head_staff', department_head_id=department_head_id)
+
+@login_required
+@user_passes_test(lambda u: can_perform_action(u, 'can_edit_department_head') or u.is_staff)
+def manage_department_head_staff(request, department_head_id):
+    current_head = get_object_or_404(DepartmentHead, id=department_head_id)
+    
+    # Get all department heads in the same department
+    department_heads = DepartmentHead.objects.filter(department=current_head.department)
+    
+    # Get available and assigned staff
+    available_staff = Staff.objects.filter(
+        department=current_head.department
+    ).exclude(
+        managed_by=current_head
+    )
+    
+    assigned_staff = Staff.objects.filter(managed_by=current_head)
+    
+    context = {
+        'current_head': current_head,
+        'department_heads': department_heads,
+        'available_staff': available_staff,
+        'assigned_staff': assigned_staff,
+    }
+    
+    return render(request, 'staff_monitor/manage_department_head_staff.html', context)
+
+@login_required
+@user_passes_test(lambda u: can_perform_action(u, 'can_edit_department_head') or u.is_staff)
+def transfer_staff(request, department_head_id):
+    if request.method == 'POST':
+        current_head = get_object_or_404(DepartmentHead, id=department_head_id)
+        new_head_id = request.POST.get('new_head_id')
+        
+        if not new_head_id:
+            messages.error(request, 'Please select a new department head.')
+            return redirect('manage_department_head_staff', department_head_id=department_head_id)
+        
+        new_head = get_object_or_404(DepartmentHead, id=new_head_id)
+        
+        # Verify both heads are in the same department
+        if current_head.department != new_head.department:
+            messages.error(request, 'Cannot transfer staff between different departments.')
+            return redirect('manage_department_head_staff', department_head_id=department_head_id)
+        
+        # Get all assigned staff
+        assigned_staff = Staff.objects.filter(managed_by=current_head)
+        count = assigned_staff.count()
+        
+        # Transfer all staff to new head
+        for staff in assigned_staff:
+            staff.managed_by.remove(current_head)
+            staff.managed_by.add(new_head)
+        
+        messages.success(request, f'Successfully transferred {count} staff members to {new_head.user.get_full_name()}.')
+        return redirect('manage_department_head_staff', department_head_id=new_head_id)
+    
+    return redirect('manage_department_head_staff', department_head_id=department_head_id)
+
+@login_required
+@user_passes_test(lambda u: is_admin(u) or can_perform_action(u, 'can_edit_staff'))
+def center_management(request):
+    # Get all staff and department heads
+    staff_list = Staff.objects.all().select_related('user', 'department')
+    department_heads = DepartmentHead.objects.all().select_related('user', 'department', 'subdepartment')
+    departments = Department.objects.all()
+    
+    context = {
+        'staff_list': staff_list,
+        'department_heads': department_heads,
+        'departments': departments,
+        'is_admin': is_admin(request.user),
+        'is_hr_head': hasattr(request.user, 'departmenthead') and request.user.departmenthead.is_hr_head
+    }
+    
+    return render(request, 'staff_monitor/center_management.html', context)
+
+@login_required
+@user_passes_test(lambda u: is_admin(u) or can_perform_action(u, 'can_edit_staff'))
+def update_staff_status(request, staff_id):
+    if request.method == 'POST':
+        staff = get_object_or_404(Staff, id=staff_id)
+        new_status = request.POST.get('status')
+        
+        if new_status in ['active', 'on_leave', 'left_service']:
+            old_status = staff.status
+            staff.status = new_status
+            staff.save()
+            
+            # Handle user account activation/deactivation
+            user = staff.user
+            if new_status == 'active':
+                user.is_active = True
+                user.save()
+                messages.success(request, f"Successfully updated {staff.user.get_full_name()}'s status to {staff.get_status_display()} and enabled their account")
+            else:
+                user.is_active = False
+                user.save()
+                messages.success(request, f"Successfully updated {staff.user.get_full_name()}'s status to {staff.get_status_display()} and disabled their account")
+        else:
+            messages.error(request, "Invalid status provided")
+    
+    return redirect('center_management')
+
+@login_required
+@user_passes_test(lambda u: is_admin(u) or can_perform_action(u, 'can_edit_department_head'))
+def update_department_head_status(request, head_id):
+    if request.method == 'POST':
+        department_head = get_object_or_404(DepartmentHead, id=head_id)
+        new_status = request.POST.get('status')
+        
+        if new_status in ['active', 'on_leave', 'left_service']:
+            old_status = department_head.status
+            department_head.status = new_status
+            department_head.save()
+            
+            # Handle user account activation/deactivation
+            user = department_head.user
+            if new_status == 'active':
+                user.is_active = True
+                user.save()
+                messages.success(request, f"Successfully updated {department_head.user.get_full_name()}'s status to {department_head.get_status_display()} and enabled their account")
+            else:
+                user.is_active = False
+                user.save()
+                messages.success(request, f"Successfully updated {department_head.user.get_full_name()}'s status to {department_head.get_status_display()} and disabled their account")
+        else:
+            messages.error(request, "Invalid status provided")
+    
+    return redirect('center_management')
+
+def handle_incident_photo_upload(photo, report_number):
+    """Handle incident photo upload and return the processed photo path"""
+    if photo:
+        # Create a unique filename using report number and timestamp
+        timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
+        filename = f"incident_{report_number}_{timestamp}{os.path.splitext(photo.name)[1]}"
+        return filename
+    return None
+
+@login_required
+def staff_list(request):
+    # For admin users and HR users - show all staff
+    if request.user.is_staff or is_hr_head(request.user):
+        staff_list = Staff.objects.all().select_related('user', 'department', 'subdepartment')
+        departments = Department.objects.all()
+        # Group staff by department
+        staff_by_department = {}
+        for dept in departments:
+            staff_in_dept = staff_list.filter(department=dept)
+            staff_by_department[dept.id] = {
+                'name': dept.name,
+                'staff': staff_in_dept,
+            }
+        show_by_department = True
+    # For regular department heads - show only their department's staff
+    else:
+        try:
+            department_head = DepartmentHead.objects.get(user=request.user)
+            staff_list = Staff.objects.filter(department=department_head.department).select_related('user', 'department', 'subdepartment')
+            departments = Department.objects.filter(id=department_head.department.id)
+            staff_by_department = None
+            show_by_department = False
+        except DepartmentHead.DoesNotExist:
+            staff_list = Staff.objects.none()
+            departments = Department.objects.none()
+            staff_by_department = None
+            show_by_department = False
+    context = {
+        'staff_list': staff_list,
+        'departments': departments,
+        'is_admin': request.user.is_staff,
+        'is_hr_head': is_hr_head(request.user),
+        'show_by_department': show_by_department,
+        'staff_by_department': staff_by_department,
+    }
+    return render(request, 'staff_monitor/staff_list.html', context)
+
+@login_required
+def superintendent_list(request):
+    # For admin users and HR users - show all department heads except HR department heads
+    if request.user.is_staff or is_hr_head(request.user):
+        superintendents = DepartmentHead.objects.exclude(
+            models.Q(department__name__iexact='hr') | 
+            models.Q(subdepartment__name__iexact='hr')
+        ).select_related('user', 'department', 'subdepartment')
+        departments = Department.objects.exclude(name__iexact='hr')
+        show_by_department = False
+    # For regular department heads - show only their department's staff
+    else:
+        try:
+            department_head = DepartmentHead.objects.get(user=request.user)
+            superintendents = DepartmentHead.objects.filter(department=department_head.department).select_related('user', 'department', 'subdepartment')
+            departments = Department.objects.filter(id=department_head.department.id)
+            show_by_department = False
+        except DepartmentHead.DoesNotExist:
+            superintendents = DepartmentHead.objects.none()
+            departments = Department.objects.none()
+            show_by_department = False
+    
+    # Group department heads by department for easier viewing
+    superintendents_by_department = {}
+    if show_by_department:
+        for dept in departments:
+            dept_heads = superintendents.filter(department=dept)
+            if dept_heads.exists():
+                superintendents_by_department[dept.id] = {
+                    'name': dept.name,
+                    'department_heads': dept_heads
+                }
+    
+    context = {
+        'superintendents': superintendents,
+        'departments': departments,
+        'is_admin': request.user.is_staff,
+        'is_hr_head': is_hr_head(request.user),
+        'show_by_department': show_by_department,
+        'department_head': DepartmentHead.objects.filter(user=request.user).first(),
+        'superintendents_by_department': superintendents_by_department if show_by_department else None
+    }
+    
+    return render(request, 'staff_monitor/superintendent_list.html', context)
+
+@login_required
+def feedback_form(request, staff_id):
+    staff = get_object_or_404(Staff, id=staff_id)
+    
+    # Check if user has permission to report incidents for this staff
+    if not request.user.is_staff and not is_hr_head(request.user):
+        try:
+            department_head = DepartmentHead.objects.get(user=request.user)
+            if staff.department != department_head.department:
+                messages.error(request, "You don't have permission to report incidents for this staff member.")
+                return redirect('dashboard')
+        except DepartmentHead.DoesNotExist:
+            messages.error(request, "You don't have permission to report incidents.")
+            return redirect('dashboard')
+    
+    if request.method == 'POST':
+        form = IncidentReportForm(request.POST, request.FILES)
+        if form.is_valid():
+            # Generate report number
+            report_number = f"IR{datetime.now().strftime('%Y%m%d%H%M%S')}"
+            
+            # Create incident report
+            incident_report = form.save(commit=False)
+            incident_report.staff = staff
+            incident_report.reporter = request.user
+            incident_report.report_number = report_number
+            
+            # Handle photo upload
+            photo = request.FILES.get('incident_photo')
+            if photo:
+                processed_photo = handle_incident_photo_upload(photo, report_number)
+                incident_report.incident_photo = processed_photo
+            
+            incident_report.save()
+            messages.success(request, 'Incident report submitted successfully.')
+            return redirect('incident_report_list')
+    else:
+        form = IncidentReportForm()
+    
+    context = {
+        'form': form,
+        'staff': staff,
+        'is_admin': request.user.is_staff,
+        'is_hr_head': is_hr_head(request.user)
+    }
+    
+    return render(request, 'staff_monitor/feedback_form.html', context)
+
+@login_required
+def feedback_form_department_head(request, department_head_id):
+    department_head = get_object_or_404(DepartmentHead, id=department_head_id)
+    
+    # Check if user has permission to report incidents for this department head
+    if not request.user.is_staff and not is_hr_head(request.user):
+        try:
+            user_department_head = DepartmentHead.objects.get(user=request.user)
+            if department_head.department != user_department_head.department:
+                messages.error(request, "You don't have permission to report incidents for this department head.")
+                return redirect('dashboard')
+        except DepartmentHead.DoesNotExist:
+            messages.error(request, "You don't have permission to report incidents.")
+            return redirect('dashboard')
+    
+    if request.method == 'POST':
+        form = IncidentReportForm(request.POST, request.FILES)
+        if form.is_valid():
+            # Generate report number
+            report_number = f"IR{datetime.now().strftime('%Y%m%d%H%M%S')}"
+            
+            # Create incident report
+            incident_report = form.save(commit=False)
+            incident_report.department_head = department_head
+            incident_report.reporter = request.user
+            incident_report.report_number = report_number
+            
+            # Handle photo upload
+            photo = request.FILES.get('incident_photo')
+            if photo:
+                processed_photo = handle_incident_photo_upload(photo, report_number)
+                incident_report.incident_photo = processed_photo
+            
+            incident_report.save()
+            messages.success(request, 'Incident report submitted successfully.')
+            return redirect('incident_report_list')
+    else:
+        form = IncidentReportForm()
+    
+    context = {
+        'form': form,
+        'department_head': department_head,
+        'is_admin': request.user.is_staff,
+        'is_hr_head': is_hr_head(request.user)
+    }
+    
+    return render(request, 'staff_monitor/feedback_form_department_head.html', context)
+
+@login_required
+def check_report_exists(request, staff_id, date):
+    try:
+        staff = get_object_or_404(Staff, id=staff_id)
+        report_date = datetime.strptime(date, '%Y-%m-%d').date()
+        
+        # Check if a report exists for this staff member on the given date
+        report_exists = PerformanceReport.objects.filter(
+            staff=staff,
+            date=report_date
+        ).exists()
+        
+        return JsonResponse({
+            'exists': report_exists,
+            'message': 'Report already exists for this date' if report_exists else 'No report exists for this date'
+        })
+    except ValueError:
+        return JsonResponse({
+            'error': 'Invalid date format. Please use YYYY-MM-DD format.'
+        }, status=400)
+    except Exception as e:
+        return JsonResponse({
+            'error': str(e)
+        }, status=500)
+
+@login_required
+def view_report(request, report_id):
+    report = get_object_or_404(PerformanceReport, id=report_id)
+    
+    # Check if user has permission to view this report
+    if not request.user.is_staff and not is_hr_head(request.user):
+        try:
+            department_head = DepartmentHead.objects.get(user=request.user)
+            if report.staff and report.staff.department != department_head.department:
+                messages.error(request, "You don't have permission to view this report.")
+                return redirect('dashboard')
+        except DepartmentHead.DoesNotExist:
+            messages.error(request, "You don't have permission to view reports.")
+            return redirect('dashboard')
+    
+    section_field_map = {
+        'A. JOB KNOWLEDGE/ PROFESSIONALISM': [
+            ('Understanding of job responsibility', 'job_responsibility'),
+            ('Good communications skills', 'communication_skills'),
+            ('Identifies & understand patient requirements and balance with hospital interest', 'patient_requirements'),
+            ('Negotiation skills & ability to address queries/ doubts', 'negotiation_skills'),
+            ('Effective Relationship with management', 'management_relationship'),
+            ('Respect for policies, rules & hospital values', 'policy_adherence'),
+            ('Has ethical behavior & positive attitude', 'ethical_behavior'),
+            ('Honesty and transparency', 'honesty_transparency'),
+        ],
+        'B. PRODUCTIVITY': [
+            ('Manages a fair work load', 'workload_management'),
+            ('Takes additional responsibilities', 'additional_responsibilities'),
+            ('Develops and follows work procedure', 'work_procedure'),
+        ],
+        'C. QUALITY OF WORK': [
+            ('Demonstrates accuracy, thoroughness and reliability', 'accuracy_reliability'),
+            ('Communicates views clearly & logically both in one to one conversation & group', 'clear_communication'),
+            ('Attendance & punctuality', 'attendance_punctuality'),
+            ('Has good responsibility & accountability', 'responsibility_accountability'),
+        ],
+        'D. INTERPERSONAL & WORKING RELATIONSHIPS': [
+            ('Interacts effectively with patients, co-workers & public', 'interaction_effectiveness'),
+            ('Has good interpersonal skills and gets along well with people', 'interpersonal_skills'),
+            ('Seeks & provides help & cooperation from team members when required', 'team_cooperation'),
+            ('Exhibits appropriate sensitivity to others feelings', 'sensitivity'),
+            ('Collaborates effectively with cross-functional teams', 'cross_functional_collaboration'),
+        ],
+        'E. LEADERSHIP, INITIATIVES & RESOURCEFULNESS': [
+            ('Displays proactive behavior', 'proactive_behavior'),
+            ('Is meticulous in following through work ideas', 'work_ideas'),
+            ('Displays competence of working within resources', 'resource_competence'),
+            ('Displays mentoring or guiding others & taking charge when needed', 'mentoring_skills'),
+            ('Has work delegation skills', 'delegation_skills'),
+            ('Has good decision-making skills', 'decision_making'),
+        ],
+        'F. PLANNING & ORGANIZING EFFECTIVENESS': [
+            ('Effectively prioritizes work & establishes work plans', 'work_prioritization'),
+            ('Performs tasks thoroughly on time', 'timely_completion'),
+            ('Works within organizational policies & guidelines', 'policy_compliance'),
+            ('Consistency in behavior', 'behavior_consistency'),
+            ('Displays ability to work under pressure', 'pressure_handling'),
+        ],
+        'G. ADAPTABILITY': [
+            ('Displays adaptability to change, modifies behavior to deal effectively with change', 'change_adaptability'),
+            ('Willing to learn from mistakes, treats change as an opportunity for learning & growth', 'learning_attitude'),
+            ('Displays good emotional intelligence', 'emotional_intelligence'),
+        ],
+        'H. RESULT ORIENTATION': [
+            ('Demonstrates string commitment & drive to achieve results', 'commitment_drive'),
+            ('Takes timely decisions & ensure completion of tasks', 'timely_decisions'),
+            ('Can be relied on to deliver despite obstacles or complex situations', 'obstacle_handling'),
+        ],
+        'I. CLARITY OF VISION': [
+            ('Understands the philosophy of vision & mission of the hospital', 'hospital_vision'),
+            ('Displays clarity of vision with respect to departments and organization', 'department_vision'),
+        ],
+        'J. PROBLEM SOLVING': [
+            ('Has the ability to identify problems & identifies various dimensions of problem', 'problem_identification'),
+            ('Identifies alternate approaches/ solutions to problems', 'solution_approach'),
+            ('Ability to handle cases even under pressure', 'pressure_case_handling'),
+        ],
+    }
+    context = {
+        'report': report,
+        'is_admin': request.user.is_staff,
+        'is_hr_head': is_hr_head(request.user),
+        'staff': report.staff if report.staff else None,
+        'department_head': report.department_head if report.department_head else None,
+        'evaluator': report.evaluator,
+        'section_field_map': section_field_map,
+    }
+    return render(request, 'staff_monitor/print_report.html', context)
+
+@login_required
+def print_report(request, report_id):
+    report = get_object_or_404(PerformanceReport, id=report_id)
+    
+    # Check if user has permission to view this report
+    if not request.user.is_staff and not is_hr_head(request.user):
+        try:
+            department_head = DepartmentHead.objects.get(user=request.user)
+            if report.staff and report.staff.department != department_head.department:
+                messages.error(request, "You don't have permission to view this report.")
+                return redirect('dashboard')
+        except DepartmentHead.DoesNotExist:
+            messages.error(request, "You don't have permission to view reports.")
+            return redirect('dashboard')
+    
+    section_field_map = {
+        'A. JOB KNOWLEDGE/ PROFESSIONALISM': [
+            ('Understanding of job responsibility', 'job_responsibility'),
+            ('Good communications skills', 'communication_skills'),
+            ('Identifies & understand patient requirements and balance with hospital interest', 'patient_requirements'),
+            ('Negotiation skills & ability to address queries/ doubts', 'negotiation_skills'),
+            ('Effective Relationship with management', 'management_relationship'),
+            ('Respect for policies, rules & hospital values', 'policy_adherence'),
+            ('Has ethical behavior & positive attitude', 'ethical_behavior'),
+            ('Honesty and transparency', 'honesty_transparency'),
+        ],
+        'B. PRODUCTIVITY': [
+            ('Manages a fair work load', 'workload_management'),
+            ('Takes additional responsibilities', 'additional_responsibilities'),
+            ('Develops and follows work procedure', 'work_procedure'),
+        ],
+        'C. QUALITY OF WORK': [
+            ('Demonstrates accuracy, thoroughness and reliability', 'accuracy_reliability'),
+            ('Communicates views clearly & logically both in one to one conversation & group', 'clear_communication'),
+            ('Attendance & punctuality', 'attendance_punctuality'),
+            ('Has good responsibility & accountability', 'responsibility_accountability'),
+        ],
+        'D. INTERPERSONAL & WORKING RELATIONSHIPS': [
+            ('Interacts effectively with patients, co-workers & public', 'interaction_effectiveness'),
+            ('Has good interpersonal skills and gets along well with people', 'interpersonal_skills'),
+            ('Seeks & provides help & cooperation from team members when required', 'team_cooperation'),
+            ('Exhibits appropriate sensitivity to others feelings', 'sensitivity'),
+            ('Collaborates effectively with cross-functional teams', 'cross_functional_collaboration'),
+        ],
+        'E. LEADERSHIP, INITIATIVES & RESOURCEFULNESS': [
+            ('Displays proactive behavior', 'proactive_behavior'),
+            ('Is meticulous in following through work ideas', 'work_ideas'),
+            ('Displays competence of working within resources', 'resource_competence'),
+            ('Displays mentoring or guiding others & taking charge when needed', 'mentoring_skills'),
+            ('Has work delegation skills', 'delegation_skills'),
+            ('Has good decision-making skills', 'decision_making'),
+        ],
+        'F. PLANNING & ORGANIZING EFFECTIVENESS': [
+            ('Effectively prioritizes work & establishes work plans', 'work_prioritization'),
+            ('Performs tasks thoroughly on time', 'timely_completion'),
+            ('Works within organizational policies & guidelines', 'policy_compliance'),
+            ('Consistency in behavior', 'behavior_consistency'),
+            ('Displays ability to work under pressure', 'pressure_handling'),
+        ],
+        'G. ADAPTABILITY': [
+            ('Displays adaptability to change, modifies behavior to deal effectively with change', 'change_adaptability'),
+            ('Willing to learn from mistakes, treats change as an opportunity for learning & growth', 'learning_attitude'),
+            ('Displays good emotional intelligence', 'emotional_intelligence'),
+        ],
+        'H. RESULT ORIENTATION': [
+            ('Demonstrates string commitment & drive to achieve results', 'commitment_drive'),
+            ('Takes timely decisions & ensure completion of tasks', 'timely_decisions'),
+            ('Can be relied on to deliver despite obstacles or complex situations', 'obstacle_handling'),
+        ],
+        'I. CLARITY OF VISION': [
+            ('Understands the philosophy of vision & mission of the hospital', 'hospital_vision'),
+            ('Displays clarity of vision with respect to departments and organization', 'department_vision'),
+        ],
+        'J. PROBLEM SOLVING': [
+            ('Has the ability to identify problems & identifies various dimensions of problem', 'problem_identification'),
+            ('Identifies alternate approaches/ solutions to problems', 'solution_approach'),
+            ('Ability to handle cases even under pressure', 'pressure_case_handling'),
+        ],
+    }
+    context = {
+        'report': report,
+        'is_admin': request.user.is_staff,
+        'is_hr_head': is_hr_head(request.user),
+        'staff': report.staff if report.staff else None,
+        'department_head': report.department_head if report.department_head else None,
+        'evaluator': report.evaluator,
+        'section_field_map': section_field_map,
+        'print_mode': True
+    }
+    return render(request, 'staff_monitor/print_report.html', context)
+
+@login_required
+@user_passes_test(lambda u: is_admin(u) or can_perform_action(u, 'can_manage_departments'))
+def add_department(request):
+    if request.method == 'POST':
+        form = DepartmentForm(request.POST)
+        if form.is_valid():
+            try:
+                department = form.save()
+                messages.success(request, f'Department "{department.name}" added successfully.')
+                return redirect('department_list')
+            except Exception as e:
+                messages.error(request, f'Error adding department: {str(e)}')
+    else:
+        form = DepartmentForm()
+    
+    context = {
+        'form': form,
+        'is_admin': request.user.is_staff,
+        'is_hr_head': is_hr_head(request.user),
+        'title': 'Add Department'
+    }
+    
+    return render(request, 'staff_monitor/department_form.html', context)
+
+@login_required
+@user_passes_test(lambda u: is_admin(u) or can_perform_action(u, 'can_manage_departments'))
+def department_list(request):
+    departments = Department.objects.all().prefetch_related('subdepartments')
+    
+    # Get counts for each department
+    for department in departments:
+        department.staff_count = Staff.objects.filter(department=department).count()
+        department.head_count = DepartmentHead.objects.filter(department=department).count()
+        department.subdepartment_count = department.subdepartments.count()
+    
+    context = {
+        'departments': departments,
+        'is_admin': request.user.is_staff,
+        'is_hr_head': is_hr_head(request.user),
+        'can_manage_departments': can_perform_action(request.user, 'can_manage_departments')
+    }
+    
+    return render(request, 'staff_monitor/department_list.html', context)
+
+@login_required
+@user_passes_test(lambda u: is_admin(u) or can_perform_action(u, 'can_manage_departments'))
+def edit_department(request, department_id):
+    department = get_object_or_404(Department, id=department_id)
+    
+    if request.method == 'POST':
+        form = DepartmentForm(request.POST, instance=department)
+        if form.is_valid():
+            try:
+                updated_department = form.save()
+                messages.success(request, f'Department "{updated_department.name}" updated successfully.')
+                return redirect('department_list')
+            except Exception as e:
+                messages.error(request, f'Error updating department: {str(e)}')
+    else:
+        form = DepartmentForm(instance=department)
+    
+    context = {
+        'form': form,
+        'department': department,
+        'is_admin': request.user.is_staff,
+        'is_hr_head': is_hr_head(request.user),
+        'title': f'Edit Department: {department.name}'
+    }
+    
+    return render(request, 'staff_monitor/department_form.html', context)
+
+@login_required
+@user_passes_test(lambda u: is_admin(u) or can_perform_action(u, 'can_manage_departments'))
+def delete_department(request, department_id):
+    department = get_object_or_404(Department, id=department_id)
+    
+    # Check if department has any staff or department heads
+    staff_count = Staff.objects.filter(department=department).count()
+    head_count = DepartmentHead.objects.filter(department=department).count()
+    subdept_count = department.subdepartments.count()
+    
+    if request.method == 'POST':
+        try:
+            department_name = department.name
+            department.delete()
+            messages.success(request, f'Department "{department_name}" deleted successfully.')
+            return redirect('department_list')
+        except Exception as e:
+            messages.error(request, f'Error deleting department: {str(e)}')
+            return redirect('department_list')
+    
+    context = {
+        'department': department,
+        'staff_count': staff_count,
+        'head_count': head_count,
+        'subdept_count': subdept_count,
+        'is_admin': request.user.is_staff,
+        'is_hr_head': is_hr_head(request.user),
+        'title': f'Delete Department: {department.name}'
+    }
+    
+    return render(request, 'staff_monitor/department_confirm_delete.html', context)
+
+@login_required
+def get_subdepartments(request, department_id):
+    try:
+        department = Department.objects.get(id=department_id)
+        subdepartments = SubDepartment.objects.filter(department=department).order_by('name')
+        
+        data = [{'id': sub.id, 'name': sub.name} for sub in subdepartments]
+        return JsonResponse({'subdepartments': data})
+    except Department.DoesNotExist:
+        return JsonResponse({'error': 'Department not found'}, status=404)
+    except Exception as e:
+        return JsonResponse({'error': str(e)}, status=500)
+
+@login_required
+@user_passes_test(lambda u: is_admin(u) or can_perform_action(u, 'can_edit_staff'))
+def edit_staff(request, staff_id):
+    staff = get_object_or_404(Staff, id=staff_id)
+    
+    if request.method == 'POST':
+        form = StaffForm(request.POST, instance=staff)
+        if form.is_valid():
+            try:
+                updated_staff = form.save()
+                messages.success(request, f'Staff member "{updated_staff.user.get_full_name()}" updated successfully.')
+                return redirect('staff_list')
+            except Exception as e:
+                messages.error(request, f'Error updating staff member: {str(e)}')
+    else:
+        form = StaffForm(instance=staff)
+    
+    context = {
+        'form': form,
+        'staff': staff,
+        'is_admin': request.user.is_staff,
+        'is_hr_head': is_hr_head(request.user),
+        'title': f'Edit Staff: {staff.user.get_full_name()}'
+    }
+    
+    return render(request, 'staff_monitor/staff_form.html', context)
+
+@login_required
+@user_passes_test(lambda u: is_admin(u) or can_perform_action(u, 'can_delete_staff'))
+def delete_staff(request, staff_id):
+    staff = get_object_or_404(Staff, id=staff_id)
+    
+    # Check if staff has any performance reports or incident reports
+    performance_reports = PerformanceReport.objects.filter(staff=staff).count()
+    incident_reports = IncidentReport.objects.filter(staff=staff).count()
+    
+    if request.method == 'POST':
+        try:
+            staff_name = staff.user.get_full_name()
+            staff.delete()
+            messages.success(request, f'Staff member "{staff_name}" deleted successfully.')
+            return redirect('staff_list')
+        except Exception as e:
+            messages.error(request, f'Error deleting staff member: {str(e)}')
+            return redirect('staff_list')
+    
+    context = {
+        'staff': staff,
+        'performance_reports': performance_reports,
+        'incident_reports': incident_reports,
+        'is_admin': request.user.is_staff,
+        'is_hr_head': is_hr_head(request.user),
+        'title': f'Delete Staff: {staff.user.get_full_name()}'
+    }
+    
+    return render(request, 'staff_monitor/staff_confirm_delete.html', context)
+
+@login_required
+@user_passes_test(lambda u: is_admin(u) or can_perform_action(u, 'can_edit_department_head'))
+def edit_superintendent(request, superintendent_id):
+    department_head = get_object_or_404(DepartmentHead, id=superintendent_id)
+    
+    if request.method == 'POST':
+        form = DepartmentHeadForm(request.POST, instance=department_head)
+        if form.is_valid():
+            try:
+                updated_head = form.save()
+                messages.success(request, f'Department Head "{updated_head.user.get_full_name()}" updated successfully.')
+                return redirect('superintendent_list')
+            except Exception as e:
+                messages.error(request, f'Error updating department head: {str(e)}')
+    else:
+        form = DepartmentHeadForm(instance=department_head)
+    
+    context = {
+        'form': form,
+        'department_head': department_head,
+        'is_admin': request.user.is_staff,
+        'is_hr_head': is_hr_head(request.user),
+        'title': f'Edit Department Head: {department_head.user.get_full_name()}'
+    }
+    
+    return render(request, 'staff_monitor/superintendent_form.html', context)
+
+@login_required
+@user_passes_test(lambda u: is_admin(u) or can_perform_action(u, 'can_delete_department_head'))
+def delete_superintendent(request, superintendent_id):
+    department_head = get_object_or_404(DepartmentHead, id=superintendent_id)
+    
+    # Check if department head has any managed staff, performance reports, or incident reports
+    managed_staff_count = department_head.managed_staff.count()
+    performance_reports = PerformanceReport.objects.filter(department_head=department_head).count()
+    incident_reports = IncidentReport.objects.filter(department_head=department_head).count()
+    
+    if request.method == 'POST':
+        try:
+            head_name = department_head.user.get_full_name()
+            department_head.delete()
+            messages.success(request, f'Department Head "{head_name}" deleted successfully.')
+            return redirect('superintendent_list')
+        except Exception as e:
+            messages.error(request, f'Error deleting department head: {str(e)}')
+            return redirect('superintendent_list')
+    
+    context = {
+        'department_head': department_head,
+        'managed_staff_count': managed_staff_count,
+        'performance_reports': performance_reports,
+        'incident_reports': incident_reports,
+        'is_admin': request.user.is_staff,
+        'is_hr_head': is_hr_head(request.user),
+        'title': f'Delete Department Head: {department_head.user.get_full_name()}'
+    }
+    
+    return render(request, 'staff_monitor/superintendent_confirm_delete.html', context)

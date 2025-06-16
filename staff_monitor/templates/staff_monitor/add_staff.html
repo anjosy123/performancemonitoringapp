@@ -14,11 +14,12 @@
             <div class="card-body">
                 <form method="post" class="needs-validation" novalidate>
                     {% csrf_token %}
+                    <div class="mb-3">
+                        <label class="form-label">Full Name</label>
+                        {{ form.name }}
+                    </div>
+
                     <div class="row">
-                        <div class="col-md-6 mb-3">
-                            <label class="form-label">Full Name</label>
-                            {{ form.name }}
-                        </div>
                         <div class="col-md-6 mb-3">
                             <label class="form-label">Employee ID</label>
                             {{ form.employee_id }}
@@ -28,20 +29,19 @@
                             </small>
                             {% endif %}
                         </div>
-                    </div>
-
-                    <div class="mb-3">
-                        <label class="form-label">Email</label>
-                        {{ form.email }}
-                        <small class="text-muted">Optional. If provided, login credentials will be sent to this email address.</small>
-                        {% if form.email.errors %}
-                            <div class="invalid-feedback d-block">{{ form.email.errors.0 }}</div>
-                        {% endif %}
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Email</label>
+                            {{ form.email }}
+                            <small class="text-muted">Optional. If provided, login credentials will be sent to this email address.</small>
+                            {% if form.email.errors %}
+                                <div class="invalid-feedback d-block">{{ form.email.errors.0 }}</div>
+                            {% endif %}
+                        </div>
                     </div>
 
                     <div class="row">
                         <div class="col-md-6 mb-3">
-                            <label class="form-label">Designation</label>
+                            <label class="form-label">Position</label>
                             {{ form.position }}
                         </div>
                         <div class="col-md-6 mb-3">
@@ -56,12 +56,21 @@
                             {{ form.subdepartment }}
                             <small class="text-muted" id="no-subdepts-msg" style="display: none;">No subdepartments available for the selected department</small>
                         </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Status</label>
+                            {{ form.status }}
+                        </div>
                     </div>
 
-                    <div class="mb-3">
-                        <label class="form-label">Qualification</label>
-                        {{ form.qualification }}
-                        <small class="text-muted">Enter the staff member's educational qualification</small>
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Contact Number</label>
+                            {{ form.contact_number }}
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Qualification</label>
+                            {{ form.qualification }}
+                        </div>
                     </div>
 
                     <div class="row">
@@ -73,12 +82,6 @@
                             <label class="form-label">Date of Appointment</label>
                             {{ form.appointment_date }}
                         </div>
-                    </div>
-
-                    <div class="mb-3">
-                        <label class="form-label">Contact Information</label>
-                        {{ form.contact_info }}
-                        <small class="text-muted">Enter the staff member's contact information.</small>
                     </div>
 
                     {% if form.errors %}
@@ -104,7 +107,7 @@
                     {% endif %}
 
                     <div class="d-grid gap-2 d-md-flex justify-content-md-end">
-                        <a href="{% url 'dashboard' %}" class="btn btn-secondary me-2">
+                        <a href="{% url 'staff_list' %}" class="btn btn-secondary me-2">
                             <i class="fas fa-times me-1"></i>Cancel
                         </a>
                         <button type="submit" class="btn btn-primary">
@@ -143,6 +146,13 @@
         border-radius: 0.5rem;
     }
     .text-muted {
+        font-size: 0.875rem;
+    }
+    .form-label {
+        font-weight: 500;
+        margin-bottom: 0.5rem;
+    }
+    .invalid-feedback {
         font-size: 0.875rem;
     }
 </style>
