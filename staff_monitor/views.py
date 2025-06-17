@@ -395,7 +395,7 @@ def performance_form_department_head(request, department_head_id):
         except DepartmentHead.DoesNotExist:
             messages.error(request, 'You do not have permission to evaluate department heads.')
             return redirect('dashboard')
-
+    
     if request.method == 'POST':
         try:
             # Check if report exists for the date
@@ -1157,7 +1157,7 @@ def manage_subdepartment_staff(request, subdepartment_head_id):
     if subdepartment_head.subdepartment:
         # For subdepartment heads - show ONLY staff from their specific subdepartment
         available_staff = Staff.objects.filter(
-            department=subdepartment_head.department,
+        department=subdepartment_head.department,
             subdepartment=subdepartment_head.subdepartment  # This ensures only staff from this specific subdepartment
         ).exclude(
             managed_by=subdepartment_head
@@ -1807,10 +1807,33 @@ def update_department_head_status(request, head_id):
 def handle_incident_photo_upload(photo, report_number):
     """Handle incident photo upload and return the processed photo path"""
     if photo:
-        # Create a unique filename using report number and timestamp
-        timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
-        filename = f"incident_{report_number}_{timestamp}{os.path.splitext(photo.name)[1]}"
-        return filename
+        try:
+            # Create a unique filename using report number
+            # Remove any special characters from report number for filename
+            safe_report_number = report_number.replace('-', '_')
+            filename = f"incident_{safe_report_number}.jpg"
+            
+            # Create a BytesIO object to store the image
+            image_io = BytesIO()
+            
+            # Open and process the image
+            img = Image.open(photo)
+            
+            # Convert to RGB if necessary (for PNG with transparency)
+            if img.mode in ('RGBA', 'LA'):
+                background = Image.new('RGB', img.size, (255, 255, 255))
+                background.paste(img, mask=img.split()[-1])
+                img = background
+            
+            # Save the processed image
+            img.save(image_io, format='JPEG', quality=85)
+            image_io.seek(0)
+            
+            # Create a new file with the processed image
+            return ContentFile(image_io.getvalue(), name=filename)
+        except Exception as e:
+            logger.error(f"Error processing photo: {str(e)}")
+            return None
     return None
 
 @login_required
@@ -1900,67 +1923,167 @@ def superintendent_list(request):
 def feedback_form(request, staff_id):
     staff = get_object_or_404(Staff, id=staff_id)
     
-    # Check if user has permission to report incidents for this staff
-    if not request.user.is_staff and not is_hr_head(request.user):
+    # Check if user has permission to report incidents for this staff member
+    if not request.user.is_staff:  # If not admin
         try:
             department_head = DepartmentHead.objects.get(user=request.user)
-            if staff.department != department_head.department:
-                messages.error(request, "You don't have permission to report incidents for this staff member.")
+            
+            # HR heads can report incidents for any staff
+            if department_head.is_hr_head or department_head.department.name.lower() == "hr" or (department_head.subdepartment and department_head.subdepartment.name.lower() == "hr"):
+                # Continue with reporting
+                pass
+            # Regular department heads can only report incidents for staff in their department
+            elif staff.department != department_head.department:
+                messages.error(request, 'You do not have permission to report incidents for staff from other departments.')
                 return redirect('dashboard')
         except DepartmentHead.DoesNotExist:
-            messages.error(request, "You don't have permission to report incidents.")
+            messages.error(request, 'You do not have permission to report incidents for staff.')
             return redirect('dashboard')
+
+    # Initialize form with user data
+    initial_data = {'prepared_by': request.user.get_full_name()}
     
     if request.method == 'POST':
-        form = IncidentReportForm(request.POST, request.FILES)
+        form = IncidentReportForm(request.POST, request.FILES, initial={'user': request.user})
+        
         if form.is_valid():
-            # Generate report number
-            report_number = f"IR{datetime.now().strftime('%Y%m%d%H%M%S')}"
-            
-            # Create incident report
-            incident_report = form.save(commit=False)
-            incident_report.staff = staff
-            incident_report.reporter = request.user
-            incident_report.report_number = report_number
-            
-            # Handle photo upload
-            photo = request.FILES.get('incident_photo')
-            if photo:
-                processed_photo = handle_incident_photo_upload(photo, report_number)
-                incident_report.incident_photo = processed_photo
-            
-            incident_report.save()
-            messages.success(request, 'Incident report submitted successfully.')
-            return redirect('incident_report_list')
+            try:
+                # Get incident types and related parties (not in the form)
+                incident_types = request.POST.getlist('incident_type')
+                other_incident_type = request.POST.get('other_incident_type', '')
+                incident_description = request.POST.get('incident_description', '')
+                related_parties = request.POST.getlist('related_party')
+                
+                # Process individuals involved
+                individual_names = request.POST.getlist('individual_name[]')
+                individual_departments = request.POST.getlist('individual_department[]')
+                individual_positions = request.POST.getlist('individual_position[]')
+                individual_roles = request.POST.getlist('individual_role[]')
+                
+                # Create a list of individual dictionaries
+                individuals = []
+                for i in range(len(individual_names)):
+                    if individual_names[i]:  # Only add if name is provided
+                        individuals.append({
+                            'name': individual_names[i],
+                            'department': individual_departments[i] if i < len(individual_departments) else '',
+                            'position': individual_positions[i] if i < len(individual_positions) else '',
+                            'role': individual_roles[i] if i < len(individual_roles) else ''
+                        })
+                
+                # Create incident report from form data but don't save yet
+                incident_report = form.save(commit=False)
+                incident_report.staff = staff
+                incident_report.reporter = request.user
+                incident_report.incident_description = incident_description
+                
+                # Set reporter position based on user role
+                if request.user.is_staff:
+                    reporter_position = "HR Director"
+                else:
+                    try:
+                        department_head = DepartmentHead.objects.get(user=request.user)
+                        if department_head.is_hr_head:
+                            reporter_position = f"HR Head - {department_head.department.name}"
+                        else:
+                            reporter_position = f"Department Head - {department_head.department.name}"
+                    except DepartmentHead.DoesNotExist:
+                        reporter_position = staff.position
+                
+                incident_report.reporter_position = reporter_position
+                
+                # Generate a report number if not provided
+                if not incident_report.report_number:
+                    # Format: IR-YYYYMMDD-StaffID-Count
+                    date_str = incident_report.incident_date.strftime('%Y%m%d')
+                    
+                    # Get the count of reports for this staff member on this date
+                    existing_count = IncidentReport.objects.filter(
+                        staff=staff,
+                        incident_date=incident_report.incident_date
+                    ).count()
+                    
+                    # Create the report number
+                    incident_report.report_number = f"IR-{date_str}-{staff.id}-{existing_count + 1:03d}"
+                
+                # Process the uploaded photo and rename it based on the report number
+                if 'incident_photo' in request.FILES:
+                    photo = request.FILES['incident_photo']
+                    processed_photo = handle_incident_photo_upload(photo, incident_report.report_number)
+                    if processed_photo:
+                        incident_report.incident_photo = processed_photo
+                
+                # Set status
+                incident_report.status = 'reported'
+                
+                # Save the report to get an ID
+                incident_report.save()
+                
+                # Set JSON fields using helper methods
+                incident_report.set_incident_types(incident_types)
+                incident_report.set_related_parties(related_parties)
+                incident_report.set_individuals_involved(individuals)
+                
+                # Save again with the JSON fields
+                incident_report.save()
+                
+                messages.success(request, 'Incident report submitted successfully.')
+                return redirect('dashboard')
+            except Exception as e:
+                messages.error(request, f'Error submitting incident report: {str(e)}')
+        else:
+            # Form validation failed
+            for field, errors in form.errors.items():
+                for error in errors:
+                    messages.error(request, f"{field}: {error}")
     else:
-        form = IncidentReportForm()
-    
+        # GET request, initialize empty form
+        form = IncidentReportForm(initial={'user': request.user})
+
+    # Prepare context for template
     context = {
-        'form': form,
         'staff': staff,
-        'is_admin': request.user.is_staff,
-        'is_hr_head': is_hr_head(request.user)
+        'today': date.today(),
+        'form': form,
     }
     
+    # Add department head to context if applicable
+    if not request.user.is_staff:
+        try:
+            department_head = DepartmentHead.objects.get(user=request.user)
+            context['department_head'] = department_head
+        except DepartmentHead.DoesNotExist:
+            pass
+
     return render(request, 'staff_monitor/feedback_form.html', context)
 
 @login_required
 def feedback_form_department_head(request, department_head_id):
     department_head = get_object_or_404(DepartmentHead, id=department_head_id)
     
-    # Check if user has permission to report incidents for this department head
-    if not request.user.is_staff and not is_hr_head(request.user):
+    # Check if user has permission to evaluate this department head
+    if not request.user.is_staff:  # If not admin
         try:
-            user_department_head = DepartmentHead.objects.get(user=request.user)
-            if department_head.department != user_department_head.department:
-                messages.error(request, "You don't have permission to report incidents for this department head.")
+            main_department_head = DepartmentHead.objects.get(user=request.user)
+            
+            # HR heads can evaluate any department head
+            if main_department_head.is_hr_head or main_department_head.department.name.lower() == "hr" or (main_department_head.subdepartment and main_department_head.subdepartment.name.lower() == "hr"):
+                # Continue with feedback
+                pass
+            # Regular department heads can only evaluate subdepartment heads in their department
+            elif department_head.department != main_department_head.department or main_department_head.subdepartment is not None:
+                messages.error(request, 'You do not have permission to evaluate department heads from other departments.')
                 return redirect('dashboard')
         except DepartmentHead.DoesNotExist:
-            messages.error(request, "You don't have permission to report incidents.")
+            messages.error(request, 'You do not have permission to evaluate department heads.')
             return redirect('dashboard')
+
+    # Initialize form with user data
+    initial_data = {'prepared_by': request.user.get_full_name()}
     
     if request.method == 'POST':
-        form = IncidentReportForm(request.POST, request.FILES)
+        form = IncidentReportForm(request.POST, request.FILES, initial={'user': request.user})
+        
         if form.is_valid():
             try:
                 # Get incident types and related parties (not in the form)

@@ -2,6 +2,9 @@
 
 from django.db import models
 from django.contrib.auth.models import User
+import logging
+
+logger = logging.getLogger(__name__)
 
 class Department(models.Model):
     name = models.CharField(max_length=100, unique=True)
@@ -396,11 +399,10 @@ class IncidentReport(models.Model):
         if self.incident_photo:
             try:
                 # First, try the direct path
-                direct_path = os.path.join(settings.MEDIA_ROOT, self.incident_photo.name)
-                if os.path.exists(direct_path):
+                if os.path.exists(self.incident_photo.path):
                     return self.incident_photo.url
-                    
-                # Try with report number converted to have underscores instead of hyphens
+                
+                # If direct path doesn't exist, try with normalized report number
                 safe_report_number = self.report_number.replace('-', '_')
                 potential_filename = f"incident_{safe_report_number}.jpg"
                 potential_path = os.path.join(settings.MEDIA_ROOT, 'incident_photos', potential_filename)
@@ -408,15 +410,8 @@ class IncidentReport(models.Model):
                 if os.path.exists(potential_path):
                     return f"{settings.MEDIA_URL}incident_photos/{potential_filename}"
                     
-                # Also try with other common image extensions
-                for ext in ['.png', '.jpeg', '.gif']:
-                    alt_filename = f"incident_{safe_report_number}{ext}"
-                    alt_path = os.path.join(settings.MEDIA_ROOT, 'incident_photos', alt_filename)
-                    if os.path.exists(alt_path):
-                        return f"{settings.MEDIA_URL}incident_photos/{alt_filename}"
-                        
             except (ValueError, AttributeError, FileNotFoundError) as e:
-                print(f"Error retrieving photo URL: {str(e)}")
+                logger.error(f"Error retrieving photo URL: {str(e)}")
                 pass
         
         # Return default image if original photo doesn't exist
