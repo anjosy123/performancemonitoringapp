@@ -7,20 +7,32 @@
         <h3 class="mb-0">
             <i class="fas fa-exclamation-triangle me-2"></i>Incident Reports
         </h3>
-        <a href="{% url 'dashboard' %}" class="btn btn-light btn-sm close-btn">
-            <i class="fas fa-times"></i>
-        </a>
+        <div class="d-flex gap-2">
+            <button id="exportBtn" class="btn btn-light btn-sm">
+                <i class="fas fa-download me-1"></i>Export
+            </button>
+            <a href="{% url 'dashboard' %}" class="btn btn-light btn-sm close-btn">
+                <i class="fas fa-times"></i>
+            </a>
+        </div>
     </div>
 
-    <!-- Search and Filter Section -->
+    <!-- Enhanced Search and Filter Section -->
     <div class="card-body border-bottom">
-        <div class="row g-3">
+        <!-- Basic Search Row -->
+        <div class="row g-3 mb-3">
             <div class="col-md-4">
                 <div class="input-group">
                     <span class="input-group-text bg-light">
                         <i class="fas fa-search"></i>
                     </span>
-                    <input type="text" id="searchInput" class="form-control" placeholder="Search by name, ID, or incident type...">
+                    <input type="text" id="searchInput" class="form-control" placeholder="Search by name, ID, location, or incident type..." autocomplete="off">
+                    <button class="btn btn-outline-secondary" type="button" id="advancedSearchToggle">
+                        <i class="fas fa-filter"></i>
+                    </button>
+                </div>
+                <!-- Search Suggestions -->
+                <div id="searchSuggestions" class="position-absolute bg-white border rounded shadow-sm d-none" style="z-index: 1000; width: 100%; max-height: 200px; overflow-y: auto;">
                 </div>
             </div>
             <div class="col-md-3">
@@ -45,6 +57,60 @@
                 </button>
             </div>
         </div>
+
+        <!-- Advanced Search Section (Collapsible) -->
+        <div id="advancedSearchSection" class="d-none">
+            <div class="row g-3 mb-3">
+                <div class="col-md-3">
+                    <label class="form-label small fw-semibold">Date Range</label>
+                    <input type="date" id="dateFrom" class="form-control" placeholder="From Date">
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label small fw-semibold">&nbsp;</label>
+                    <input type="date" id="dateTo" class="form-control" placeholder="To Date">
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label small fw-semibold">Reporter</label>
+                    <select id="reporterFilter" class="form-select">
+                        <option value="">All Reporters</option>
+                        {% for report in reports %}
+                            <option value="{{ report.reporter.get_full_name }}">{{ report.reporter.get_full_name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label small fw-semibold">Quick Filters</label>
+                    <select id="quickFilter" class="form-select">
+                        <option value="">All Reports</option>
+                        <option value="today">Today</option>
+                        <option value="week">This Week</option>
+                        <option value="month">This Month</option>
+                        <option value="recent">Last 7 Days</option>
+                        <option value="urgent">Under Investigation</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+
+        <!-- Quick Action Buttons -->
+        <div class="row g-2">
+            <div class="col-md-8">
+                <div class="btn-group btn-group-sm" role="group">
+                    <button type="button" class="btn btn-outline-primary" id="sortByDate">
+                        <i class="fas fa-calendar me-1"></i>Date
+                    </button>
+                    <button type="button" class="btn btn-outline-primary" id="sortByName">
+                        <i class="fas fa-user me-1"></i>Name
+                    </button>
+                    <button type="button" class="btn btn-outline-primary" id="sortByStatus">
+                        <i class="fas fa-flag me-1"></i>Status
+                    </button>
+                </div>
+            </div>
+            <div class="col-md-4 text-end">
+                <span class="badge bg-info" id="resultCount">0 reports found</span>
+            </div>
+        </div>
     </div>
 
     <div class="card-body">
@@ -52,6 +118,9 @@
             <table class="table table-hover" id="incidentReportsTable">
                 <thead class="table-light">
                     <tr>
+                        <th>
+                            <input type="checkbox" id="selectAll" class="form-check-input">
+                        </th>
                         <th>Report Number</th>
                         <th>Name</th>
                         <th>Department</th>
@@ -64,7 +133,10 @@
                 </thead>
                 <tbody>
                     {% for report in reports %}
-                        <tr class="report-row">
+                        <tr class="report-row" data-report-id="{{ report.id }}">
+                            <td>
+                                <input type="checkbox" class="form-check-input report-checkbox" value="{{ report.id }}">
+                            </td>
                             <td class="fw-bold">{{ report.report_number }}</td>
                             <td>
                                 {% if report.staff %}
@@ -87,7 +159,7 @@
                                     {{ report.department_head.designation }}
                                 {% endif %}
                             </td>
-                            <td>{{ report.incident_date }}</td>
+                            <td data-date="{{ report.incident_date|date:'Y-m-d' }}">{{ report.incident_date }}</td>
                             <td>{{ report.incident_location }}</td>
                             <td>
                                 <span class="badge {% if report.status == 'reported' %}bg-warning{% elif report.status == 'under_investigation' %}bg-info{% elif report.status == 'resolved' %}bg-success{% else %}bg-secondary{% endif %}">
@@ -115,7 +187,7 @@
                         </tr>
                     {% empty %}
                         <tr>
-                            <td colspan="8" class="text-center py-4">
+                            <td colspan="9" class="text-center py-4">
                                 <i class="fas fa-exclamation-triangle text-muted me-2"></i>No incident reports found
                             </td>
                         </tr>
@@ -128,6 +200,77 @@
         <div id="noResults" class="text-center py-4 d-none">
             <i class="fas fa-search fa-2x text-muted mb-3"></i>
             <p class="text-muted mb-0">No matching reports found</p>
+        </div>
+
+        <!-- Bulk Actions -->
+        <div id="bulkActions" class="mt-3 d-none">
+            <div class="card border-warning">
+                <div class="card-header bg-warning bg-opacity-10">
+                    <h6 class="mb-0">
+                        <i class="fas fa-tasks me-2"></i>Bulk Actions
+                        <span id="selectedCount" class="badge bg-warning text-dark ms-2">0 selected</span>
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <div class="btn-group">
+                        <button class="btn btn-outline-primary btn-sm" id="bulkExport">
+                            <i class="fas fa-download me-1"></i>Export Selected
+                        </button>
+                        <button class="btn btn-outline-info btn-sm" id="bulkPrint">
+                            <i class="fas fa-print me-1"></i>Print Selected
+                        </button>
+                        {% if user.is_staff %}
+                        <button class="btn btn-outline-danger btn-sm" id="bulkDelete">
+                            <i class="fas fa-trash me-1"></i>Delete Selected
+                        </button>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Export Modal -->
+<div class="modal fade" id="exportModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Export Incident Reports</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="mb-3">
+                    <label class="form-label">Export Format:</label>
+                    <div class="form-check">
+                        <input class="form-check-input" type="radio" name="exportFormat" id="exportCSV" value="csv" checked>
+                        <label class="form-check-label" for="exportCSV">CSV</label>
+                    </div>
+                    <div class="form-check">
+                        <input class="form-check-input" type="radio" name="exportFormat" id="exportExcel" value="excel">
+                        <label class="form-check-label" for="exportExcel">Excel</label>
+                    </div>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">Include Fields:</label>
+                    <div class="form-check">
+                        <input class="form-check-input" type="checkbox" id="includeBasic" checked>
+                        <label class="form-check-label" for="includeBasic">Basic Information</label>
+                    </div>
+                    <div class="form-check">
+                        <input class="form-check-input" type="checkbox" id="includeDetails" checked>
+                        <label class="form-check-label" for="includeDetails">Incident Details</label>
+                    </div>
+                    <div class="form-check">
+                        <input class="form-check-input" type="checkbox" id="includeActions">
+                        <label class="form-check-label" for="includeActions">Actions Taken</label>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary" id="confirmExport">Export</button>
+            </div>
         </div>
     </div>
 </div>
@@ -229,6 +372,23 @@
         box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.25);
     }
 
+    /* Advanced search animation */
+    #advancedSearchSection {
+        transition: all 0.3s ease;
+    }
+
+    /* Sort button active state */
+    .btn-group .btn.active {
+        background-color: #0d6efd;
+        color: white;
+        border-color: #0d6efd;
+    }
+
+    /* Bulk actions styling */
+    #bulkActions {
+        transition: all 0.3s ease;
+    }
+
     @media (max-width: 768px) {
         .card-header {
             padding: 1rem;
@@ -253,11 +413,16 @@
             width: fit-content;
             margin: 0 auto;
         }
+
+        #advancedSearchSection .row {
+            margin-bottom: 1rem;
+        }
     }
 </style>
 
 <script>
 document.addEventListener('DOMContentLoaded', function() {
+    // Elements
     const searchInput = document.getElementById('searchInput');
     const departmentFilter = document.getElementById('departmentFilter');
     const statusFilter = document.getElementById('statusFilter');
@@ -265,6 +430,18 @@ document.addEventListener('DOMContentLoaded', function() {
     const table = document.getElementById('incidentReportsTable');
     const rows = table.getElementsByClassName('report-row');
     const noResults = document.getElementById('noResults');
+    const resultCount = document.getElementById('resultCount');
+    const advancedSearchToggle = document.getElementById('advancedSearchToggle');
+    const advancedSearchSection = document.getElementById('advancedSearchSection');
+    const dateFrom = document.getElementById('dateFrom');
+    const dateTo = document.getElementById('dateTo');
+    const reporterFilter = document.getElementById('reporterFilter');
+    const quickFilter = document.getElementById('quickFilter');
+    const selectAll = document.getElementById('selectAll');
+    const bulkActions = document.getElementById('bulkActions');
+    const selectedCount = document.getElementById('selectedCount');
+    const exportBtn = document.getElementById('exportBtn');
+    const exportModal = new bootstrap.Modal(document.getElementById('exportModal'));
 
     // Remove duplicate department options
     const uniqueDepartments = new Set();
@@ -276,28 +453,93 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     });
 
+    // Remove duplicate reporter options
+    const uniqueReporters = new Set();
+    Array.from(reporterFilter.options).forEach(option => {
+        if (uniqueReporters.has(option.value) && option.value !== '') {
+            option.remove();
+        } else {
+            uniqueReporters.add(option.value);
+        }
+    });
+
+    // Advanced search toggle
+    advancedSearchToggle.addEventListener('click', function() {
+        advancedSearchSection.classList.toggle('d-none');
+        this.classList.toggle('active');
+    });
+
+    // Enhanced filter function
     function filterTable() {
         const searchTerm = searchInput.value.toLowerCase();
         const selectedDepartment = departmentFilter.value.toLowerCase();
         const selectedStatus = statusFilter.value.toLowerCase();
+        const selectedReporter = reporterFilter.value.toLowerCase();
+        const dateFromValue = dateFrom.value;
+        const dateToValue = dateTo.value;
+        const quickFilterValue = quickFilter.value;
+        
         let visibleCount = 0;
+        const today = new Date();
+        const weekAgo = new Date(today.getTime() - 7 * 24 * 60 * 60 * 1000);
+        const monthAgo = new Date(today.getFullYear(), today.getMonth() - 1, today.getDate());
 
         Array.from(rows).forEach(row => {
-            const reportNumber = row.cells[0].textContent.toLowerCase();
-            const name = row.cells[1].textContent.toLowerCase();
-            const department = row.cells[2].textContent.toLowerCase();
-            const role = row.cells[3].textContent.toLowerCase();
-            const location = row.cells[5].textContent.toLowerCase();
-            const status = row.cells[6].textContent.toLowerCase();
+            const reportNumber = row.cells[1].textContent.toLowerCase();
+            const name = row.cells[2].textContent.toLowerCase();
+            const department = row.cells[3].textContent.toLowerCase();
+            const role = row.cells[4].textContent.toLowerCase();
+            const location = row.cells[6].textContent.toLowerCase();
+            const status = row.cells[7].textContent.toLowerCase();
+            const reportDate = new Date(row.cells[5].getAttribute('data-date'));
             
+            // Basic search
             const matchesSearch = reportNumber.includes(searchTerm) || 
                                   name.includes(searchTerm) || 
                                   location.includes(searchTerm) ||
                                   role.includes(searchTerm);
+            
+            // Department filter
             const matchesDepartment = !selectedDepartment || department === selectedDepartment;
+            
+            // Status filter
             const matchesStatus = !selectedStatus || status === selectedStatus;
+            
+            // Reporter filter
+            const matchesReporter = !selectedReporter || name.includes(selectedReporter);
+            
+            // Date range filter
+            let matchesDateRange = true;
+            if (dateFromValue && reportDate < new Date(dateFromValue)) {
+                matchesDateRange = false;
+            }
+            if (dateToValue && reportDate > new Date(dateToValue)) {
+                matchesDateRange = false;
+            }
+            
+            // Quick filter
+            let matchesQuickFilter = true;
+            if (quickFilterValue) {
+                switch(quickFilterValue) {
+                    case 'today':
+                        matchesQuickFilter = reportDate.toDateString() === today.toDateString();
+                        break;
+                    case 'week':
+                        matchesQuickFilter = reportDate >= new Date(today.getFullYear(), today.getMonth(), today.getDate() - today.getDay());
+                        break;
+                    case 'month':
+                        matchesQuickFilter = reportDate >= new Date(today.getFullYear(), today.getMonth(), 1);
+                        break;
+                    case 'recent':
+                        matchesQuickFilter = reportDate >= weekAgo;
+                        break;
+                    case 'urgent':
+                        matchesQuickFilter = status.includes('investigation');
+                        break;
+                }
+            }
 
-            if (matchesSearch && matchesDepartment && matchesStatus) {
+            if (matchesSearch && matchesDepartment && matchesStatus && matchesReporter && matchesDateRange && matchesQuickFilter) {
                 row.style.display = '';
                 visibleCount++;
             } else {
@@ -305,24 +547,234 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         });
 
+        // Update result count
+        resultCount.textContent = `${visibleCount} report${visibleCount !== 1 ? 's' : ''} found`;
+
         // Toggle no results message
         noResults.classList.toggle('d-none', visibleCount > 0);
         table.classList.toggle('d-none', visibleCount === 0);
     }
 
-    // Event listeners
+    // Sorting functionality
+    let currentSort = { column: 'date', direction: 'desc' };
+
+    function sortTable(column, direction) {
+        const tbody = table.querySelector('tbody');
+        const rows = Array.from(tbody.querySelectorAll('.report-row'));
+        
+        rows.sort((a, b) => {
+            let aValue, bValue;
+            
+            switch(column) {
+                case 'date':
+                    aValue = new Date(a.cells[5].getAttribute('data-date'));
+                    bValue = new Date(b.cells[5].getAttribute('data-date'));
+                    break;
+                case 'name':
+                    aValue = a.cells[2].textContent.toLowerCase();
+                    bValue = b.cells[2].textContent.toLowerCase();
+                    break;
+                case 'status':
+                    aValue = a.cells[7].textContent.toLowerCase();
+                    bValue = b.cells[7].textContent.toLowerCase();
+                    break;
+                default:
+                    aValue = a.cells[5].textContent.toLowerCase();
+                    bValue = b.cells[5].textContent.toLowerCase();
+            }
+            
+            if (direction === 'asc') {
+                return aValue > bValue ? 1 : -1;
+            } else {
+                return aValue < bValue ? 1 : -1;
+            }
+        });
+        
+        rows.forEach(row => tbody.appendChild(row));
+    }
+
+    // Sort button event listeners
+    document.getElementById('sortByDate').addEventListener('click', function() {
+        currentSort.direction = currentSort.column === 'date' && currentSort.direction === 'desc' ? 'asc' : 'desc';
+        currentSort.column = 'date';
+        sortTable('date', currentSort.direction);
+        updateSortButtons();
+    });
+
+    document.getElementById('sortByName').addEventListener('click', function() {
+        currentSort.direction = currentSort.column === 'name' && currentSort.direction === 'desc' ? 'asc' : 'desc';
+        currentSort.column = 'name';
+        sortTable('name', currentSort.direction);
+        updateSortButtons();
+    });
+
+    document.getElementById('sortByStatus').addEventListener('click', function() {
+        currentSort.direction = currentSort.column === 'status' && currentSort.direction === 'desc' ? 'asc' : 'desc';
+        currentSort.column = 'status';
+        sortTable('status', currentSort.direction);
+        updateSortButtons();
+    });
+
+    function updateSortButtons() {
+        document.querySelectorAll('.btn-group .btn').forEach(btn => btn.classList.remove('active'));
+        document.getElementById(`sortBy${currentSort.column.charAt(0).toUpperCase() + currentSort.column.slice(1)}`).classList.add('active');
+    }
+
+    // Bulk selection functionality
+    selectAll.addEventListener('change', function() {
+        const checkboxes = document.querySelectorAll('.report-checkbox');
+        checkboxes.forEach(checkbox => {
+            checkbox.checked = this.checked;
+        });
+        updateBulkActions();
+    });
+
+    document.addEventListener('change', function(e) {
+        if (e.target.classList.contains('report-checkbox')) {
+            updateBulkActions();
+        }
+    });
+
+    function updateBulkActions() {
+        const selectedCheckboxes = document.querySelectorAll('.report-checkbox:checked');
+        const count = selectedCheckboxes.length;
+        
+        if (count > 0) {
+            bulkActions.classList.remove('d-none');
+            selectedCount.textContent = `${count} selected`;
+        } else {
+            bulkActions.classList.add('d-none');
+        }
+    }
+
+    // Export functionality
+    exportBtn.addEventListener('click', function() {
+        exportModal.show();
+    });
+
+    document.getElementById('confirmExport').addEventListener('click', function() {
+        const format = document.querySelector('input[name="exportFormat"]:checked').value;
+        const includeBasic = document.getElementById('includeBasic').checked;
+        const includeDetails = document.getElementById('includeDetails').checked;
+        const includeActions = document.getElementById('includeActions').checked;
+        
+        // Get visible rows
+        const visibleRows = Array.from(rows).filter(row => row.style.display !== 'none');
+        const data = visibleRows.map(row => ({
+            reportNumber: row.cells[1].textContent,
+            name: row.cells[2].textContent,
+            department: row.cells[3].textContent,
+            role: row.cells[4].textContent,
+            date: row.cells[5].textContent,
+            location: row.cells[6].textContent,
+            status: row.cells[7].textContent
+        }));
+        
+        if (format === 'csv') {
+            exportToCSV(data);
+        } else {
+            exportToExcel(data);
+        }
+        
+        exportModal.hide();
+    });
+
+    function exportToCSV(data) {
+        const headers = ['Report Number', 'Name', 'Department', 'Role', 'Date', 'Location', 'Status'];
+        const csvContent = [headers.join(','), ...data.map(row => 
+            [row.reportNumber, row.name, row.department, row.role, row.date, row.location, row.status].join(',')
+        )].join('\n');
+        
+        const blob = new Blob([csvContent], { type: 'text/csv' });
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `incident_reports_${new Date().toISOString().split('T')[0]}.csv`;
+        a.click();
+        window.URL.revokeObjectURL(url);
+    }
+
+    function exportToExcel(data) {
+        // Simple Excel export using CSV format (can be enhanced with proper Excel library)
+        exportToCSV(data);
+    }
+
+    // Bulk actions
+    document.getElementById('bulkExport').addEventListener('click', function() {
+        const selectedCheckboxes = document.querySelectorAll('.report-checkbox:checked');
+        const data = Array.from(selectedCheckboxes).map(checkbox => {
+            const row = checkbox.closest('tr');
+            return {
+                reportNumber: row.cells[1].textContent,
+                name: row.cells[2].textContent,
+                department: row.cells[3].textContent,
+                role: row.cells[4].textContent,
+                date: row.cells[5].textContent,
+                location: row.cells[6].textContent,
+                status: row.cells[7].textContent
+            };
+        });
+        exportToCSV(data);
+    });
+
+    document.getElementById('bulkPrint').addEventListener('click', function() {
+        const selectedCheckboxes = document.querySelectorAll('.report-checkbox:checked');
+        selectedCheckboxes.forEach(checkbox => {
+            const row = checkbox.closest('tr');
+            const reportId = row.getAttribute('data-report-id');
+            window.open(`{% url 'print_incident_report' 0 %}`.replace('0', reportId), '_blank');
+        });
+    });
+
+    document.getElementById('bulkDelete').addEventListener('click', function() {
+        const selectedCheckboxes = document.querySelectorAll('.report-checkbox:checked');
+        const count = selectedCheckboxes.length;
+        
+        Swal.fire({
+            title: 'Confirm Bulk Delete',
+            html: `Are you sure you want to delete <strong>${count}</strong> incident report${count !== 1 ? 's' : ''}?<br><br><span class="text-danger">This action cannot be undone.</span>`,
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonText: 'Yes, Delete All',
+            cancelButtonText: 'Cancel',
+            confirmButtonColor: '#dc3545',
+            cancelButtonColor: '#6c757d'
+        }).then((result) => {
+            if (result.isConfirmed) {
+                // Delete each selected report
+                selectedCheckboxes.forEach(checkbox => {
+                    const row = checkbox.closest('tr');
+                    const reportId = row.getAttribute('data-report-id');
+                    window.location.href = `{% url 'delete_incident_report' 0 %}`.replace('0', reportId);
+                });
+            }
+        });
+    });
+
+    // Event listeners for filtering
     searchInput.addEventListener('input', filterTable);
     departmentFilter.addEventListener('change', filterTable);
     statusFilter.addEventListener('change', filterTable);
+    dateFrom.addEventListener('change', filterTable);
+    dateTo.addEventListener('change', filterTable);
+    reporterFilter.addEventListener('change', filterTable);
+    quickFilter.addEventListener('change', filterTable);
     
     resetButton.addEventListener('click', function() {
         searchInput.value = '';
         departmentFilter.value = '';
         statusFilter.value = '';
+        dateFrom.value = '';
+        dateTo.value = '';
+        reporterFilter.value = '';
+        quickFilter.value = '';
+        selectAll.checked = false;
+        document.querySelectorAll('.report-checkbox').forEach(cb => cb.checked = false);
+        updateBulkActions();
         filterTable();
     });
 
-    // Delete confirmation
+    // Delete confirmation (existing functionality)
     document.querySelectorAll('.delete-report').forEach(button => {
         button.addEventListener('click', function() {
             const reportId = this.dataset.reportId;
@@ -345,12 +797,280 @@ document.addEventListener('DOMContentLoaded', function() {
                 cancelButtonColor: '#6c757d'
             }).then((result) => {
                 if (result.isConfirmed) {
-                    // Redirect to delete URL
                     window.location.href = `{% url 'delete_incident_report' 0 %}`.replace('0', reportId);
                 }
             });
         });
     });
+
+    // Initialize
+    filterTable();
+    updateSortButtons();
+
+    // Enhanced Search Functionality
+    const searchSuggestions = document.getElementById('searchSuggestions');
+    let suggestionIndex = -1;
+    let suggestions = [];
+
+    // Generate search suggestions
+    function generateSuggestions() {
+        const searchTerm = searchInput.value.toLowerCase();
+        if (searchTerm.length < 2) {
+            searchSuggestions.classList.add('d-none');
+            return;
+        }
+
+        suggestions = [];
+        const allData = Array.from(rows).map(row => ({
+            reportNumber: row.cells[1].textContent,
+            name: row.cells[2].textContent,
+            department: row.cells[3].textContent,
+            role: row.cells[4].textContent,
+            location: row.cells[6].textContent,
+            status: row.cells[7].textContent
+        }));
+
+        // Find matching suggestions
+        allData.forEach(data => {
+            Object.values(data).forEach(value => {
+                if (value.toLowerCase().includes(searchTerm) && !suggestions.includes(value)) {
+                    suggestions.push(value);
+                }
+            });
+        });
+
+        // Limit suggestions to 10
+        suggestions = suggestions.slice(0, 10);
+
+        if (suggestions.length > 0) {
+            displaySuggestions();
+        } else {
+            searchSuggestions.classList.add('d-none');
+        }
+    }
+
+    function displaySuggestions() {
+        searchSuggestions.innerHTML = '';
+        suggestions.forEach((suggestion, index) => {
+            const div = document.createElement('div');
+            div.className = 'p-2 border-bottom suggestion-item';
+            div.style.cursor = 'pointer';
+            div.innerHTML = `<i class="fas fa-search me-2 text-muted"></i>${suggestion}`;
+            div.addEventListener('click', () => {
+                searchInput.value = suggestion;
+                searchSuggestions.classList.add('d-none');
+                filterTable();
+            });
+            div.addEventListener('mouseenter', () => {
+                document.querySelectorAll('.suggestion-item').forEach(item => item.classList.remove('bg-light'));
+                div.classList.add('bg-light');
+                suggestionIndex = index;
+            });
+            searchSuggestions.appendChild(div);
+        });
+        searchSuggestions.classList.remove('d-none');
+    }
+
+    // Keyboard navigation for suggestions
+    searchInput.addEventListener('keydown', function(e) {
+        if (e.key === 'ArrowDown') {
+            e.preventDefault();
+            if (suggestions.length > 0) {
+                suggestionIndex = Math.min(suggestionIndex + 1, suggestions.length - 1);
+                highlightSuggestion();
+            }
+        } else if (e.key === 'ArrowUp') {
+            e.preventDefault();
+            if (suggestions.length > 0) {
+                suggestionIndex = Math.max(suggestionIndex - 1, -1);
+                highlightSuggestion();
+            }
+        } else if (e.key === 'Enter') {
+            if (suggestionIndex >= 0 && suggestions[suggestionIndex]) {
+                searchInput.value = suggestions[suggestionIndex];
+                searchSuggestions.classList.add('d-none');
+                filterTable();
+            }
+        } else if (e.key === 'Escape') {
+            searchSuggestions.classList.add('d-none');
+            suggestionIndex = -1;
+        }
+    });
+
+    function highlightSuggestion() {
+        document.querySelectorAll('.suggestion-item').forEach((item, index) => {
+            if (index === suggestionIndex) {
+                item.classList.add('bg-light');
+            } else {
+                item.classList.remove('bg-light');
+            }
+        });
+    }
+
+    // Global keyboard shortcuts
+    document.addEventListener('keydown', function(e) {
+        // Ctrl/Cmd + F to focus search
+        if ((e.ctrlKey || e.metaKey) && e.key === 'f') {
+            e.preventDefault();
+            searchInput.focus();
+        }
+        // Ctrl/Cmd + E to export
+        if ((e.ctrlKey || e.metaKey) && e.key === 'e') {
+            e.preventDefault();
+            exportBtn.click();
+        }
+        // Ctrl/Cmd + A to select all
+        if ((e.ctrlKey || e.metaKey) && e.key === 'a') {
+            e.preventDefault();
+            selectAll.checked = !selectAll.checked;
+            selectAll.dispatchEvent(new Event('change'));
+        }
+        // Escape to clear filters
+        if (e.key === 'Escape' && document.activeElement !== searchInput) {
+            resetButton.click();
+        }
+    });
+
+    // Search highlighting
+    function highlightSearchTerm(text, searchTerm) {
+        if (!searchTerm) return text;
+        const regex = new RegExp(`(${searchTerm})`, 'gi');
+        return text.replace(regex, '<mark class="bg-warning">$1</mark>');
+    }
+
+    // Enhanced filter function with highlighting
+    const originalFilterTable = filterTable;
+    filterTable = function() {
+        const searchTerm = searchInput.value.toLowerCase();
+        const selectedDepartment = departmentFilter.value.toLowerCase();
+        const selectedStatus = statusFilter.value.toLowerCase();
+        const selectedReporter = reporterFilter.value.toLowerCase();
+        const dateFromValue = dateFrom.value;
+        const dateToValue = dateTo.value;
+        const quickFilterValue = quickFilter.value;
+        
+        let visibleCount = 0;
+        const today = new Date();
+        const weekAgo = new Date(today.getTime() - 7 * 24 * 60 * 60 * 1000);
+        const monthAgo = new Date(today.getFullYear(), today.getMonth() - 1, today.getDate());
+
+        Array.from(rows).forEach(row => {
+            const reportNumber = row.cells[1].textContent.toLowerCase();
+            const name = row.cells[2].textContent.toLowerCase();
+            const department = row.cells[3].textContent.toLowerCase();
+            const role = row.cells[4].textContent.toLowerCase();
+            const location = row.cells[6].textContent.toLowerCase();
+            const status = row.cells[7].textContent.toLowerCase();
+            const reportDate = new Date(row.cells[5].getAttribute('data-date'));
+            
+            // Basic search
+            const matchesSearch = reportNumber.includes(searchTerm) || 
+                                  name.includes(searchTerm) || 
+                                  location.includes(searchTerm) ||
+                                  role.includes(searchTerm);
+            
+            // Department filter
+            const matchesDepartment = !selectedDepartment || department === selectedDepartment;
+            
+            // Status filter
+            const matchesStatus = !selectedStatus || status === selectedStatus;
+            
+            // Reporter filter
+            const matchesReporter = !selectedReporter || name.includes(selectedReporter);
+            
+            // Date range filter
+            let matchesDateRange = true;
+            if (dateFromValue && reportDate < new Date(dateFromValue)) {
+                matchesDateRange = false;
+            }
+            if (dateToValue && reportDate > new Date(dateToValue)) {
+                matchesDateRange = false;
+            }
+            
+            // Quick filter
+            let matchesQuickFilter = true;
+            if (quickFilterValue) {
+                switch(quickFilterValue) {
+                    case 'today':
+                        matchesQuickFilter = reportDate.toDateString() === today.toDateString();
+                        break;
+                    case 'week':
+                        matchesQuickFilter = reportDate >= new Date(today.getFullYear(), today.getMonth(), today.getDate() - today.getDay());
+                        break;
+                    case 'month':
+                        matchesQuickFilter = reportDate >= new Date(today.getFullYear(), today.getMonth(), 1);
+                        break;
+                    case 'recent':
+                        matchesQuickFilter = reportDate >= weekAgo;
+                        break;
+                    case 'urgent':
+                        matchesQuickFilter = status.includes('investigation');
+                        break;
+                }
+            }
+
+            if (matchesSearch && matchesDepartment && matchesStatus && matchesReporter && matchesDateRange && matchesQuickFilter) {
+                row.style.display = '';
+                visibleCount++;
+                
+                // Highlight search terms
+                if (searchTerm) {
+                    row.cells[1].innerHTML = highlightSearchTerm(row.cells[1].textContent, searchInput.value);
+                    row.cells[2].innerHTML = highlightSearchTerm(row.cells[2].textContent, searchInput.value);
+                    row.cells[4].innerHTML = highlightSearchTerm(row.cells[4].textContent, searchInput.value);
+                    row.cells[6].innerHTML = highlightSearchTerm(row.cells[6].textContent, searchInput.value);
+                }
+            } else {
+                row.style.display = 'none';
+            }
+        });
+
+        // Update result count
+        resultCount.textContent = `${visibleCount} report${visibleCount !== 1 ? 's' : ''} found`;
+
+        // Toggle no results message
+        noResults.classList.toggle('d-none', visibleCount > 0);
+        table.classList.toggle('d-none', visibleCount === 0);
+    };
+
+    // Enhanced event listeners
+    searchInput.addEventListener('input', function() {
+        filterTable();
+        generateSuggestions();
+    });
+
+    // Hide suggestions when clicking outside
+    document.addEventListener('click', function(e) {
+        if (!searchInput.contains(e.target) && !searchSuggestions.contains(e.target)) {
+            searchSuggestions.classList.add('d-none');
+            suggestionIndex = -1;
+        }
+    });
+
+    // Show keyboard shortcuts help
+    const helpBtn = document.createElement('button');
+    helpBtn.className = 'btn btn-outline-info btn-sm ms-2';
+    helpBtn.innerHTML = '<i class="fas fa-keyboard me-1"></i>Shortcuts';
+    helpBtn.addEventListener('click', function() {
+        Swal.fire({
+            title: 'Keyboard Shortcuts',
+            html: `
+                <div class="text-start">
+                    <p><strong>Ctrl/Cmd + F:</strong> Focus search</p>
+                    <p><strong>Ctrl/Cmd + E:</strong> Export reports</p>
+                    <p><strong>Ctrl/Cmd + A:</strong> Select all reports</p>
+                    <p><strong>Escape:</strong> Clear filters</p>
+                    <p><strong>Arrow Keys:</strong> Navigate search suggestions</p>
+                    <p><strong>Enter:</strong> Select suggestion</p>
+                </div>
+            `,
+            icon: 'info',
+            confirmButtonText: 'Got it!'
+        });
+    });
+    
+    // Add help button to header
+    document.querySelector('.card-header .d-flex').appendChild(helpBtn);
 });
 </script>
 {% endblock %} 
