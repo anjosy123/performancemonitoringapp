@@ -40,11 +40,13 @@ class DepartmentHead(models.Model):
     subdepartment = models.ForeignKey(SubDepartment, on_delete=models.SET_NULL, null=True, blank=True)
     designation = models.CharField(max_length=100, default="Department Head")
     contact_number = models.CharField(max_length=15)
+    qualification = models.CharField(max_length=200, null=True, blank=True, help_text="Educational or professional qualifications")
     joining_date = models.DateField(null=True, blank=True)
     appointment_date = models.DateField(null=True, blank=True)
     managed_staff = models.ManyToManyField('Staff', related_name='supervisors', blank=True)
     is_hr_head = models.BooleanField(default=False)
     managed_subdepartments = models.ManyToManyField(SubDepartment, related_name='department_heads', blank=True)
+    managed_departments = models.ManyToManyField(Department, related_name='managing_heads', blank=True, help_text="Additional departments this head manages.")
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='active')
 
     def __str__(self):

@@ -1,0 +1,340 @@
+{% extends 'staff_monitor/base.html' %}
+
+{% block content %}
+<div class="container-fluid px-3 px-md-4 py-4">
+    <div class="row justify-content-center">
+        <div class="col-12 col-lg-8 col-xl-6">
+            <div class="card shadow-sm border-0">
+                <div class="card-header bg-danger text-white py-3">
+                    <div class="d-flex align-items-center justify-content-between">
+                        <div class="d-flex align-items-center">
+                            <i class="fas fa-exclamation-triangle me-3 fs-4"></i>
+                            <h3 class="mb-0 fs-5 fs-md-4">
+                                {{ title|default:"Delete Department" }}
+                            </h3>
+                        </div>
+                        <a href="{% url 'department_list' %}" class="btn btn-light btn-sm">
+                            <i class="fas fa-arrow-left me-1"></i>Back to List
+                        </a>
+                    </div>
+                </div>
+                <div class="card-body p-4">
+                    <!-- Warning Alert -->
+                    <div class="alert alert-warning border-0 shadow-sm mb-4">
+                        <div class="d-flex align-items-start">
+                            <i class="fas fa-exclamation-triangle me-3 fs-4 text-warning"></i>
+                            <div>
+                                <h5 class="alert-heading mb-2">Warning: This action cannot be undone!</h5>
+                                <p class="mb-0">You are about to delete the department <strong>"{{ department.name }}"</strong>. This will permanently remove the department and all associated data.</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Department Information -->
+                    <div class="section-header mb-4">
+                        <h5 class="text-primary mb-3">
+                            <i class="fas fa-info-circle me-2"></i>Department Information
+                        </h5>
+                    </div>
+
+                    <div class="row g-3 mb-4">
+                        <div class="col-12 col-md-6">
+                            <div class="info-card bg-light border rounded p-3">
+                                <div class="d-flex align-items-center mb-2">
+                                    <i class="fas fa-building me-2 text-primary"></i>
+                                    <strong>Department Name</strong>
+                                </div>
+                                <p class="mb-0">{{ department.name }}</p>
+                            </div>
+                        </div>
+                        <div class="col-12 col-md-6">
+                            <div class="info-card bg-light border rounded p-3">
+                                <div class="d-flex align-items-center mb-2">
+                                    <i class="fas fa-calendar me-2 text-primary"></i>
+                                    <strong>Created</strong>
+                                </div>
+                                <p class="mb-0">{{ department.created_at|date:"M d, Y" }}</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Impact Analysis -->
+                    <div class="section-header mb-4">
+                        <h5 class="text-danger mb-3">
+                            <i class="fas fa-chart-line me-2"></i>Impact Analysis
+                        </h5>
+                    </div>
+
+                    <div class="row g-3 mb-4">
+                        <div class="col-12 col-md-4">
+                            <div class="impact-card bg-danger bg-opacity-10 border border-danger rounded p-3 text-center">
+                                <div class="impact-number text-danger fs-2 fw-bold mb-1">{{ staff_count }}</div>
+                                <div class="impact-label text-muted">Staff Members</div>
+                                <small class="text-danger">Will be affected</small>
+                            </div>
+                        </div>
+                        <div class="col-12 col-md-4">
+                            <div class="impact-card bg-warning bg-opacity-10 border border-warning rounded p-3 text-center">
+                                <div class="impact-number text-warning fs-2 fw-bold mb-1">{{ head_count }}</div>
+                                <div class="impact-label text-muted">Department Heads</div>
+                                <small class="text-warning">Will be affected</small>
+                            </div>
+                        </div>
+                        <div class="col-12 col-md-4">
+                            <div class="impact-card bg-info bg-opacity-10 border border-info rounded p-3 text-center">
+                                <div class="impact-number text-info fs-2 fw-bold mb-1">{{ subdept_count }}</div>
+                                <div class="impact-label text-muted">Subdepartments</div>
+                                <small class="text-info">Will be deleted</small>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Confirmation Message -->
+                    <div class="alert alert-info border-0 shadow-sm mb-4">
+                        <div class="d-flex align-items-start">
+                            <i class="fas fa-info-circle me-3 fs-4 text-info"></i>
+                            <div>
+                                <h6 class="alert-heading mb-2">Before proceeding, please ensure:</h6>
+                                <ul class="mb-0">
+                                    <li>All staff members have been reassigned to other departments</li>
+                                    <li>All department heads have been reassigned or removed</li>
+                                    <li>All subdepartments have been handled appropriately</li>
+                                    <li>You have backed up any important data</li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Action Buttons -->
+                    <div class="d-flex flex-column flex-sm-row gap-3 justify-content-end mt-5 pt-4 border-top">
+                        <a href="{% url 'department_list' %}" class="btn btn-outline-secondary btn-lg flex-fill flex-sm-grow-0">
+                            <i class="fas fa-times me-2"></i>
+                            <span class="d-none d-sm-inline">Cancel</span>
+                            <span class="d-sm-none">Cancel</span>
+                        </a>
+                        <form method="post" class="d-inline flex-fill flex-sm-grow-0">
+                            {% csrf_token %}
+                            <button type="submit" class="btn btn-danger btn-lg w-100">
+                                <i class="fas fa-trash-alt me-2"></i>
+                                <span class="d-none d-sm-inline">Delete Department</span>
+                                <span class="d-sm-none">Delete</span>
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+/* Enhanced Mobile Responsive Styles */
+.container-fluid {
+    max-width: 1200px;
+    margin: 0 auto;
+}
+
+.card {
+    border-radius: 1rem;
+    border: none;
+    box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
+    transition: box-shadow 0.15s ease-in-out;
+}
+
+.card:hover {
+    box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15);
+}
+
+.card-header {
+    border-top-left-radius: 1rem !important;
+    border-top-right-radius: 1rem !important;
+    border-bottom: none;
+}
+
+.section-header h5 {
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: #495057;
+    border-bottom: 2px solid #e9ecef;
+    padding-bottom: 0.5rem;
+}
+
+/* Info Cards */
+.info-card {
+    border-radius: 0.5rem;
+    transition: all 0.15s ease-in-out;
+}
+
+.info-card:hover {
+    box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.1);
+}
+
+/* Impact Cards */
+.impact-card {
+    border-radius: 0.5rem;
+    transition: all 0.15s ease-in-out;
+}
+
+.impact-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 0.25rem 0.5rem rgba(0, 0, 0, 0.15);
+}
+
+.impact-number {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+
+.impact-label {
+    font-size: 0.9rem;
+    font-weight: 500;
+}
+
+/* Alert Styling */
+.alert {
+    border-radius: 0.5rem;
+    border: none;
+    font-size: 0.9rem;
+}
+
+.alert-heading {
+    font-size: 1rem;
+    font-weight: 600;
+}
+
+/* Buttons */
+.btn {
+    padding: 0.75rem 1.5rem;
+    border-radius: 0.5rem;
+    font-weight: 500;
+    font-size: 0.95rem;
+    transition: all 0.15s ease-in-out;
+    border: none;
+}
+
+.btn-lg {
+    padding: 1rem 2rem;
+    font-size: 1rem;
+}
+
+.btn-danger {
+    background: linear-gradient(135deg, #dc3545 0%, #c82333 100%);
+    border: none;
+}
+
+.btn-danger:hover {
+    background: linear-gradient(135deg, #c82333 0%, #bd2130 100%);
+    transform: translateY(-1px);
+    box-shadow: 0 0.25rem 0.5rem rgba(220, 53, 69, 0.25);
+}
+
+.btn-outline-secondary {
+    border: 2px solid #6c757d;
+    color: #6c757d;
+}
+
+.btn-outline-secondary:hover {
+    background-color: #6c757d;
+    border-color: #6c757d;
+    color: white;
+}
+
+/* Mobile Optimizations */
+@media (max-width: 767.98px) {
+    .container-fluid {
+        padding-left: 1rem;
+        padding-right: 1rem;
+    }
+    
+    .card-body {
+        padding: 1.5rem;
+    }
+    
+    .section-header h5 {
+        font-size: 1rem;
+    }
+    
+    .impact-number {
+        font-size: 1.5rem !important;
+    }
+    
+    .btn-lg {
+        padding: 0.875rem 1.5rem;
+        font-size: 0.95rem;
+    }
+    
+    /* Stack buttons vertically on mobile */
+    .d-flex.flex-column.flex-sm-row {
+        gap: 0.75rem !important;
+    }
+    
+    .btn {
+        width: 100%;
+        margin-bottom: 0.5rem;
+    }
+    
+    .btn:last-child {
+        margin-bottom: 0;
+    }
+}
+
+/* Tablet Optimizations */
+@media (min-width: 768px) and (max-width: 991.98px) {
+    .container-fluid {
+        padding-left: 2rem;
+        padding-right: 2rem;
+    }
+    
+    .card-body {
+        padding: 2rem;
+    }
+}
+
+/* Large Screen Optimizations */
+@media (min-width: 992px) {
+    .container-fluid {
+        padding-left: 3rem;
+        padding-right: 3rem;
+    }
+    
+    .card-body {
+        padding: 2.5rem;
+    }
+}
+
+/* Accessibility Improvements */
+.btn:focus {
+    outline: none;
+    box-shadow: 0 0 0 0.25rem rgba(220, 53, 69, 0.25);
+}
+
+/* Smooth transitions */
+* {
+    transition: color 0.15s ease-in-out, background-color 0.15s ease-in-out, border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out;
+}
+</style>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Add confirmation dialog for delete button
+    const deleteForm = document.querySelector('form[method="post"]');
+    const deleteButton = deleteForm.querySelector('button[type="submit"]');
+    
+    deleteButton.addEventListener('click', function(e) {
+        const departmentName = '{{ department.name }}';
+        const confirmed = confirm(`Are you absolutely sure you want to delete the department "${departmentName}"?\n\nThis action cannot be undone and will affect:\n- ${document.querySelector('.impact-number').textContent} staff members\n- ${document.querySelectorAll('.impact-number')[1].textContent} department heads\n- ${document.querySelectorAll('.impact-number')[2].textContent} subdepartments\n\nType "DELETE" to confirm:`);
+        
+        if (!confirmed) {
+            e.preventDefault();
+            return false;
+        }
+        
+        const userInput = prompt('Please type "DELETE" to confirm:');
+        if (userInput !== 'DELETE') {
+            e.preventDefault();
+            alert('Deletion cancelled. Department was not deleted.');
+            return false;
+        }
+    });
+});
+</script>
+{% endblock %} 

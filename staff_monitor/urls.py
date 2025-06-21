@@ -31,6 +31,8 @@ urlpatterns = [
     path('department/edit/<int:department_id>/', views.edit_department, name='edit_department'),
     path('department/delete/<int:department_id>/', views.delete_department, name='delete_department'),
     path('get-subdepartments/<int:department_id>/', views.get_subdepartments, name='get_subdepartments'),
+    path('get-all-departments/', views.get_all_departments, name='get_all_departments'),
+    path('get-all-subdepartments/', views.get_all_subdepartments, name='get_all_subdepartments'),
     
     # Staff management
     path('add-staff/', views.add_staff, name='add_staff'),

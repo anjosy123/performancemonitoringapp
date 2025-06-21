@@ -90,7 +90,16 @@ class DepartmentHeadForm(forms.ModelForm):
         widget=forms.Select(attrs={
             'class': 'form-control',
             'id': 'department-select'
-        })
+        }),
+        label="Primary Department"
+    )
+    managed_departments = forms.ModelMultipleChoiceField(
+        queryset=Department.objects.all(),
+        required=False,
+        widget=forms.CheckboxSelectMultiple(attrs={
+            'class': 'form-check-input'
+        }),
+        label="Additional Departments"
     )
     subdepartment = forms.ModelChoiceField(
         queryset=SubDepartment.objects.none(),
@@ -98,7 +107,16 @@ class DepartmentHeadForm(forms.ModelForm):
         widget=forms.Select(attrs={
             'class': 'form-control',
             'id': 'subdepartment-select'
-        })
+        }),
+        label="Primary Subdepartment"
+    )
+    managed_subdepartments = forms.ModelMultipleChoiceField(
+        queryset=SubDepartment.objects.all(),
+        required=False,
+        widget=forms.CheckboxSelectMultiple(attrs={
+            'class': 'form-check-input'
+        }),
+        label="Additional Subdepartments"
     )
     designation = forms.CharField(
         required=True,
@@ -129,10 +147,17 @@ class DepartmentHeadForm(forms.ModelForm):
             'placeholder': 'Enter contact number'
         })
     )
+    qualification = forms.CharField(
+        required=False,
+        widget=forms.TextInput(attrs={
+            'class': 'form-control',
+            'placeholder': 'Enter educational or professional qualifications'
+        })
+    )
     
     class Meta:
         model = DepartmentHead
-        fields = ['department', 'subdepartment', 'designation', 'joining_date', 'appointment_date', 'contact_number']
+        fields = ['department', 'managed_departments', 'subdepartment', 'managed_subdepartments', 'designation', 'contact_number', 'qualification', 'joining_date', 'appointment_date']
 
     def __init__(self, *args, **kwargs):
         self.instance_user = None
@@ -144,6 +169,7 @@ class DepartmentHeadForm(forms.ModelForm):
         # If we have a department in the instance, filter subdepartments
         if self.instance and hasattr(self.instance, 'department') and self.instance.department:
             self.fields['subdepartment'].queryset = SubDepartment.objects.filter(department=self.instance.department)
+            self.fields['managed_subdepartments'].queryset = SubDepartment.objects.filter(department=self.instance.department)
             # Set initial value for department to ensure it's available for subdepartment filtering
             self.initial['department'] = self.instance.department.id
         else:
@@ -154,6 +180,7 @@ class DepartmentHeadForm(forms.ModelForm):
             try:
                 department_id = int(self.data.get('department'))
                 self.fields['subdepartment'].queryset = SubDepartment.objects.filter(department_id=department_id)
+                self.fields['managed_subdepartments'].queryset = SubDepartment.objects.filter(department_id=department_id)
             except (ValueError, TypeError):
                 pass
                 
@@ -162,8 +189,9 @@ class DepartmentHeadForm(forms.ModelForm):
             self.fields['first_name'].initial = self.instance_user.first_name
             self.fields['last_name'].initial = self.instance_user.last_name
             self.fields['email'].initial = self.instance_user.email
+            # Make email not required when editing and set it to readonly
+            self.fields['email'].required = False
             self.fields['email'].widget.attrs['readonly'] = True
-            self.fields['email'].widget.attrs['disabled'] = True
             self.fields['email'].help_text = "Email cannot be changed once account is created."
 
     def clean(self):
@@ -184,9 +212,13 @@ class DepartmentHeadForm(forms.ModelForm):
     def clean_email(self):
         email = self.cleaned_data.get('email')
         
-        # If no email is provided, that's okay since it's optional now
-        if not email:
-            return email
+        # If no email is provided and we're editing, use the existing email
+        if not email and self.instance_user:
+            return self.instance_user.email
+        
+        # If no email is provided and we're creating new, that's an error
+        if not email and not self.instance_user:
+            raise forms.ValidationError("Email is required for new department heads.")
         
         # If we're editing an existing user with the same email
         if self.instance_user and self.instance_user.email == email:
@@ -211,7 +243,7 @@ class DepartmentHeadForm(forms.ModelForm):
             user.first_name = self.cleaned_data['first_name']
             user.last_name = self.cleaned_data['last_name']
             
-            # Update email if changed
+            # Update email if changed (but it shouldn't change when editing)
             email = self.cleaned_data.get('email')
             if email and email != user.email:
                 user.email = email
@@ -221,6 +253,8 @@ class DepartmentHeadForm(forms.ModelForm):
             
             # Update DepartmentHead instance
             head = super().save(commit)
+            head.managed_departments.set(self.cleaned_data['managed_departments'])
+            head.managed_subdepartments.set(self.cleaned_data['managed_subdepartments'])
             return head
         else:
             # Create new user for a new department head
@@ -242,24 +276,19 @@ class DepartmentHeadForm(forms.ModelForm):
             
             if commit:
                 head.save()
+                self.save_m2m()
                 
                 # Store the generated password to inform the user
                 head.user_password = password
                 
                 # Handle additional subdepartments if any
-                additional_subdepts = self.data.getlist('additional_subdepartments')
-                if additional_subdepts:
-                    # Add the primary subdepartment to the list if it exists
-                    if head.subdepartment:
-                        additional_subdepts.append(str(head.subdepartment.id))
-                    
-                    # Add all subdepartments to managed_subdepartments
-                    for subdept_id in additional_subdepts:
-                        try:
-                            subdept = SubDepartment.objects.get(id=subdept_id)
-                            head.managed_subdepartments.add(subdept)
-                        except SubDepartment.DoesNotExist:
-                            continue
+                managed_departments = self.cleaned_data.get('managed_departments')
+                if managed_departments:
+                    head.managed_departments.set(managed_departments)
+                
+                managed_subdepartments = self.cleaned_data.get('managed_subdepartments')
+                if managed_subdepartments:
+                    head.managed_subdepartments.set(managed_subdepartments)
                 
                 # Try to send email with login credentials
                 try:
@@ -395,7 +424,6 @@ class StaffForm(forms.ModelForm):
         # If editing an existing staff member, disable employee_id field
         if self.instance and self.instance.pk:
             self.fields['employee_id'].widget.attrs['readonly'] = True
-            self.fields['employee_id'].widget.attrs['disabled'] = True
             self.fields['employee_id'].required = False
             # Store the original employee_id to use in save method
             self.initial['employee_id'] = self.instance.employee_id

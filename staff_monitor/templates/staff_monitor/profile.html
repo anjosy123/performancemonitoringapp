@@ -65,13 +65,18 @@
                                     <h3 class="profile-card-title">Basic Information</h3>
                                 </div>
                                 <div class="profile-card-body">
+                                    {% if is_staff %}
+                                        <div class="alert alert-info mb-4">
+                                            <i class="fas fa-edit me-2"></i>You can edit your personal details below. Changes will be saved immediately.
+                                        </div>
+                                    {% endif %}
                                     <div class="mb-4">
                                         <label for="first_name" class="form-label">First Name</label>
-                                        <input type="text" class="form-control" id="first_name" name="first_name" value="{{ user.first_name }}" required disabled>
+                                        <input type="text" class="form-control" id="first_name" name="first_name" value="{{ user.first_name }}" required {% if not is_staff %}disabled{% endif %}>
                                     </div>
                                     <div class="mb-4">
                                         <label for="last_name" class="form-label">Last Name</label>
-                                        <input type="text" class="form-control" id="last_name" name="last_name" value="{{ user.last_name }}" required disabled>
+                                        <input type="text" class="form-control" id="last_name" name="last_name" value="{{ user.last_name }}" required {% if not is_staff %}disabled{% endif %}>
                                     </div>
                                     <div class="mb-4">
                                         <label for="email" class="form-label">Email Address</label>
@@ -141,7 +146,18 @@
                     </div>
                     
                     <div class="profile-submit-wrapper">
-                        <button type="submit" class="btn btn-primary" disabled>Save Changes</button>
+                        {% if is_staff %}
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-save me-2"></i>Save Changes
+                            </button>
+                        {% else %}
+                            <button type="submit" class="btn btn-primary" disabled>
+                                <i class="fas fa-save me-2"></i>Save Changes
+                            </button>
+                            <small class="form-text text-muted d-block mt-2">
+                                <i class="fas fa-info-circle me-1"></i>Only administrators can edit personal details. Please contact your system administrator for changes.
+                            </small>
+                        {% endif %}
                     </div>
                 </form>
             </div>
@@ -510,7 +526,6 @@
     }
 </style>
 
-{% block extra_js %}
 <script>
     document.addEventListener('DOMContentLoaded', function() {
         // Password visibility toggle
@@ -521,7 +536,6 @@
                 const targetId = this.getAttribute('data-target');
                 const passwordInput = document.getElementById(targetId);
                 
-                // Toggle password visibility
                 if (passwordInput.type === 'password') {
                     passwordInput.type = 'text';
                     this.innerHTML = '<i class="fas fa-eye-slash"></i>';
@@ -541,13 +555,7 @@
                 
                 if (newPassword !== confirmPassword) {
                     event.preventDefault();
-                    
-                    Swal.fire({
-                        title: 'Passwords Do Not Match',
-                        text: 'Please make sure your passwords match.',
-                        icon: 'error',
-                        confirmButtonColor: '#0d47a1'
-                    });
+                    alert('Passwords do not match. Please try again.');
                 }
             });
         }
@@ -566,31 +574,47 @@
                 this.style.boxShadow = '0 6px 15px rgba(0, 0, 0, 0.08)';
             });
         });
+        
+        // Admin personal details form handling
+        {% if is_staff %}
+        const personalForm = document.querySelector('form[action*="update_profile"]');
+        if (personalForm) {
+            personalForm.addEventListener('submit', function(event) {
+                const firstName = document.getElementById('first_name').value.trim();
+                const lastName = document.getElementById('last_name').value.trim();
+                
+                if (!firstName || !lastName) {
+                    event.preventDefault();
+                    Swal.fire({
+                        title: 'Required Fields Missing',
+                        text: 'Please fill in both first name and last name.',
+                        icon: 'warning',
+                        confirmButtonColor: '#0d47a1'
+                    });
+                    return;
+                }
+                
+                // Show confirmation for admin users
+                Swal.fire({
+                    title: 'Update Personal Details',
+                    text: 'Are you sure you want to update your personal details?',
+                    icon: 'question',
+                    showCancelButton: true,
+                    confirmButtonColor: '#0d47a1',
+                    cancelButtonColor: '#6c757d',
+                    confirmButtonText: 'Yes, Update',
+                    cancelButtonText: 'Cancel'
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        // Form will submit normally
+                        return true;
+                    } else {
+                        event.preventDefault();
+                    }
+                });
+            });
+        }
+        {% endif %}
     });
 </script>
-{% endblock %}
-
-{% if is_staff_member %}
-    <div class="row mb-3">
-        <div class="col-md-6">
-            <strong>Employee ID:</strong> {{ employee_id }}
-        </div>
-        <div class="col-md-6">
-            <strong>Position:</strong> {{ position }}
-        </div>
-    </div>
-    <div class="row mb-3">
-        <div class="col-md-6">
-            <strong>Department:</strong> {{ department_name }}
-        </div>
-        <div class="col-md-6">
-            <strong>Subdepartment:</strong> {{ subdepartment_name|default:"-" }}
-        </div>
-    </div>
-    <div class="row mb-3">
-        <div class="col-md-6">
-            <strong>Qualification:</strong> {{ staff.qualification|default:"-" }}
-        </div>
-    </div>
-{% endif %}
 {% endblock %} 

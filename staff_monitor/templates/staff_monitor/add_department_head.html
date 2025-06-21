@@ -2,345 +2,816 @@
 {% extends 'staff_monitor/base.html' %}
 
 {% block content %}
-<div class="row justify-content-center">
-    <div class="col-md-8">
-        <div class="card">
-            <div class="card-header bg-primary text-white">
-                <h3 class="mb-0">
-                    <i class="fas fa-user-md me-2"></i>
-                    {% if edit_mode %}Edit{% else %}Add{% endif %} Department Head
-                </h3>
-            </div>
-            <div class="card-body">
-                <form method="post" class="needs-validation" novalidate>
-                    {% csrf_token %}
-                    <div class="row">
-                        <div class="col-md-6 mb-3">
-                            <label class="form-label">First Name</label>
-                            {{ form.first_name }}
-                        </div>
-                        <div class="col-md-6 mb-3">
-                            <label class="form-label">Last Name</label>
-                            {{ form.last_name }}
-                        </div>
+<div class="container-fluid px-3 px-md-4 py-4">
+    <div class="row justify-content-center">
+        <div class="col-12 col-lg-10 col-xl-8">
+            <div class="card shadow-sm border-0">
+                <div class="card-header bg-primary text-white py-3">
+                    <div class="d-flex align-items-center">
+                        <i class="fas fa-user-md me-3 fs-4"></i>
+                        <h3 class="mb-0 fs-5 fs-md-4">
+                            {% if form.instance.pk %}Edit{% else %}Add{% endif %} Department Head
+                        </h3>
                     </div>
-
-                    <div class="mb-3">
-                        <label class="form-label">Email</label>
-                        {{ form.email }}
-                        {% if edit_mode %}
-                            <small class="text-muted">Email address cannot be changed once account is created.</small>
-                        {% else %}
-                        <small class="text-muted">Login credentials will be sent to this email address</small>
-                        {% endif %}
-                        {% if form.email.errors %}
-                            <div class="invalid-feedback d-block">{{ form.email.errors.0 }}</div>
-                        {% endif %}
-                    </div>
-
-                    <div class="row">
-                        <div class="col-md-6 mb-3">
-                            <label class="form-label">Department</label>
-                            <label class="form-label" style="color: red;">If this person is the Head of the Department. Please don't select any subdepartment</label>
-                            {{ form.department }}
+                </div>
+                <div class="card-body p-4">
+                    <form method="post" class="needs-validation" novalidate>
+                        {% csrf_token %}
+                        
+                        <!-- Personal Information Section -->
+                        <div class="section-header mb-4">
+                            <h5 class="text-primary mb-3">
+                                <i class="fas fa-user me-2"></i>Personal Information
+                            </h5>
                         </div>
-                        <div class="col-md-6 mb-3" id="subdepartment-container">
-                            <label class="form-label">Sub Departments</label>
-                            <div class="subdepartments-checkbox-container">
-                                <div id="subdepartment-checkboxes" class="border rounded p-3" style="max-height: 200px; overflow-y: auto;">
-                                    <div id="loading-subdepts" class="text-center py-2">
-                                        <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
-                                        Loading subdepartments...
-                                    </div>
-                                    <div id="no-subdepts-msg" class="text-muted py-2" style="display: none;">
-                                        No subdepartments available for the selected department
-                                    </div>
-                                    <div id="subdepartment-checkbox-list">
-                                        <!-- Checkboxes will be dynamically added here -->
+                        
+                        <div class="row g-3 mb-4">
+                            <div class="col-12 col-md-6">
+                                <label class="form-label fw-semibold">
+                                    <i class="fas fa-user me-1"></i>First Name
+                                </label>
+                                {{ form.first_name }}
+                                {% if form.first_name.errors %}
+                                    <div class="invalid-feedback d-block">{{ form.first_name.errors.0 }}</div>
+                                {% endif %}
+                            </div>
+                            <div class="col-12 col-md-6">
+                                <label class="form-label fw-semibold">
+                                    <i class="fas fa-user me-1"></i>Last Name
+                                </label>
+                                {{ form.last_name }}
+                                {% if form.last_name.errors %}
+                                    <div class="invalid-feedback d-block">{{ form.last_name.errors.0 }}</div>
+                                {% endif %}
+                            </div>
+                        </div>
+
+                        <div class="mb-4">
+                            <label class="form-label fw-semibold">
+                                <i class="fas fa-envelope me-1"></i>Email Address
+                            </label>
+                            {{ form.email }}
+                            {% if form.instance.pk %}
+                                <div class="form-text">
+                                    <i class="fas fa-info-circle me-1"></i>Email address cannot be changed once account is created.
+                                </div>
+                            {% else %}
+                                <div class="form-text">
+                                    <i class="fas fa-info-circle me-1"></i>Login credentials will be sent to this email address.
+                                </div>
+                            {% endif %}
+                            {% if form.email.errors %}
+                                <div class="invalid-feedback d-block">{{ form.email.errors.0 }}</div>
+                            {% endif %}
+                        </div>
+
+                        <!-- Department Assignment Section -->
+                        <div class="section-header mb-4">
+                            <h5 class="text-primary mb-3">
+                                <i class="fas fa-building me-2"></i>Department Assignment
+                            </h5>
+                        </div>
+
+                        <div class="row g-3 mb-4">
+                            <div class="col-12 col-md-6">
+                                <label class="form-label fw-semibold">
+                                    <i class="fas fa-star me-1 text-warning"></i>{{ form.department.label }}
+                                </label>
+                                {{ form.department }}
+                                <div class="form-text">
+                                    <i class="fas fa-info-circle me-1"></i>This is the primary department for this department head.
+                                </div>
+                                {% if form.department.errors %}
+                                    <div class="invalid-feedback d-block">{{ form.department.errors.0 }}</div>
+                                {% endif %}
+                            </div>
+                            <div class="col-12 col-md-6" id="primary-subdepartment-container" style="display: none;">
+                                <label class="form-label fw-semibold">
+                                    <i class="fas fa-star me-1 text-warning"></i>{{ form.subdepartment.label }}
+                                </label>
+                                <div id="subdepartment-container">
+                                    {{ form.subdepartment }}
+                                    <div class="form-text">
+                                        <i class="fas fa-info-circle me-1"></i>Primary subdepartment for this department head.
                                     </div>
                                 </div>
-                                <small class="text-muted mt-1 d-block">
-                                    <i class="fas fa-info-circle me-1"></i>
-                                    You can select multiple subdepartments if this person manages more than one.
-                                </small>
-                            </div>
-                            <!-- Keep the original select for form submission compatibility -->
-                            <div style="display: none;">
-                            {{ form.subdepartment }}
+                                {% if form.subdepartment.errors %}
+                                    <div class="invalid-feedback d-block">{{ form.subdepartment.errors.0 }}</div>
+                                {% endif %}
                             </div>
                         </div>
-                    </div>
 
-                    <div class="row">
-                        <div class="col-md-6 mb-3">
-                            <label class="form-label">Designation</label>
-                            {{ form.designation }}
+                        <!-- Additional Departments Section -->
+                        <div class="mb-4">
+                            <div class="d-flex justify-content-between align-items-center mb-2">
+                                <label class="form-label fw-semibold mb-0">
+                                    <i class="fas fa-plus-circle me-1 text-success"></i>Additional Departments
+                                </label>
+                                <button type="button" class="btn btn-outline-primary btn-sm" onclick="refreshDepartments()" title="Refresh departments">
+                                    <i class="fas fa-sync-alt me-1"></i>Refresh
+                                </button>
+                            </div>
+                            <div class="additional-departments-container border rounded p-3 bg-light">
+                                <div class="row g-2" id="additional-departments-list">
+                                    <!-- Departments will be loaded here dynamically -->
+                                </div>
+                                <div class="form-text mt-2">
+                                    <i class="fas fa-info-circle me-1"></i>Select additional departments this person will manage.
+                                </div>
+                            </div>
+                            {% if form.managed_departments.errors %}
+                                <div class="invalid-feedback d-block">{{ form.managed_departments.errors.0 }}</div>
+                            {% endif %}
                         </div>
-                        <div class="col-md-6 mb-3">
-                            <label class="form-label">Contact Number</label>
-                            {{ form.contact_number }}
+                        
+                        <!-- Additional Subdepartments Section -->
+                        <div class="mb-4">
+                            <label class="form-label fw-semibold">
+                                <i class="fas fa-plus-circle me-1 text-success"></i>Additional Subdepartments
+                            </label>
+                            <div class="additional-subdepartments-container border rounded p-3 bg-light">
+                                <div class="row g-2" id="additional-subdepartments-list">
+                                    <!-- Subdepartments will be loaded here dynamically -->
+                                </div>
+                                <div class="form-text mt-2">
+                                    <i class="fas fa-info-circle me-1"></i>Select additional subdepartments this person will manage.
+                                </div>
+                            </div>
+                            {% if form.managed_subdepartments.errors %}
+                                <div class="invalid-feedback d-block">{{ form.managed_subdepartments.errors.0 }}</div>
+                            {% endif %}
                         </div>
-                    </div>
 
-                    <div class="row">
-                        <div class="col-md-6 mb-3">
-                            <label class="form-label">Date of Joining</label>
-                            {{ form.joining_date }}
-                            <small class="text-muted">Optional field</small>
+                        <!-- Contact & Position Section -->
+                        <div class="section-header mb-4">
+                            <h5 class="text-primary mb-3">
+                                <i class="fas fa-id-card me-2"></i>Contact & Position Details
+                            </h5>
                         </div>
-                        <div class="col-md-6 mb-3">
-                            <label class="form-label">Date of Appointment</label>
-                            {{ form.appointment_date }}
-                            <small class="text-muted">Optional field</small>
+
+                        <div class="row g-3 mb-4">
+                            <div class="col-12 col-md-6">
+                                <label class="form-label fw-semibold">
+                                    <i class="fas fa-briefcase me-1"></i>Designation
+                                </label>
+                                {{ form.designation }}
+                                {% if form.designation.errors %}
+                                    <div class="invalid-feedback d-block">{{ form.designation.errors.0 }}</div>
+                                {% endif %}
+                            </div>
+                            <div class="col-12 col-md-6">
+                                <label class="form-label fw-semibold">
+                                    <i class="fas fa-phone me-1"></i>Contact Number
+                                </label>
+                                {{ form.contact_number }}
+                                {% if form.contact_number.errors %}
+                                    <div class="invalid-feedback d-block">{{ form.contact_number.errors.0 }}</div>
+                                {% endif %}
+                            </div>
                         </div>
-                    </div>
 
-                    {% if form.errors %}
-                    <div class="alert alert-danger">
-                        <ul class="mb-0">
-                            {% for field in form %}
-                                {% for error in field.errors %}
-                                    <li>{{ field.label }}: {{ error }}</li>
-                                {% endfor %}
-                            {% endfor %}
-                        </ul>
-                    </div>
-                    {% endif %}
+                        <div class="mb-4">
+                            <label class="form-label fw-semibold">
+                                <i class="fas fa-graduation-cap me-1"></i>Qualification
+                            </label>
+                            {{ form.qualification }}
+                            <div class="form-text">
+                                <i class="fas fa-info-circle me-1"></i>Educational or professional qualifications (optional)
+                            </div>
+                            {% if form.qualification.errors %}
+                                <div class="invalid-feedback d-block">{{ form.qualification.errors.0 }}</div>
+                            {% endif %}
+                        </div>
 
-                    <div class="d-grid gap-2 d-md-flex justify-content-md-end">
-                        <a href="{% url 'dashboard' %}" class="btn btn-secondary me-2">
-                            <i class="fas fa-times me-1"></i>Cancel
-                        </a>
-                        <button type="submit" class="btn btn-primary">
-                            <i class="fas fa-save me-1"></i>
-                            {% if edit_mode %}Update{% else %}Add{% endif %} Department Head
-                        </button>
-                    </div>
-                </form>
+                        <!-- Dates Section -->
+                        <div class="section-header mb-4">
+                            <h5 class="text-primary mb-3">
+                                <i class="fas fa-calendar me-2"></i>Important Dates
+                            </h5>
+                        </div>
+
+                        <div class="row g-3 mb-4">
+                            <div class="col-12 col-md-6">
+                                <label class="form-label fw-semibold">
+                                    <i class="fas fa-calendar-plus me-1"></i>Date of Joining
+                                </label>
+                                {{ form.joining_date }}
+                                <div class="form-text">
+                                    <i class="fas fa-info-circle me-1"></i>Optional field
+                                </div>
+                                {% if form.joining_date.errors %}
+                                    <div class="invalid-feedback d-block">{{ form.joining_date.errors.0 }}</div>
+                                {% endif %}
+                            </div>
+                            <div class="col-12 col-md-6">
+                                <label class="form-label fw-semibold">
+                                    <i class="fas fa-calendar-check me-1"></i>Date of Appointment
+                                </label>
+                                {{ form.appointment_date }}
+                                <div class="form-text">
+                                    <i class="fas fa-info-circle me-1"></i>Optional field
+                                </div>
+                                {% if form.appointment_date.errors %}
+                                    <div class="invalid-feedback d-block">{{ form.appointment_date.errors.0 }}</div>
+                                {% endif %}
+                            </div>
+                        </div>
+
+                        <!-- Error Messages -->
+                        {% if form.non_field_errors %}
+                            <div class="alert alert-danger border-0 shadow-sm">
+                                <i class="fas fa-exclamation-triangle me-2"></i>
+                                {{ form.non_field_errors }}
+                            </div>
+                        {% endif %}
+
+                        <!-- Action Buttons -->
+                        <div class="d-flex flex-column flex-sm-row gap-3 justify-content-end mt-5 pt-4 border-top">
+                            <a href="{% url 'dashboard' %}" class="btn btn-outline-secondary btn-lg flex-fill flex-sm-grow-0">
+                                <i class="fas fa-times me-2"></i>
+                                <span class="d-none d-sm-inline">Cancel</span>
+                                <span class="d-sm-none">Cancel</span>
+                            </a>
+                            <button type="submit" class="btn btn-primary btn-lg flex-fill flex-sm-grow-0">
+                                <i class="fas fa-save me-2"></i>
+                                <span class="d-none d-sm-inline">
+                                    {% if form.instance.pk %}Update{% else %}Add{% endif %} Department Head
+                                </span>
+                                <span class="d-sm-none">
+                                    {% if form.instance.pk %}Update{% else %}Save{% endif %}
+                                </span>
+                            </button>
+                        </div>
+                    </form>
+                </div>
             </div>
         </div>
     </div>
 </div>
 
 <style>
-    .form-control {
-        padding: 0.75rem;
-        border-radius: 0.5rem;
-        border: 1px solid #dee2e6;
+/* Enhanced Mobile Responsive Styles */
+.container-fluid {
+    max-width: 1200px;
+    margin: 0 auto;
+}
+
+.card {
+    border-radius: 1rem;
+    border: none;
+    box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
+    transition: box-shadow 0.15s ease-in-out;
+}
+
+.card:hover {
+    box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15);
+}
+
+.card-header {
+    border-top-left-radius: 1rem !important;
+    border-top-right-radius: 1rem !important;
+    border-bottom: none;
+}
+
+.section-header h5 {
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: #495057;
+    border-bottom: 2px solid #e9ecef;
+    padding-bottom: 0.5rem;
+}
+
+/* Form Controls */
+.form-control, .form-select {
+    padding: 0.75rem 1rem;
+    border-radius: 0.5rem;
+    border: 1px solid #dee2e6;
+    font-size: 0.95rem;
+    transition: all 0.15s ease-in-out;
+}
+
+.form-control:focus, .form-select:focus {
+    border-color: #86b7fe;
+    box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.25);
+    background-color: #fff;
+}
+
+.form-label {
+    font-size: 0.9rem;
+    margin-bottom: 0.5rem;
+    color: #495057;
+}
+
+.form-text {
+    font-size: 0.8rem;
+    color: #6c757d;
+    margin-top: 0.25rem;
+}
+
+/* Additional Departments/Subdepartments Styling */
+.additional-departments-container,
+.additional-subdepartments-container {
+    border-radius: 0.5rem;
+    background-color: #f8f9fa;
+}
+
+.department-card, .subdepartment-card {
+    background: white;
+    border: 2px solid #e9ecef;
+    border-radius: 0.5rem;
+    padding: 0.75rem;
+    transition: all 0.2s ease-in-out;
+    cursor: pointer;
+    position: relative;
+    overflow: hidden;
+}
+
+.department-card:hover, .subdepartment-card:hover {
+    border-color: #86b7fe;
+    box-shadow: 0 0.125rem 0.25rem rgba(13, 110, 253, 0.15);
+    transform: translateY(-1px);
+}
+
+.department-card.selected, .subdepartment-card.selected {
+    border-color: #0d6efd;
+    background-color: #f8f9ff;
+    box-shadow: 0 0.125rem 0.25rem rgba(13, 110, 253, 0.25);
+}
+
+.department-card.selected::before, .subdepartment-card.selected::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 3px;
+    background: linear-gradient(90deg, #0d6efd, #0b5ed7);
+}
+
+.department-card .card-title, .subdepartment-card .card-title {
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: #495057;
+    margin-bottom: 0.25rem;
+}
+
+.department-card .card-subtitle, .subdepartment-card .card-subtitle {
+    font-size: 0.75rem;
+    color: #6c757d;
+}
+
+.department-card .selection-indicator, .subdepartment-card .selection-indicator {
+    position: absolute;
+    top: 0.5rem;
+    right: 0.5rem;
+    width: 1.25rem;
+    height: 1.25rem;
+    border-radius: 50%;
+    background-color: #e9ecef;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s ease-in-out;
+}
+
+.department-card.selected .selection-indicator, .subdepartment-card.selected .selection-indicator {
+    background-color: #0d6efd;
+    color: white;
+}
+
+.department-card.selected .selection-indicator::after, .subdepartment-card.selected .selection-indicator::after {
+    content: '✓';
+    font-size: 0.75rem;
+    font-weight: bold;
+}
+
+/* Buttons */
+.btn {
+    padding: 0.75rem 1.5rem;
+    border-radius: 0.5rem;
+    font-weight: 500;
+    font-size: 0.95rem;
+    transition: all 0.15s ease-in-out;
+    border: none;
+}
+
+.btn-lg {
+    padding: 1rem 2rem;
+    font-size: 1rem;
+}
+
+.btn-primary {
+    background: linear-gradient(135deg, #0d6efd 0%, #0b5ed7 100%);
+    border: none;
+}
+
+.btn-primary:hover {
+    background: linear-gradient(135deg, #0b5ed7 0%, #0a58ca 100%);
+    transform: translateY(-1px);
+    box-shadow: 0 0.25rem 0.5rem rgba(13, 110, 253, 0.25);
+}
+
+.btn-outline-secondary {
+    border: 2px solid #6c757d;
+    color: #6c757d;
+}
+
+.btn-outline-secondary:hover {
+    background-color: #6c757d;
+    border-color: #6c757d;
+    color: white;
+}
+
+/* Alert Styling */
+.alert {
+    border-radius: 0.5rem;
+    border: none;
+    font-size: 0.9rem;
+}
+
+/* Loading Animation */
+.spinner-border-sm {
+    width: 1rem;
+    height: 1rem;
+}
+
+/* Mobile Optimizations */
+@media (max-width: 767.98px) {
+    .container-fluid {
+        padding-left: 1rem;
+        padding-right: 1rem;
     }
-    .form-control:focus {
-        border-color: #86b7fe;
-        box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.25);
-    }
-    .card {
-        border-radius: 1rem;
-        border: none;
-        box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15);
-    }
-    .card-header {
-        border-top-left-radius: 1rem !important;
-        border-top-right-radius: 1rem !important;
+    
+    .card-body {
         padding: 1.5rem;
     }
-    .btn {
-        padding: 0.75rem 1.5rem;
-        border-radius: 0.5rem;
+    
+    .section-header h5 {
+        font-size: 1rem;
     }
-    .text-muted {
-        font-size: 0.875rem;
+    
+    .form-control, .form-select {
+        padding: 0.875rem 1rem;
+        font-size: 1rem; /* Prevent zoom on iOS */
     }
-    .subdepartments-checkbox-container {
-        margin-top: 0.5rem;
-    }
-    .form-check {
+    
+    .department-card, .subdepartment-card {
         padding: 0.5rem;
-        margin-bottom: 0.25rem;
-        border-radius: 0.25rem;
     }
-    .form-check:hover {
-        background-color: #f8f9fa;
+    
+    .btn-lg {
+        padding: 0.875rem 1.5rem;
+        font-size: 0.95rem;
     }
-    .form-check-input {
-        margin-top: 0.3rem;
+    
+    /* Stack buttons vertically on mobile */
+    .d-flex.flex-column.flex-sm-row {
+        gap: 0.75rem !important;
     }
-    .form-check-label {
-        cursor: pointer;
+    
+    .btn {
+        width: 100%;
+        margin-bottom: 0.5rem;
     }
-    /* Styles for mobile */
-    @media (max-width: 767.98px) {
-        #subdepartment-checkboxes {
-            max-height: 150px;
-        }
+    
+    .btn:last-child {
+        margin-bottom: 0;
     }
+}
+
+/* Tablet Optimizations */
+@media (min-width: 768px) and (max-width: 991.98px) {
+    .container-fluid {
+        padding-left: 2rem;
+        padding-right: 2rem;
+    }
+    
+    .card-body {
+        padding: 2rem;
+    }
+}
+
+/* Large Screen Optimizations */
+@media (min-width: 992px) {
+    .container-fluid {
+        padding-left: 3rem;
+        padding-right: 3rem;
+    }
+    
+    .card-body {
+        padding: 2.5rem;
+    }
+}
+
+/* Accessibility Improvements */
+.form-control:focus, .form-select:focus {
+    outline: none;
+}
+
+/* Smooth transitions */
+* {
+    transition: color 0.15s ease-in-out, background-color 0.15s ease-in-out, border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out;
+}
 </style>
 
 <script>
 document.addEventListener('DOMContentLoaded', function() {
     const departmentSelect = document.getElementById('department-select');
-    const subdepartmentContainer = document.getElementById('subdepartment-container');
+    const primarySubdepartmentContainer = document.getElementById('primary-subdepartment-container');
     const subdepartmentSelect = document.getElementById('subdepartment-select');
-    const noSubdeptsMsg = document.getElementById('no-subdepts-msg');
-    const loadingSubdepts = document.getElementById('loading-subdepts');
-    const subdepartmentCheckboxList = document.getElementById('subdepartment-checkbox-list');
+    const additionalDepartmentsList = document.getElementById('additional-departments-list');
+    const additionalSubdepartmentsList = document.getElementById('additional-subdepartments-list');
     
-    // Store selected subdepartments
-    let selectedSubdepartments = [];
+    // Store selected items
+    let selectedDepartments = new Set();
+    let selectedSubdepartments = new Set();
     
-    // If editing mode, get initial selected subdepartment(s)
-    if (subdepartmentSelect && subdepartmentSelect.value) {
-        selectedSubdepartments = [subdepartmentSelect.value];
-    }
-
-    // Function to update the hidden select field based on checkboxes
-    function updateHiddenSelect() {
-        if (!subdepartmentSelect) return;
-        
-        // If there's only one subdepartment selected, use that for compatibility
-        if (selectedSubdepartments.length === 1) {
-            subdepartmentSelect.value = selectedSubdepartments[0];
-        } else if (selectedSubdepartments.length > 1) {
-            // For multiple selections, we'll need to handle this in the backend
-            // For now, set the first one in the select for backward compatibility
-            subdepartmentSelect.value = selectedSubdepartments[0];
-            
-            // Add a hidden input to pass all selected subdepartments
-            const hiddenInputs = document.querySelectorAll('.hidden-subdepartment-input');
-            hiddenInputs.forEach(input => input.remove());
-            
-            selectedSubdepartments.forEach((subdeptId, index) => {
-                if (index === 0) return; // Skip first one as it's in the select
-                
-                const hiddenInput = document.createElement('input');
-                hiddenInput.type = 'hidden';
-                hiddenInput.name = 'additional_subdepartments';
-                hiddenInput.value = subdeptId;
-                hiddenInput.className = 'hidden-subdepartment-input';
-                subdepartmentSelect.parentNode.appendChild(hiddenInput);
-            });
-        } else {
-            // No subdepartments selected
-            subdepartmentSelect.value = '';
-            
-            // Remove any existing hidden inputs
-            const hiddenInputs = document.querySelectorAll('.hidden-subdepartment-input');
-            hiddenInputs.forEach(input => input.remove());
-        }
-    }
-
-    // Function to handle checkbox changes
-    function handleCheckboxChange(event) {
-        const checkbox = event.target;
-        const subdeptId = checkbox.value;
-        
-        if (checkbox.checked) {
-            // Add to selected subdepartments if not already included
-            if (!selectedSubdepartments.includes(subdeptId)) {
-                selectedSubdepartments.push(subdeptId);
+    // Load all departments for additional selection
+    function loadAllDepartments() {
+        // Add cache-busting parameter
+        const timestamp = new Date().getTime();
+        fetch(`/get-all-departments/?t=${timestamp}`, {
+            method: 'GET',
+            headers: {
+                'Cache-Control': 'no-cache',
+                'Pragma': 'no-cache'
             }
-        } else {
-            // Remove from selected subdepartments
-            selectedSubdepartments = selectedSubdepartments.filter(id => id !== subdeptId);
-        }
-        
-        // Update the hidden select field
-        updateHiddenSelect();
+        })
+            .then(response => response.json())
+            .then(data => {
+                if (data.departments && data.departments.length > 0) {
+                    additionalDepartmentsList.innerHTML = '';
+                    const primaryDepartmentId = departmentSelect.value;
+                    
+                    data.departments.forEach(dept => {
+                        // Exclude the primary department from additional departments list
+                        if (dept.id != primaryDepartmentId) {
+                            const deptCard = createDepartmentCard(dept);
+                            additionalDepartmentsList.appendChild(deptCard);
+                        }
+                    });
+                    
+                    if (additionalDepartmentsList.children.length === 0) {
+                        additionalDepartmentsList.innerHTML = '<div class="col-12 text-muted text-center">No additional departments available</div>';
+                    }
+                } else {
+                    additionalDepartmentsList.innerHTML = '<div class="col-12 text-muted text-center">No departments available</div>';
+                }
+            })
+            .catch(error => {
+                console.error('Error loading departments:', error);
+                additionalDepartmentsList.innerHTML = '<div class="col-12 text-danger text-center">Error loading departments</div>';
+            });
     }
-
-    // Function to load subdepartments and create checkboxes
-    function loadSubdepartments() {
+    
+    // Create department card
+    function createDepartmentCard(department) {
+        const col = document.createElement('div');
+        col.className = 'col-12 col-sm-6 col-md-4 col-lg-3';
+        
+        const card = document.createElement('div');
+        card.className = 'department-card';
+        card.dataset.departmentId = department.id;
+        
+        const indicator = document.createElement('div');
+        indicator.className = 'selection-indicator';
+        
+        const title = document.createElement('div');
+        title.className = 'card-title';
+        title.textContent = department.name;
+        
+        const subtitle = document.createElement('div');
+        subtitle.className = 'card-subtitle';
+        subtitle.textContent = `${department.staff_count || 0} staff members`;
+        
+        card.appendChild(indicator);
+        card.appendChild(title);
+        card.appendChild(subtitle);
+        
+        card.addEventListener('click', function() {
+            toggleDepartmentSelection(department.id, card);
+        });
+        
+        col.appendChild(card);
+        return col;
+    }
+    
+    // Toggle department selection
+    function toggleDepartmentSelection(departmentId, card) {
+        if (selectedDepartments.has(departmentId)) {
+            selectedDepartments.delete(departmentId);
+            card.classList.remove('selected');
+        } else {
+            selectedDepartments.add(departmentId);
+            card.classList.add('selected');
+        }
+        updateHiddenInputs();
+        // Reload subdepartments when department selection changes
+        loadAllSubdepartments();
+    }
+    
+    // Load subdepartments for primary department
+    function loadPrimarySubdepartments() {
         const departmentId = departmentSelect.value;
         
-        // Reset selected subdepartments when department changes
-        selectedSubdepartments = [];
-        
-        // If no department is selected, hide subdepartment field
         if (!departmentId) {
-            subdepartmentContainer.style.display = 'none';
+            primarySubdepartmentContainer.style.display = 'none';
+            // Clear additional departments and subdepartments when no primary department is selected
+            selectedDepartments.clear();
+            selectedSubdepartments.clear();
+            loadAllDepartments();
+            loadAllSubdepartments();
             return;
         }
 
-        // Show loading indicator
-        subdepartmentContainer.style.display = 'block';
-        loadingSubdepts.style.display = 'block';
-        noSubdeptsMsg.style.display = 'none';
-        subdepartmentCheckboxList.innerHTML = '';
-        
-        console.log(`Fetching subdepartments for department ID: ${departmentId}`);
-
-        // Make AJAX request to get subdepartments
         fetch(`/get-subdepartments/${departmentId}/`)
-            .then(response => {
-                if (!response.ok) {
-                    throw new Error(`HTTP error! Status: ${response.status}`);
-                }
-                console.log('Response received, parsing JSON');
-                return response.json();
-            })
+            .then(response => response.json())
             .then(data => {
-                console.log('Subdepartments data:', data);
-                // Hide loading indicator
-                loadingSubdepts.style.display = 'none';
-                
-                // If subdepartments exist, create checkboxes
                 if (data.subdepartments && data.subdepartments.length > 0) {
+                    // Populate subdepartment select
+                    subdepartmentSelect.innerHTML = '<option value="">Select subdepartment...</option>';
                     data.subdepartments.forEach(subdept => {
-                        const checkboxDiv = document.createElement('div');
-                        checkboxDiv.className = 'form-check';
-                        
-                        const checkbox = document.createElement('input');
-                        checkbox.type = 'checkbox';
-                        checkbox.className = 'form-check-input';
-                        checkbox.id = `subdept-${subdept.id}`;
-                        checkbox.value = subdept.id;
-                        checkbox.checked = selectedSubdepartments.includes(subdept.id.toString());
-                        checkbox.addEventListener('change', handleCheckboxChange);
-                        
-                        const label = document.createElement('label');
-                        label.className = 'form-check-label';
-                        label.htmlFor = `subdept-${subdept.id}`;
-                        label.textContent = subdept.name;
-                        
-                        checkboxDiv.appendChild(checkbox);
-                        checkboxDiv.appendChild(label);
-                        subdepartmentCheckboxList.appendChild(checkboxDiv);
+                        const option = document.createElement('option');
+                        option.value = subdept.id;
+                        option.textContent = subdept.name;
+                        subdepartmentSelect.appendChild(option);
+                    });
+                    primarySubdepartmentContainer.style.display = 'block';
+                } else {
+                    primarySubdepartmentContainer.style.display = 'none';
+                }
+                
+                // Reload additional departments and subdepartments when primary department changes
+                selectedDepartments.clear();
+                selectedSubdepartments.clear();
+                loadAllDepartments();
+                loadAllSubdepartments();
+            })
+            .catch(error => {
+                console.error('Error loading subdepartments:', error);
+                primarySubdepartmentContainer.style.display = 'none';
+                // Reload additional departments and subdepartments even on error
+                selectedDepartments.clear();
+                selectedSubdepartments.clear();
+                loadAllDepartments();
+                loadAllSubdepartments();
+            });
+    }
+    
+    // Load all subdepartments for additional selection
+    function loadAllSubdepartments() {
+        // Only load subdepartments if there are selected additional departments
+        if (selectedDepartments.size === 0) {
+            additionalSubdepartmentsList.innerHTML = '<div class="col-12 text-muted text-center">Select additional departments first to see their subdepartments</div>';
+            return;
+        }
+        
+        // Add cache-busting parameter
+        const timestamp = new Date().getTime();
+        fetch(`/get-all-subdepartments/?t=${timestamp}`, {
+            method: 'GET',
+            headers: {
+                'Cache-Control': 'no-cache',
+                'Pragma': 'no-cache'
+            }
+        })
+            .then(response => response.json())
+            .then(data => {
+                if (data.subdepartments && data.subdepartments.length > 0) {
+                    additionalSubdepartmentsList.innerHTML = '';
+                    const primaryDepartmentId = departmentSelect.value;
+                    const primarySubdepartmentId = subdepartmentSelect.value;
+                    
+                    data.subdepartments.forEach(subdept => {
+                        // Only show subdepartments from selected additional departments
+                        // and exclude the primary subdepartment
+                        if (selectedDepartments.has(subdept.department_id) && 
+                            subdept.id != primarySubdepartmentId) {
+                            const subdeptCard = createSubdepartmentCard(subdept);
+                            additionalSubdepartmentsList.appendChild(subdeptCard);
+                        }
                     });
                     
-                    noSubdeptsMsg.style.display = 'none';
-                    console.log(`Added ${data.subdepartments.length} subdepartments`);
+                    if (additionalSubdepartmentsList.children.length === 0) {
+                        additionalSubdepartmentsList.innerHTML = '<div class="col-12 text-muted text-center">No additional subdepartments available from selected departments</div>';
+                    }
                 } else {
-                    // If no subdepartments, show message
-                    noSubdeptsMsg.style.display = 'block';
-                    console.log('No subdepartments found for this department');
+                    additionalSubdepartmentsList.innerHTML = '<div class="col-12 text-muted text-center">No subdepartments available</div>';
                 }
             })
             .catch(error => {
                 console.error('Error loading subdepartments:', error);
-                loadingSubdepts.style.display = 'none';
-                    noSubdeptsMsg.textContent = "Error loading subdepartments. Please try again.";
-                    noSubdeptsMsg.style.display = 'block';
+                additionalSubdepartmentsList.innerHTML = '<div class="col-12 text-danger text-center">Error loading subdepartments</div>';
             });
     }
-
-    // Load subdepartments when department changes
-    if (departmentSelect) {
-        departmentSelect.addEventListener('change', loadSubdepartments);
+    
+    // Create subdepartment card
+    function createSubdepartmentCard(subdepartment) {
+        const col = document.createElement('div');
+        col.className = 'col-12 col-sm-6 col-md-4 col-lg-3';
         
-        // Initial load of subdepartments if a department is already selected
-        if (departmentSelect.value) {
-            loadSubdepartments();
-        } else {
-            subdepartmentContainer.style.display = 'none';
-        }
+        const card = document.createElement('div');
+        card.className = 'subdepartment-card';
+        card.dataset.subdepartmentId = subdepartment.id;
+        
+        const indicator = document.createElement('div');
+        indicator.className = 'selection-indicator';
+        
+        const title = document.createElement('div');
+        title.className = 'card-title';
+        title.textContent = subdepartment.name;
+        
+        const subtitle = document.createElement('div');
+        subtitle.className = 'card-subtitle';
+        subtitle.textContent = `Department: ${subdepartment.department_name}`;
+        
+        card.appendChild(indicator);
+        card.appendChild(title);
+        card.appendChild(subtitle);
+        
+        card.addEventListener('click', function() {
+            toggleSubdepartmentSelection(subdepartment.id, card);
+        });
+        
+        col.appendChild(card);
+        return col;
     }
-
-    // Add form submit handler to ensure subdepartment selection is properly saved
-    const form = document.querySelector('form');
-    if (form) {
-        form.addEventListener('submit', function(event) {
-            // Update the hidden select field one last time before submission
-            updateHiddenSelect();
+    
+    // Toggle subdepartment selection
+    function toggleSubdepartmentSelection(subdepartmentId, card) {
+        if (selectedSubdepartments.has(subdepartmentId)) {
+            selectedSubdepartments.delete(subdepartmentId);
+            card.classList.remove('selected');
+        } else {
+            selectedSubdepartments.add(subdepartmentId);
+            card.classList.add('selected');
+        }
+        updateHiddenInputs();
+    }
+    
+    // Update hidden inputs for form submission
+    function updateHiddenInputs() {
+        // Remove existing hidden inputs
+        document.querySelectorAll('.hidden-department-input, .hidden-subdepartment-input').forEach(input => input.remove());
+        
+        // Add hidden inputs for selected departments
+        selectedDepartments.forEach(deptId => {
+            const input = document.createElement('input');
+            input.type = 'hidden';
+            input.name = 'managed_departments';
+            input.value = deptId;
+            input.className = 'hidden-department-input';
+            document.querySelector('form').appendChild(input);
+        });
+        
+        // Add hidden inputs for selected subdepartments
+        selectedSubdepartments.forEach(subdeptId => {
+            const input = document.createElement('input');
+            input.type = 'hidden';
+            input.name = 'managed_subdepartments';
+            input.value = subdeptId;
+            input.className = 'hidden-subdepartment-input';
+            document.querySelector('form').appendChild(input);
         });
     }
+    
+    // Refresh departments function
+    function refreshDepartments() {
+        // Show loading state
+        const refreshBtn = document.querySelector('button[onclick="refreshDepartments()"]');
+        const originalText = refreshBtn.innerHTML;
+        refreshBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i>Loading...';
+        refreshBtn.disabled = true;
+        
+        // Reload departments
+        loadAllDepartments();
+        
+        // Reset button after a short delay
+        setTimeout(() => {
+            refreshBtn.innerHTML = originalText;
+            refreshBtn.disabled = false;
+        }, 1000);
+    }
+    
+    // Event listeners
+    departmentSelect.addEventListener('change', loadPrimarySubdepartments);
+    
+    // Initial load
+    loadAllDepartments();
+    loadAllSubdepartments();
+    if (departmentSelect.value) {
+        loadPrimarySubdepartments();
+    }
+    
+    // Form validation
+    const form = document.querySelector('form');
+    form.addEventListener('submit', function(event) {
+        if (!form.checkValidity()) {
+            event.preventDefault();
+            event.stopPropagation();
+        }
+        form.classList.add('was-validated');
+    });
 });
 </script>
 {% endblock %}

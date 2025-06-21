@@ -1534,7 +1534,14 @@ def add_superintendent(request):
             department_head = form.save()
             
             # Log information about the newly created department head
-            print(f"Added department head: {department_head.user.get_full_name()} - Dept: {department_head.department.name}")
+            print(f"Added department head: {department_head.user.get_full_name()} - Primary Dept: {department_head.department.name}")
+            
+            # Log managed departments
+            managed_depts = department_head.managed_departments.all()
+            if managed_depts.exists():
+                dept_names = [d.name for d in managed_depts]
+                print(f"Managing departments: {', '.join(dept_names)}")
+
             if department_head.subdepartment:
                 print(f"Primary Subdepartment: {department_head.subdepartment.name}")
             
@@ -1614,20 +1621,26 @@ def manage_department_head_staff(request, department_head_id):
     # Get all department heads in the same department
     department_heads = DepartmentHead.objects.filter(department=current_head.department)
     
-    # Get available and assigned staff
+    # Get all departments that this head manages (primary + additional)
+    managed_departments = [current_head.department]
+    if current_head.managed_departments.exists():
+        managed_departments.extend(current_head.managed_departments.all())
+    
+    # Get available and assigned staff from all managed departments
     available_staff = Staff.objects.filter(
-        department=current_head.department
+        department__in=managed_departments
     ).exclude(
         managed_by=current_head
-    )
+    ).select_related('user', 'department', 'subdepartment').order_by('user__first_name', 'user__last_name')
     
-    assigned_staff = Staff.objects.filter(managed_by=current_head)
+    assigned_staff = Staff.objects.filter(managed_by=current_head).select_related('user', 'department', 'subdepartment').order_by('user__first_name', 'user__last_name')
     
     context = {
         'current_head': current_head,
         'department_heads': department_heads,
         'available_staff': available_staff,
         'assigned_staff': assigned_staff,
+        'managed_departments': managed_departments,
     }
     
     return render(request, 'staff_monitor/manage_department_head_staff.html', context)
@@ -1639,9 +1652,14 @@ def assign_staff_to_head(request, department_head_id, staff_id):
         department_head = get_object_or_404(DepartmentHead, id=department_head_id)
         staff = get_object_or_404(Staff, id=staff_id)
         
-        # Verify staff is in the same department
-        if staff.department != department_head.department:
-            messages.error(request, f"Cannot assign staff from different department.")
+        # Get all departments that this head manages (primary + additional)
+        managed_departments = [department_head.department]
+        if department_head.managed_departments.exists():
+            managed_departments.extend(department_head.managed_departments.all())
+        
+        # Verify staff is in one of the managed departments
+        if staff.department not in managed_departments:
+            messages.error(request, f"Cannot assign staff from department '{staff.department.name}' as it's not in the managed departments.")
             return redirect('manage_department_head_staff', department_head_id=department_head_id)
         
         # Add staff to department head's managed staff
@@ -1670,9 +1688,14 @@ def unassign_staff_from_head(request, department_head_id, staff_id):
 def assign_all_staff(request, department_head_id):
     department_head = get_object_or_404(DepartmentHead, id=department_head_id)
     
-    # Get all available staff in the same department
+    # Get all departments that this head manages (primary + additional)
+    managed_departments = [department_head.department]
+    if department_head.managed_departments.exists():
+        managed_departments.extend(department_head.managed_departments.all())
+    
+    # Get all available staff from all managed departments
     available_staff = Staff.objects.filter(
-        department=department_head.department
+        department__in=managed_departments
     ).exclude(
         managed_by=department_head
     )
@@ -2433,18 +2456,24 @@ def print_report(request, report_id):
 def add_department(request):
     if request.method == 'POST':
         form = DepartmentForm(request.POST)
-        if form.is_valid():
+        formset = SubDepartmentFormSet(request.POST)
+        
+        if form.is_valid() and formset.is_valid():
             try:
                 department = form.save()
-                messages.success(request, f'Department "{department.name}" added successfully.')
+                formset.instance = department
+                formset.save()
+                messages.success(request, f'Department "{department.name}" and its subdepartments added successfully.')
                 return redirect('department_list')
             except Exception as e:
                 messages.error(request, f'Error adding department: {str(e)}')
     else:
         form = DepartmentForm()
+        formset = SubDepartmentFormSet()
     
     context = {
         'form': form,
+        'formset': formset,
         'is_admin': request.user.is_staff,
         'is_hr_head': is_hr_head(request.user),
         'title': 'Add Department'
@@ -2479,19 +2508,28 @@ def edit_department(request, department_id):
     
     if request.method == 'POST':
         form = DepartmentForm(request.POST, instance=department)
-        if form.is_valid():
+        formset = SubDepartmentFormSet(request.POST, instance=department)
+        
+        if form.is_valid() and formset.is_valid():
             try:
                 updated_department = form.save()
-                messages.success(request, f'Department "{updated_department.name}" updated successfully.')
+                formset.save()
+                messages.success(request, f'Department "{updated_department.name}" and its subdepartments updated successfully.')
                 return redirect('department_list')
             except Exception as e:
                 messages.error(request, f'Error updating department: {str(e)}')
     else:
         form = DepartmentForm(instance=department)
+        formset = SubDepartmentFormSet(instance=department)
+    
+    # Get existing subdepartments for display
+    existing_subdepartments = department.subdepartments.all().order_by('name')
     
     context = {
         'form': form,
+        'formset': formset,
         'department': department,
+        'existing_subdepartments': existing_subdepartments,
         'is_admin': request.user.is_staff,
         'is_hr_head': is_hr_head(request.user),
         'title': f'Edit Department: {department.name}'
@@ -2550,7 +2588,14 @@ def edit_staff(request, staff_id):
     staff = get_object_or_404(Staff, id=staff_id)
     
     if request.method == 'POST':
-        form = StaffForm(request.POST, instance=staff)
+        # Create a mutable copy of POST data
+        post_data = request.POST.copy()
+        
+        # If employee_id is not in POST data (because it's readonly), add it from the instance
+        if 'employee_id' not in post_data and staff.employee_id:
+            post_data['employee_id'] = staff.employee_id
+        
+        form = StaffForm(post_data, instance=staff)
         if form.is_valid():
             try:
                 updated_staff = form.save()
@@ -2607,7 +2652,14 @@ def edit_superintendent(request, superintendent_id):
     department_head = get_object_or_404(DepartmentHead, id=superintendent_id)
     
     if request.method == 'POST':
-        form = DepartmentHeadForm(request.POST, instance=department_head)
+        # Create a mutable copy of POST data
+        post_data = request.POST.copy()
+        
+        # If email is not in POST data (because it's readonly), add it from the instance
+        if 'email' not in post_data and department_head.user.email:
+            post_data['email'] = department_head.user.email
+        
+        form = DepartmentHeadForm(post_data, instance=department_head)
         if form.is_valid():
             try:
                 updated_head = form.save()
@@ -2746,3 +2798,45 @@ def get_department_dashboard_reports(user):
         'total_performance_reports': total_performance_reports,
         'total_incident_reports': total_incident_reports,
     }
+
+@login_required
+def get_all_departments(request):
+    try:
+        departments = Department.objects.all().order_by('name')
+        data = []
+        for dept in departments:
+            staff_count = Staff.objects.filter(department=dept).count()
+            data.append({
+                'id': dept.id,
+                'name': dept.name,
+                'staff_count': staff_count
+            })
+        response = JsonResponse({'departments': data})
+        # Add cache-busting headers
+        response['Cache-Control'] = 'no-cache, no-store, must-revalidate'
+        response['Pragma'] = 'no-cache'
+        response['Expires'] = '0'
+        return response
+    except Exception as e:
+        return JsonResponse({'error': str(e)}, status=500)
+
+@login_required
+def get_all_subdepartments(request):
+    try:
+        subdepartments = SubDepartment.objects.select_related('department').all().order_by('name')
+        data = []
+        for subdept in subdepartments:
+            data.append({
+                'id': subdept.id,
+                'name': subdept.name,
+                'department_name': subdept.department.name,
+                'department_id': subdept.department.id
+            })
+        response = JsonResponse({'subdepartments': data})
+        # Add cache-busting headers
+        response['Cache-Control'] = 'no-cache, no-store, must-revalidate'
+        response['Pragma'] = 'no-cache'
+        response['Expires'] = '0'
+        return response
+    except Exception as e:
+        return JsonResponse({'error': str(e)}, status=500)
