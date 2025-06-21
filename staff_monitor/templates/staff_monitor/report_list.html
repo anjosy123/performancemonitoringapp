@@ -26,12 +26,8 @@
             <div class="col-md-3">
                 <select id="departmentFilter" class="form-select">
                     <option value="">All Departments</option>
-                    {% for report in reports %}
-                        {% if report.staff and report.staff.department %}
-                            <option value="{{ report.staff.department }}">{{ report.staff.department }}</option>
-                        {% elif report.department_head and report.department_head.department %}
-                            <option value="{{ report.department_head.department }}">{{ report.department_head.department }}</option>
-                        {% endif %}
+                    {% for dept in departments %}
+                        <option value="{{ dept.name }}">{{ dept.name }}</option>
                     {% endfor %}
                 </select>
             </div>

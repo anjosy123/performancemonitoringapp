@@ -347,6 +347,16 @@
                             <div class="quick-stats-value">{{ department_staff.count }}</div>
                         </div>
                     </div>
+                    {% if user_reports %}
+                    <div class="quick-stats-card bg-warning text-dark">
+                        <div class="quick-stats-content">
+                            <div class="quick-stats-title">
+                                <i class="fas fa-clipboard-list me-2"></i>My Reports
+                            </div>
+                            <div class="quick-stats-value">{{ user_reports.total_performance_reports|add:user_reports.total_incident_reports }}</div>
+                        </div>
+                    </div>
+                    {% endif %}
                 </div>
 
                 {% if has_assigned_staff %}
@@ -566,6 +576,179 @@
                     </div>
                 </div>
                 
+                <!-- My Reports Section for Main Department Head -->
+                {% if user_reports %}
+                <div class="card mb-4">
+                    <div class="card-header bg-success text-white">
+                        <h5 class="mb-0">
+                            <i class="fas fa-clipboard-list me-2"></i>Recent Department Reports
+                            <small class="ms-2">(Last 10 reports)</small>
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <!-- Quick Stats for Reports -->
+                        <div class="row mb-4">
+                            <div class="col-md-6">
+                                <div class="card bg-primary text-white">
+                                    <div class="card-body text-center">
+                                        <h4 class="mb-0">{{ user_reports.total_performance_reports }}</h4>
+                                        <small>Performance Reports</small>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="card bg-warning text-dark">
+                                    <div class="card-body text-center">
+                                        <h4 class="mb-0">{{ user_reports.total_incident_reports }}</h4>
+                                        <small>Incident Reports</small>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Performance Reports -->
+                        {% if user_reports.performance_reports %}
+                        <div class="mb-4">
+                            <h6 class="text-primary">
+                                <i class="fas fa-chart-line me-2"></i>Recent Performance Evaluations
+                            </h6>
+                            <div class="table-responsive">
+                                <table class="table table-sm table-hover">
+                                    <thead class="table-light">
+                                        <tr>
+                                            <th>Date</th>
+                                            <th>Staff Member</th>
+                                            <th>Department</th>
+                                            <th>Score</th>
+                                            <th>Percentage</th>
+                                            <th>Actions</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {% for report in user_reports.performance_reports %}
+                                        <tr>
+                                            <td>{{ report.date|date:"M d, Y" }}</td>
+                                            <td>
+                                                {% if report.staff %}
+                                                    {{ report.staff.user.get_full_name }}
+                                                {% elif report.department_head %}
+                                                    {{ report.department_head.user.get_full_name }}
+                                                {% else %}
+                                                    <span class="text-muted">Unknown</span>
+                                                {% endif %}
+                                            </td>
+                                            <td>
+                                                {% if report.staff %}
+                                                    {{ report.staff.department.name }}
+                                                {% elif report.department_head %}
+                                                    {{ report.department_head.department.name }}
+                                                {% else %}
+                                                    <span class="text-muted">-</span>
+                                                {% endif %}
+                                            </td>
+                                            <td>
+                                                <span class="badge bg-primary">{{ report.total_score }}</span>
+                                            </td>
+                                            <td>
+                                                <span class="badge {% if report.percentage >= 75 %}bg-success{% elif report.percentage >= 50 %}bg-warning{% else %}bg-danger{% endif %}">
+                                                    {{ report.percentage }}%
+                                                </span>
+                                            </td>
+                                            <td>
+                                                <div class="btn-group btn-group-sm">
+                                                    <a href="{% url 'view_report' report.id %}" class="btn btn-outline-primary btn-sm" title="View Report">
+                                                        <i class="fas fa-eye"></i>
+                                                    </a>
+                                                    <a href="{% url 'print_report' report.id %}" class="btn btn-outline-secondary btn-sm" title="Print Report">
+                                                        <i class="fas fa-print"></i>
+                                                    </a>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                        {% endfor %}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                        {% endif %}
+
+                        <!-- Incident Reports -->
+                        {% if user_reports.incident_reports %}
+                        <div class="mb-4">
+                            <h6 class="text-warning">
+                                <i class="fas fa-exclamation-triangle me-2"></i>Recent Incident Reports
+                            </h6>
+                            <div class="table-responsive">
+                                <table class="table table-sm table-hover">
+                                    <thead class="table-light">
+                                        <tr>
+                                            <th>Date</th>
+                                            <th>Report #</th>
+                                            <th>Staff Member</th>
+                                            <th>Location</th>
+                                            <th>Status</th>
+                                            <th>Actions</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {% for report in user_reports.incident_reports %}
+                                        <tr>
+                                            <td>{{ report.incident_date|date:"M d, Y" }}</td>
+                                            <td>
+                                                <span class="badge bg-secondary">{{ report.report_number }}</span>
+                                            </td>
+                                            <td>
+                                                {% if report.staff %}
+                                                    {{ report.staff.user.get_full_name }}
+                                                {% elif report.department_head %}
+                                                    {{ report.department_head.user.get_full_name }}
+                                                {% else %}
+                                                    <span class="text-muted">Unknown</span>
+                                                {% endif %}
+                                            </td>
+                                            <td>{{ report.incident_location|truncatechars:30 }}</td>
+                                            <td>
+                                                <span class="badge 
+                                                    {% if report.status == 'reported' %}bg-primary
+                                                    {% elif report.status == 'under_investigation' %}bg-warning
+                                                    {% elif report.status == 'resolved' %}bg-success
+                                                    {% else %}bg-secondary{% endif %}">
+                                                    {{ report.get_status_display }}
+                                                </span>
+                                            </td>
+                                            <td>
+                                                <div class="btn-group btn-group-sm">
+                                                    <a href="{% url 'view_incident_report' report.id %}" class="btn btn-outline-primary btn-sm" title="View Report">
+                                                        <i class="fas fa-eye"></i>
+                                                    </a>
+                                                    <a href="{% url 'print_incident_report' report.id %}" class="btn btn-outline-secondary btn-sm" title="Print Report">
+                                                        <i class="fas fa-print"></i>
+                                                    </a>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                        {% endfor %}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                        {% endif %}
+
+                        <!-- View All Reports Links -->
+                        <div class="text-center mt-3">
+                            <div class="btn-group">
+                                <a href="{% url 'report_list' %}" class="btn btn-primary">
+                                    <i class="fas fa-chart-line me-2"></i>View All Performance Reports
+                                </a>
+                                <a href="{% url 'incident_report_list' %}" class="btn btn-warning">
+                                    <i class="fas fa-exclamation-triangle me-2"></i>View All Incident Reports
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                {% endif %}
+                
                 <!-- Subdepartment Head Dashboard -->
                 {% else %}
                 <!-- Enhanced Search and Filter Section -->
@@ -624,6 +807,34 @@
                                 <i class="fas fa-users me-2"></i>Subdepartment Staff
                             </div>
                             <div class="quick-stats-value">{{ department_staff.count }}</div>
+                        </div>
+                    </div>
+                    {% if user_reports %}
+                    <div class="quick-stats-card bg-warning text-dark">
+                        <div class="quick-stats-content">
+                            <div class="quick-stats-title">
+                                <i class="fas fa-clipboard-list me-2"></i>My Reports
+                            </div>
+                            <div class="quick-stats-value">{{ user_reports.total_performance_reports|add:user_reports.total_incident_reports }}</div>
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
+
+                <!-- View Reports Links -->
+                <div class="card my-4">
+                    <div class="card-body text-center">
+                        <h5 class="card-title mb-3">
+                            <i class="fas fa-clipboard-list me-2"></i>View Department Reports
+                        </h5>
+                        <p class="text-muted">View all performance and incident reports for your department.</p>
+                        <div class="btn-group">
+                            <a href="{% url 'report_list' %}" class="btn btn-primary">
+                                <i class="fas fa-chart-line me-2"></i>Performance Reports
+                            </a>
+                            <a href="{% url 'incident_report_list' %}" class="btn btn-warning text-dark">
+                                <i class="fas fa-exclamation-triangle me-2"></i>Incident Reports
+                            </a>
                         </div>
                     </div>
                 </div>
@@ -724,8 +935,13 @@
                 {% endif %}
                 {% endif %}
 
-                {% if is_admin or is_hr_head %}
-                <!-- Staff table removed from dashboard. Use the 'Manage Staff' or 'View Staff' button to access the staff list. -->
+                <!-- Welcome Message -->
+                {% if show_welcome %}
+                <div class="welcome-message">
+                    <i class="fas fa-info-circle me-2"></i>
+                    <span class="welcome-title">Welcome to Mariampur Hospital</span>
+                    <p class="welcome-message">You are logged in as <strong>Department Head</strong> for <span class="badge bg-primary">{{ department_head.department.name }}</span></p>
+                </div>
                 {% endif %}
             </div>
         </div>

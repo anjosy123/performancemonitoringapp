@@ -11,9 +11,9 @@
             <button id="exportBtn" class="btn btn-light btn-sm">
                 <i class="fas fa-download me-1"></i>Export
             </button>
-            <a href="{% url 'dashboard' %}" class="btn btn-light btn-sm close-btn">
-                <i class="fas fa-times"></i>
-            </a>
+        <a href="{% url 'dashboard' %}" class="btn btn-light btn-sm close-btn">
+            <i class="fas fa-times"></i>
+        </a>
         </div>
     </div>
 
@@ -38,8 +38,8 @@
             <div class="col-md-3">
                 <select id="departmentFilter" class="form-select">
                     <option value="">All Departments</option>
-                    {% for department in departments %}
-                        <option value="{{ department.name }}">{{ department.name }}</option>
+                    {% for dept in departments %}
+                        <option value="{{ dept.name }}">{{ dept.name }}</option>
                     {% endfor %}
                 </select>
             </div>
@@ -504,7 +504,7 @@ document.addEventListener('DOMContentLoaded', function() {
             
             // Status filter
             const matchesStatus = !selectedStatus || status === selectedStatus;
-            
+
             // Reporter filter
             const matchesReporter = !selectedReporter || name.includes(selectedReporter);
             

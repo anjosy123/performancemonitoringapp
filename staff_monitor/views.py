@@ -162,6 +162,9 @@ def dashboard(request):
     is_admin = request.user.is_staff
     user_is_hr_head = is_hr_head(request.user)
     
+    # Check if a welcome message should be shown
+    show_welcome = request.session.pop('show_welcome_message', False)
+    
     # For department heads
     if not is_admin and not user_is_hr_head:
         try:
@@ -213,9 +216,10 @@ def dashboard(request):
                 'assigned_staff': assigned_staff,
                 'department_staff': department_staff,  # Staff in department/subdepartment but not assigned
                 'subdepartment_heads': subdepartment_heads,
-                'show_welcome': True,  # Show welcome message on login
+                'show_welcome': show_welcome,  # Show welcome message on login
                 'has_assigned_staff': assigned_staff.exists(),  # Flag for directly assigned staff
-                'has_department_staff': department_staff.exists()  # Flag for other staff in department
+                'has_department_staff': department_staff.exists(),  # Flag for other staff in department
+                'user_reports': get_department_dashboard_reports(request.user),  # Add user's submitted reports
             }
             return render(request, 'staff_monitor/dashboard.html', context)
         except DepartmentHead.DoesNotExist:
@@ -653,26 +657,36 @@ def view_incident_report(request, report_id):
     if not request.user.is_staff:
         try:
             department_head = DepartmentHead.objects.get(user=request.user)
-            
-            # Prevent department heads from viewing their own reports
+
+            # Prevent viewing their own report
             if report.department_head and report.department_head.id == department_head.id:
                 messages.error(request, 'You cannot view your own incident reports.')
                 return redirect('incident_report_list')
             
-            # HR heads can view any report (except their own, handled above)
-            if department_head.is_hr_head or department_head.department.name.lower() == "hr" or (department_head.subdepartment and department_head.subdepartment.name.lower() == "hr"):
-                # Continue with viewing the report
-                pass
-            # Regular department heads can only view reports from their department
-            elif (report.staff and report.staff.department != department_head.department) or \
-                 (report.department_head and report.department_head.department != department_head.department):
-                messages.error(request, 'You do not have permission to view this report.')
+            # Check if the report is within the department head's scope
+            report_department = None
+            if report.staff:
+                report_department = report.staff.department
+            elif report.department_head:
+                report_department = report.department_head.department
+
+            is_privileged_hr = (department_head.is_hr_head and hasattr(department_head, 'privileges') and department_head.privileges.can_view_all_reports) or \
+                               (department_head.department.name.lower() == "hr") or \
+                               (department_head.subdepartment and department_head.subdepartment.name.lower() == "hr")
+
+            # Check if the report's subject (staff or head) is within the manager's department
+            report_subject_department = None
+            if report.staff:
+                report_subject_department = report.staff.department
+            elif report.department_head:
+                report_subject_department = report.department_head.department
+
+            # A department head can view any report if it belongs to their own department.
+            # This covers main department heads viewing sub-department reports.
+            if report_subject_department != department_head.department:
+                messages.error(request, 'You do not have permission to view this report as it is outside your department.')
                 return redirect('incident_report_list')
-            # Subdepartment heads can only view reports for staff assigned to them
-            elif department_head.subdepartment is not None:
-                if report.staff and report.staff not in department_head.managed_staff.all():
-                    messages.error(request, 'You do not have permission to view this report.')
-                    return redirect('incident_report_list')
+
         except DepartmentHead.DoesNotExist:
             messages.error(request, 'You do not have permission to view reports.')
             return redirect('dashboard')
@@ -686,33 +700,33 @@ def view_incident_report(request, report_id):
 
 @login_required
 def print_incident_report(request, report_id):
-    # Reuse the view_incident_report logic but with print parameter
     report = get_object_or_404(IncidentReport, id=report_id)
-    
-    # Check permissions
+
     if not request.user.is_staff:
         try:
             department_head = DepartmentHead.objects.get(user=request.user)
-            
-            # Prevent department heads from viewing their own reports
+
             if report.department_head and report.department_head.id == department_head.id:
-                messages.error(request, 'You cannot view your own incident reports.')
+                messages.error(request, 'You cannot print your own incident reports.')
                 return redirect('incident_report_list')
-            
-            # HR heads can view any report (except their own, handled above)
-            if department_head.is_hr_head or department_head.department.name.lower() == "hr" or (department_head.subdepartment and department_head.subdepartment.name.lower() == "hr"):
-                # Continue with viewing the report
-                pass
-            # Regular department heads can only view reports from their department
-            elif (report.staff and report.staff.department != department_head.department) or \
-                 (report.department_head and report.department_head.department != department_head.department):
-                messages.error(request, 'You do not have permission to view this report.')
-                return redirect('incident_report_list')
-            # Subdepartment heads can only view reports for staff assigned to them
-            elif department_head.subdepartment is not None:
-                if report.staff and report.staff not in department_head.managed_staff.all():
-                    messages.error(request, 'You do not have permission to view this report.')
+
+            # HR heads can view any report, so we check for that first
+            is_privileged_hr = (department_head.is_hr_head and hasattr(department_head, 'privileges') and department_head.privileges.can_view_all_reports) or \
+                               (department_head.department.name.lower() == "hr") or \
+                               (department_head.subdepartment and department_head.subdepartment.name.lower() == "hr")
+
+            if not is_privileged_hr:
+                # For non-HR heads, check if the report is within their department
+                report_subject_department = None
+                if report.staff:
+                    report_subject_department = report.staff.department
+                elif report.department_head:
+                    report_subject_department = report.department_head.department
+
+                if report_subject_department != department_head.department:
+                    messages.error(request, 'You do not have permission to print this report as it is outside your department.')
                     return redirect('incident_report_list')
+
         except DepartmentHead.DoesNotExist:
             messages.error(request, 'You do not have permission to view reports.')
             return redirect('dashboard')
@@ -1312,6 +1326,9 @@ def custom_login(request):
                 auth_login(request, user)
                 logger.info(f"User logged in successfully: {username}")
                 
+                # Set a session flag to show the welcome message
+                request.session['show_welcome_message'] = True
+                
                 # Redirect to next page or dashboard
                 return redirect(next_url if next_url and next_url != '/' else 'dashboard')
             else:
@@ -1391,35 +1408,51 @@ def debug_db_connection(request):
 @login_required
 def report_list(request):
     try:
-        if request.user.is_staff:
-            # Admin sees all reports
-            reports = PerformanceReport.objects.all().order_by('-date')
+        user = request.user
+        reports = PerformanceReport.objects.none()
+        departments = Department.objects.none()
+        is_authorized = False
+
+        if user.is_staff:
+            is_authorized = True
+            reports = PerformanceReport.objects.all()
+            departments = Department.objects.all()
         else:
             try:
-                # Check if the user is a department head
-                department_head = DepartmentHead.objects.get(user=request.user)
-                
-                # Check if HR head with all-reports privilege
-                if department_head.is_hr_head and hasattr(department_head, 'privileges') and department_head.privileges.can_view_all_reports:
-                    reports = PerformanceReport.objects.exclude(department_head=department_head).order_by('-date')
-                elif department_head.department.name.lower() == "hr" or (department_head.subdepartment and department_head.subdepartment.name.lower() == "hr"):
-                    reports = PerformanceReport.objects.exclude(department_head=department_head).order_by('-date')
+                department_head = DepartmentHead.objects.get(user=user)
+                is_authorized = True
+
+                is_privileged_hr = (department_head.is_hr_head and hasattr(department_head, 'privileges') and department_head.privileges.can_view_all_reports) or \
+                                   (department_head.department.name.lower() == "hr") or \
+                                   (department_head.subdepartment and department_head.subdepartment.name.lower() == "hr")
+
+                if is_privileged_hr:
+                    reports = PerformanceReport.objects.exclude(department_head=department_head)
+                    departments = Department.objects.all()
                 else:
-                    if department_head.subdepartment is None:
+                    if department_head.subdepartment:
                         reports = PerformanceReport.objects.filter(
-                            models.Q(staff__department=department_head.department) | 
-                            models.Q(department_head__department=department_head.department)
-                        ).exclude(department_head=department_head).order_by('-date')
+                            Q(staff__subdepartment=department_head.subdepartment) |
+                            Q(department_head__subdepartment=department_head.subdepartment)
+                        ).exclude(department_head=department_head)
                     else:
-                        managed_staff_ids = department_head.managed_staff.values_list('id', flat=True)
                         reports = PerformanceReport.objects.filter(
-                            models.Q(staff_id__in=managed_staff_ids)
-                        ).exclude(department_head=department_head).order_by('-date')
+                            Q(staff__department=department_head.department) |
+                            Q(department_head__department=department_head.department)
+                        ).exclude(department_head=department_head)
+                    
+                    departments = Department.objects.filter(id=department_head.department.id)
+
             except DepartmentHead.DoesNotExist:
-                reports = PerformanceReport.objects.none()
-        
+                is_authorized = False
+
+        if not is_authorized:
+            messages.error(request, "You do not have permission to view performance reports.")
+            return redirect('dashboard')
+
         return render(request, 'staff_monitor/report_list.html', {
-            'reports': reports,
+            'reports': reports.order_by('-date'),
+            'departments': departments.order_by('name'),
             'rating_choices': PerformanceReport.RATING_CHOICES
         })
     except Exception as e:
@@ -1429,69 +1462,62 @@ def report_list(request):
 @login_required
 def incident_report_list(request):
     try:
-        # Check permissions (same as performance reports)
-        if request.user.is_staff:
-            # Admin sees all reports
+        user = request.user
+        reports = IncidentReport.objects.none()
+        departments = Department.objects.none()
+        is_authorized = False
+
+        if user.is_staff:
             is_authorized = True
-            # Get all incident reports
-            reports = IncidentReport.objects.all().order_by('-incident_date', '-incident_time')
+            reports = IncidentReport.objects.all()
+            departments = Department.objects.all()
         else:
             try:
-                # Check if the user is a department head
-                department_head = DepartmentHead.objects.get(user=request.user)
-                
-                # Check if HR head with all-reports privilege
-                if department_head.is_hr_head and hasattr(department_head, 'privileges') and department_head.privileges.can_view_all_reports:
-                    is_authorized = True
-                    # HR head sees all reports except their own
-                    reports = IncidentReport.objects.exclude(
-                        department_head=department_head
-                    ).order_by('-incident_date', '-incident_time')
-                elif department_head.department.name.lower() == "hr" or (department_head.subdepartment and department_head.subdepartment.name.lower() == "hr"):
-                    is_authorized = True
-                    # HR department or subdepartment sees all reports except their own
-                    reports = IncidentReport.objects.exclude(
-                        department_head=department_head
-                    ).order_by('-incident_date', '-incident_time')
+                department_head = DepartmentHead.objects.get(user=user)
+                is_authorized = True  # All department heads are authorized to see this page
+
+                is_privileged_hr = (department_head.is_hr_head and hasattr(department_head, 'privileges') and department_head.privileges.can_view_all_reports) or \
+                                   (department_head.department.name.lower() == "hr") or \
+                                   (department_head.subdepartment and department_head.subdepartment.name.lower() == "hr")
+
+                if is_privileged_hr:
+                    # Privileged HR heads can see all reports (except their own) and filter by any department
+                    reports = IncidentReport.objects.exclude(department_head=department_head)
+                    departments = Department.objects.all()
                 else:
-                    # Regular department head is authorized to see their department's reports
-                    is_authorized = True
-                    
-                    if department_head.subdepartment is None:
-                        # Main department head sees all reports from their department except their own
+                    # Regular department heads see reports only from their scope
+                    if department_head.subdepartment:
+                        # Sub-department head's scope is their specific sub-department
                         reports = IncidentReport.objects.filter(
-                            models.Q(staff__department=department_head.department) |
-                            models.Q(department_head__department=department_head.department)
-                        ).exclude(
-                            department_head=department_head
-                        ).order_by('-incident_date', '-incident_time')
+                            Q(staff__subdepartment=department_head.subdepartment) |
+                            Q(department_head__subdepartment=department_head.subdepartment)
+                        ).exclude(department_head=department_head)
                     else:
-                        # Subdepartment head sees only reports for staff assigned to them, not their own
-                        managed_staff_ids = department_head.managed_staff.values_list('id', flat=True)
-                        reports = IncidentReport.objects.filter(
-                            models.Q(staff_id__in=managed_staff_ids)
-                        ).exclude(
-                            department_head=department_head
-                        ).order_by('-incident_date', '-incident_time')
+                        # Main department head's scope is their entire department.
+                        # This includes staff directly in the department and all sub-departments.
+                        department = department_head.department
+                        subdepartments_in_dept = SubDepartment.objects.filter(department=department)
                         
-                        # Add debug message to check if reports are being found
-                        print(f"Found {reports.count()} incident reports for subdepartment head {department_head.user.get_full_name()}")
-                        print(f"Managed staff IDs for incidents: {list(managed_staff_ids)}")
+                        reports = IncidentReport.objects.filter(
+                            Q(staff__department=department) | 
+                            Q(staff__subdepartment__in=subdepartments_in_dept) |
+                            Q(department_head__department=department)
+                        ).distinct().exclude(department_head=department_head)
+                    
+                    # A regular head should only be able to filter by their own department
+                    departments = Department.objects.filter(id=department_head.department.id)
+
             except DepartmentHead.DoesNotExist:
-                is_authorized = False
-                reports = IncidentReport.objects.none()
-        
+                is_authorized = False  # Not a dept head, not authorized
+
         if not is_authorized:
             messages.error(request, "You do not have permission to view incident reports.")
             return redirect('dashboard')
-        
-        # Get departments for filter
-        departments = Department.objects.all().order_by('name')
             
         # Pass the reports to the template
         return render(request, 'staff_monitor/incident_report_list.html', {
-            'reports': reports,
-            'departments': departments,
+            'reports': reports.order_by('-incident_date', '-incident_time'),
+            'departments': departments.order_by('name'),
             'status_choices': IncidentReport.STATUS_CHOICES
         })
         
@@ -2641,3 +2667,82 @@ def delete_superintendent(request, superintendent_id):
     }
     
     return render(request, 'staff_monitor/superintendent_confirm_delete.html', context)
+
+# Add this function after the existing helper functions and before the dashboard view
+
+def get_user_submitted_reports(user):
+    """Get all reports submitted by the current user"""
+    try:
+        # Get performance reports submitted by this user
+        performance_reports = PerformanceReport.objects.filter(
+            evaluator=user
+        ).select_related('staff', 'department_head', 'staff__user', 'department_head__user').order_by('-date')[:10]
+        
+        # Get incident reports submitted by this user
+        incident_reports = IncidentReport.objects.filter(
+            reporter=user
+        ).select_related('staff', 'department_head', 'staff__user', 'department_head__user').order_by('-incident_date', '-incident_time')[:10]
+        
+        return {
+            'performance_reports': performance_reports,
+            'incident_reports': incident_reports,
+            'total_performance_reports': PerformanceReport.objects.filter(evaluator=user).count(),
+            'total_incident_reports': IncidentReport.objects.filter(reporter=user).count(),
+        }
+    except Exception as e:
+        logger.error(f"Error getting user submitted reports: {str(e)}")
+        return {
+            'performance_reports': [],
+            'incident_reports': [],
+            'total_performance_reports': 0,
+            'total_incident_reports': 0,
+        }
+
+def get_department_dashboard_reports(user):
+    """Get all recent reports relevant to a department head's dashboard."""
+    try:
+        department_head = DepartmentHead.objects.get(user=user)
+    except DepartmentHead.DoesNotExist:
+        # If the user is not a department head, return empty
+        return {
+            'performance_reports': [],
+            'incident_reports': [],
+            'total_performance_reports': 0,
+            'total_incident_reports': 0,
+        }
+
+    # Define the querysets for staff and department heads in the manager's scope
+    if department_head.subdepartment:
+        # Sub-department head: scope is their sub-department
+        staff_in_scope = Staff.objects.filter(subdepartment=department_head.subdepartment)
+        heads_in_scope = DepartmentHead.objects.filter(subdepartment=department_head.subdepartment)
+    else:
+        # Main department head: scope is their entire department
+        staff_in_scope = Staff.objects.filter(department=department_head.department)
+        heads_in_scope = DepartmentHead.objects.filter(department=department_head.department, subdepartment__isnull=False)
+
+    # Get recent performance reports within scope
+    performance_reports = PerformanceReport.objects.filter(
+        Q(staff__in=staff_in_scope) | Q(department_head__in=heads_in_scope)
+    ).select_related('staff', 'department_head', 'staff__user', 'department_head__user').order_by('-date')[:10]
+    
+    # Get recent incident reports within scope
+    incident_reports = IncidentReport.objects.filter(
+        Q(staff__in=staff_in_scope) | Q(department_head__in=heads_in_scope)
+    ).select_related('staff', 'department_head', 'staff__user', 'department_head__user').order_by('-incident_date', '-incident_time')[:10]
+
+    # Get total counts
+    total_performance_reports = PerformanceReport.objects.filter(
+        Q(staff__in=staff_in_scope) | Q(department_head__in=heads_in_scope)
+    ).count()
+    
+    total_incident_reports = IncidentReport.objects.filter(
+        Q(staff__in=staff_in_scope) | Q(department_head__in=heads_in_scope)
+    ).count()
+
+    return {
+        'performance_reports': performance_reports,
+        'incident_reports': incident_reports,
+        'total_performance_reports': total_performance_reports,
+        'total_incident_reports': total_incident_reports,
+    }

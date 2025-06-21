@@ -401,7 +401,7 @@ class IncidentReport(models.Model):
                 # First, try the direct path
                 if os.path.exists(self.incident_photo.path):
                     return self.incident_photo.url
-                
+                    
                 # If direct path doesn't exist, try with normalized report number
                 safe_report_number = self.report_number.replace('-', '_')
                 potential_filename = f"incident_{safe_report_number}.jpg"
@@ -409,7 +409,7 @@ class IncidentReport(models.Model):
                 
                 if os.path.exists(potential_path):
                     return f"{settings.MEDIA_URL}incident_photos/{potential_filename}"
-                    
+                        
             except (ValueError, AttributeError, FileNotFoundError) as e:
                 logger.error(f"Error retrieving photo URL: {str(e)}")
                 pass
