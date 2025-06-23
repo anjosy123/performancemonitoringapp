@@ -3,25 +3,25 @@
 
 {% block content %}
 <div class="row justify-content-center">
-    <div class="col-md-10">
+    <div class="col-12 col-md-10">
         <div class="card">
             <div class="card-body">
                 <!-- Admin Dashboard -->
                 {% if is_admin %}
                 <div class="quick-links">
-                    <div class="row g-3 justify-content-center">
-                        <div class="col-md-4">
-                            <a href="{% url 'superintendent_list' %}" class="btn btn-outline-primary w-100">
+                    <div class="row row-cols-1 row-cols-md-3 g-3 justify-content-center">
+                        <div class="col">
+                            <a href="{% url 'superintendent_list' %}" class="btn btn-outline-primary w-100 mb-2 mb-md-0">
                                 <i class="fas fa-user-md me-2"></i>View Department Heads
                             </a>
                         </div>
-                        <div class="col-md-4">
-                            <a href="{% url 'staff_list' %}" class="btn btn-outline-primary w-100">
+                        <div class="col">
+                            <a href="{% url 'staff_list' %}" class="btn btn-outline-primary w-100 mb-2 mb-md-0">
                                 <i class="fas fa-users me-2"></i>View Staff
                             </a>
                         </div>
-                        <div class="col-md-4">
-                            <div class="dropdown">
+                        <div class="col">
+                            <div class="dropdown w-100">
                                 <button class="btn btn-outline-primary w-100 dropdown-toggle" type="button" id="reportsDropdownBtn" data-bs-toggle="dropdown" aria-expanded="false">
                                     <i class="fas fa-clipboard-list me-2"></i>View Reports
                                 </button>
@@ -40,26 +40,24 @@
                             </div>
                         </div>
                     </div>
-                    
-                    <div class="row g-3 justify-content-center mt-3">
-                        <div class="col-md-4">
-                            <a href="{% url 'hr_privileges_list' %}" class="btn btn-outline-success w-100">
+                    <div class="row row-cols-1 row-cols-md-3 g-3 justify-content-center mt-3">
+                        <div class="col">
+                            <a href="{% url 'hr_privileges_list' %}" class="btn btn-outline-success w-100 mb-2 mb-md-0">
                                 <i class="fas fa-user-shield me-2"></i>Manage HR Privileges
                             </a>
                         </div>
-                        <div class="col-md-4">
-                            <a href="{% url 'bulk_upload_staff' %}" class="btn btn-outline-warning w-100">
+                        <div class="col">
+                            <a href="{% url 'bulk_upload_staff' %}" class="btn btn-outline-warning w-100 mb-2 mb-md-0">
                                 <i class="fas fa-file-upload me-2"></i>Bulk Upload Staff
                             </a>
                         </div>
-                        <div class="col-md-4">
-                            <a href="{% url 'center_management' %}" class="btn btn-outline-info w-100">
+                        <div class="col">
+                            <a href="{% url 'center_management' %}" class="btn btn-outline-info w-100 mb-2 mb-md-0">
                                 <i class="fas fa-hospital-user me-2"></i>Status Marker
                             </a>
                         </div>
                     </div>
                 </div>
-                
                 <!-- Department Head Evaluation Section for Admin -->
                 <div class="card mt-4">
                     <div class="card-header bg-primary text-white">
@@ -69,7 +67,6 @@
                     </div>
                     <div class="card-body">
                         <p class="text-muted mb-3">Select a department head to evaluate their performance or record an incident:</p>
-                        
                         <!-- Department Heads Table -->
                         <div class="table-responsive">
                             <table class="table table-hover" id="deptHeadTable">
@@ -91,17 +88,17 @@
                                         data-subdepartment="{{ head.subdepartment.name|default:'Main' }}"
                                         data-contact="{{ head.contact_number }}"
                                         data-status="{{ head.status }}">
-                                        <td>{{ head.user.get_full_name }}</td>
-                                        <td>{{ head.department.name }}</td>
-                                        <td>
+                                        <td data-label="Name">{{ head.user.get_full_name }}</td>
+                                        <td data-label="Department">{{ head.department.name }}</td>
+                                        <td data-label="Subdepartment">
                                             {% if head.subdepartment %}
                                             {{ head.subdepartment.name }}
                                             {% else %}
                                             <span class="text-muted">Main</span>
                                             {% endif %}
                                         </td>
-                                        <td>{{ head.contact_number }}</td>
-                                        <td>
+                                        <td data-label="Contact">{{ head.contact_number }}</td>
+                                        <td data-label="Status">
                                             {% if head.status == 'active' %}
                                             <span class="badge bg-success">Active</span>
                                             {% elif head.status == 'on_leave' %}
@@ -112,12 +109,12 @@
                                             <span class="badge bg-secondary">Inactive</span>
                                             {% endif %}
                                         </td>
-                                        <td>
-                                            <div class="btn-group">
-                                                <a href="{% url 'performance_form_department_head' head.id %}" class="btn btn-primary btn-sm">
+                                        <td data-label="Actions">
+                                            <div class="btn-group d-flex flex-md-row flex-column gap-1">
+                                                <a href="{% url 'performance_form_department_head' head.id %}" class="btn btn-primary btn-sm w-100 mb-1 mb-md-0">
                                                     <i class="fas fa-clipboard-check me-1"></i>Evaluate
                                                 </a>
-                                                <a href="{% url 'feedback_form_department_head' head.id %}" class="btn btn-success btn-sm">
+                                                <a href="{% url 'feedback_form_department_head' head.id %}" class="btn btn-success btn-sm w-100">
                                                     <i class="fas fa-comment-dots me-1"></i>Incident
                                                 </a>
                                             </div>
