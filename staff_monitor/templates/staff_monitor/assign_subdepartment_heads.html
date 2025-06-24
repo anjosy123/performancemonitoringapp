@@ -1,0 +1,57 @@
+{% extends 'staff_monitor/base.html' %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="card">
+        <div class="card-header bg-secondary text-white">
+            <h4 class="mb-0">
+                <i class="fas fa-sitemap me-2"></i>Assign Subdepartment Heads to {{ department_head.user.get_full_name }}
+            </h4>
+        </div>
+        <div class="card-body">
+            <form method="post">
+                {% csrf_token %}
+                <div class="mb-3">
+                    <label class="form-label fw-bold">Select Subdepartment Heads to assign:</label>
+                    <div class="table-responsive">
+                        <table class="table table-bordered align-middle">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>Select</th>
+                                    <th>Name</th>
+                                    <th>Subdepartment</th>
+                                    <th>Contact</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for head in subdepartment_heads %}
+                                <tr>
+                                    <td>
+                                        <input type="checkbox" name="subdepartment_head_ids" value="{{ head.id }}" {% if head in assigned_subdepartment_heads %}checked{% endif %}>
+                                    </td>
+                                    <td>{{ head.user.get_full_name }}</td>
+                                    <td>{{ head.subdepartment.name }}</td>
+                                    <td>{{ head.contact_number }}</td>
+                                </tr>
+                                {% empty %}
+                                <tr>
+                                    <td colspan="4" class="text-center text-muted">No subdepartment heads found for these departments.</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                <div class="d-flex justify-content-between">
+                    <a href="{% url 'superintendent_list' %}" class="btn btn-outline-secondary">
+                        <i class="fas fa-arrow-left me-1"></i>Back to Department Heads
+                    </a>
+                    <button type="submit" class="btn btn-success">
+                        <i class="fas fa-save me-1"></i>Save Assignments
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %} 

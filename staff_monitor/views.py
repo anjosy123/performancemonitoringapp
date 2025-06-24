@@ -220,6 +220,7 @@ def dashboard(request):
                 'has_assigned_staff': assigned_staff.exists(),  # Flag for directly assigned staff
                 'has_department_staff': department_staff.exists(),  # Flag for other staff in department
                 'user_reports': get_department_dashboard_reports(request.user),  # Add user's submitted reports
+                'managed_subdepartment_heads': department_head.managed_subdepartment_heads.all(),
             }
             return render(request, 'staff_monitor/dashboard.html', context)
         except DepartmentHead.DoesNotExist:
@@ -267,13 +268,14 @@ def performance_form(request, staff_id):
     if not request.user.is_staff:  # If not admin
         try:
             department_head = DepartmentHead.objects.get(user=request.user)
-            
             # HR heads can evaluate any staff
             if department_head.is_hr_head or department_head.department.name.lower() == "hr":
-                # Continue with evaluation
+                pass
+            # Allow if staff is assigned to this department head
+            elif department_head in staff.managed_by.all():
                 pass
             # Regular department heads can only evaluate staff in their department
-            elif staff.department != department_head.department:
+            else:
                 messages.error(request, 'You do not have permission to evaluate staff from other departments.')
                 return redirect('dashboard')
         except DepartmentHead.DoesNotExist:
@@ -391,6 +393,9 @@ def performance_form_department_head(request, department_head_id):
             # HR heads can evaluate any department head
             if main_department_head.is_hr_head or main_department_head.department.name.lower() == "hr":
                 # Continue with evaluation
+                pass
+            # Allow if the department head is assigned to this department head (via managed_subdepartment_heads)
+            elif main_department_head in department_head.supervised_by.all():
                 pass
             # Regular department heads can only evaluate subdepartment heads in their department
             elif department_head.department != main_department_head.department or main_department_head.subdepartment is not None:
@@ -657,7 +662,7 @@ def view_incident_report(request, report_id):
     if not request.user.is_staff:
         try:
             department_head = DepartmentHead.objects.get(user=request.user)
-
+            
             # Prevent viewing their own report
             if report.department_head and report.department_head.id == department_head.id:
                 messages.error(request, 'You cannot view your own incident reports.')
@@ -701,15 +706,15 @@ def view_incident_report(request, report_id):
 @login_required
 def print_incident_report(request, report_id):
     report = get_object_or_404(IncidentReport, id=report_id)
-
+    
     if not request.user.is_staff:
         try:
             department_head = DepartmentHead.objects.get(user=request.user)
-
+            
             if report.department_head and report.department_head.id == department_head.id:
                 messages.error(request, 'You cannot print your own incident reports.')
                 return redirect('incident_report_list')
-
+            
             # HR heads can view any report, so we check for that first
             is_privileged_hr = (department_head.is_hr_head and hasattr(department_head, 'privileges') and department_head.privileges.can_view_all_reports) or \
                                (department_head.department.name.lower() == "hr") or \
@@ -725,7 +730,7 @@ def print_incident_report(request, report_id):
 
                 if report_subject_department != department_head.department:
                     messages.error(request, 'You do not have permission to print this report as it is outside your department.')
-                    return redirect('incident_report_list')
+                return redirect('incident_report_list')
 
         except DepartmentHead.DoesNotExist:
             messages.error(request, 'You do not have permission to view reports.')
@@ -1430,17 +1435,21 @@ def report_list(request):
                     reports = PerformanceReport.objects.exclude(department_head=department_head)
                     departments = Department.objects.all()
                 else:
+                    # Get all staff assigned to this department head
+                    assigned_staff = Staff.objects.filter(managed_by=department_head)
+                    # Also include staff in their department (legacy)
                     if department_head.subdepartment:
                         reports = PerformanceReport.objects.filter(
                             Q(staff__subdepartment=department_head.subdepartment) |
-                            Q(department_head__subdepartment=department_head.subdepartment)
+                            Q(department_head__subdepartment=department_head.subdepartment) |
+                            Q(staff__in=assigned_staff)
                         ).exclude(department_head=department_head)
                     else:
                         reports = PerformanceReport.objects.filter(
                             Q(staff__department=department_head.department) |
-                            Q(department_head__department=department_head.department)
+                            Q(department_head__department=department_head.department) |
+                            Q(staff__in=assigned_staff)
                         ).exclude(department_head=department_head)
-                    
                     departments = Department.objects.filter(id=department_head.department.id)
 
             except DepartmentHead.DoesNotExist:
@@ -1449,7 +1458,7 @@ def report_list(request):
         if not is_authorized:
             messages.error(request, "You do not have permission to view performance reports.")
             return redirect('dashboard')
-
+        
         return render(request, 'staff_monitor/report_list.html', {
             'reports': reports.order_by('-date'),
             'departments': departments.order_by('name'),
@@ -1503,13 +1512,13 @@ def incident_report_list(request):
                             Q(staff__subdepartment__in=subdepartments_in_dept) |
                             Q(department_head__department=department)
                         ).distinct().exclude(department_head=department_head)
-                    
+                        
                     # A regular head should only be able to filter by their own department
                     departments = Department.objects.filter(id=department_head.department.id)
 
             except DepartmentHead.DoesNotExist:
                 is_authorized = False  # Not a dept head, not authorized
-
+        
         if not is_authorized:
             messages.error(request, "You do not have permission to view incident reports.")
             return redirect('dashboard')
@@ -1617,32 +1626,31 @@ def add_staff(request):
 @user_passes_test(lambda u: can_perform_action(u, 'can_edit_department_head') or u.is_staff)
 def manage_department_head_staff(request, department_head_id):
     current_head = get_object_or_404(DepartmentHead, id=department_head_id)
-    
-    # Get all department heads in the same department
-    department_heads = DepartmentHead.objects.filter(department=current_head.department)
-    
-    # Get all departments that this head manages (primary + additional)
-    managed_departments = [current_head.department]
-    if current_head.managed_departments.exists():
-        managed_departments.extend(current_head.managed_departments.all())
-    
-    # Get available and assigned staff from all managed departments
+    managed_departments = list(current_head.managed_departments.all())
+    if current_head.department and current_head.department not in managed_departments:
+        managed_departments.append(current_head.department)
+    managed_subdepartments = current_head.managed_subdepartments.all()
+    from staff_monitor.models import SubDepartment
+    all_subdepartments = SubDepartment.objects.filter(department__in=managed_departments)
+    # Combine all subdepartments (from managed departments and directly managed)
+    all_subdepartments_ids = set(all_subdepartments.values_list('id', flat=True)) | set(managed_subdepartments.values_list('id', flat=True))
+    department_heads = DepartmentHead.objects.filter(
+        Q(department__in=managed_departments) | Q(managed_departments__in=managed_departments)
+    ).distinct()
     available_staff = Staff.objects.filter(
-        department__in=managed_departments
+        Q(department__in=managed_departments) | Q(subdepartment__id__in=all_subdepartments_ids)
     ).exclude(
         managed_by=current_head
     ).select_related('user', 'department', 'subdepartment').order_by('user__first_name', 'user__last_name')
-    
     assigned_staff = Staff.objects.filter(managed_by=current_head).select_related('user', 'department', 'subdepartment').order_by('user__first_name', 'user__last_name')
-    
     context = {
         'current_head': current_head,
         'department_heads': department_heads,
         'available_staff': available_staff,
         'assigned_staff': assigned_staff,
         'managed_departments': managed_departments,
+        'managed_subdepartments': managed_subdepartments,
     }
-    
     return render(request, 'staff_monitor/manage_department_head_staff.html', context)
 
 @login_required
@@ -1651,22 +1659,19 @@ def assign_staff_to_head(request, department_head_id, staff_id):
     if request.method == 'POST':
         department_head = get_object_or_404(DepartmentHead, id=department_head_id)
         staff = get_object_or_404(Staff, id=staff_id)
-        
-        # Get all departments that this head manages (primary + additional)
-        managed_departments = [department_head.department]
-        if department_head.managed_departments.exists():
-            managed_departments.extend(department_head.managed_departments.all())
-        
-        # Verify staff is in one of the managed departments
-        if staff.department not in managed_departments:
-            messages.error(request, f"Cannot assign staff from department '{staff.department.name}' as it's not in the managed departments.")
+        managed_departments = list(department_head.managed_departments.all())
+        if department_head.department and department_head.department not in managed_departments:
+            managed_departments.append(department_head.department)
+        managed_subdepartments = department_head.managed_subdepartments.all()
+        from staff_monitor.models import SubDepartment
+        all_subdepartments = SubDepartment.objects.filter(department__in=managed_departments)
+        all_subdepartments_ids = set(all_subdepartments.values_list('id', flat=True)) | set(managed_subdepartments.values_list('id', flat=True))
+        # Only use managed_subdepartments and all subdepartments of managed departments for eligibility
+        if staff.department not in managed_departments and (not staff.subdepartment or staff.subdepartment.id not in all_subdepartments_ids):
+            messages.error(request, f"Cannot assign staff from department '{staff.department.name}' as it's not in the managed departments or subdepartments.")
             return redirect('manage_department_head_staff', department_head_id=department_head_id)
-        
-        # Add staff to department head's managed staff
         staff.managed_by.add(department_head)
-        
         messages.success(request, f"Successfully assigned {staff.user.get_full_name()} to {department_head.user.get_full_name()}")
-    
     return redirect('manage_department_head_staff', department_head_id=department_head_id)
 
 @login_required
@@ -1687,23 +1692,20 @@ def unassign_staff_from_head(request, department_head_id, staff_id):
 @user_passes_test(lambda u: can_perform_action(u, 'can_edit_department_head') or u.is_staff)
 def assign_all_staff(request, department_head_id):
     department_head = get_object_or_404(DepartmentHead, id=department_head_id)
-    
-    # Get all departments that this head manages (primary + additional)
-    managed_departments = [department_head.department]
-    if department_head.managed_departments.exists():
-        managed_departments.extend(department_head.managed_departments.all())
-    
-    # Get all available staff from all managed departments
+    managed_departments = list(department_head.managed_departments.all())
+    if department_head.department and department_head.department not in managed_departments:
+        managed_departments.append(department_head.department)
+    managed_subdepartments = department_head.managed_subdepartments.all()
+    from staff_monitor.models import SubDepartment
+    all_subdepartments = SubDepartment.objects.filter(department__in=managed_departments)
+    all_subdepartments_ids = set(all_subdepartments.values_list('id', flat=True)) | set(managed_subdepartments.values_list('id', flat=True))
     available_staff = Staff.objects.filter(
-        department__in=managed_departments
+        Q(department__in=managed_departments) | Q(subdepartment__id__in=all_subdepartments_ids)
     ).exclude(
         managed_by=department_head
     )
-    
-    # Assign all available staff
     for staff in available_staff:
         staff.managed_by.add(department_head)
-    
     messages.success(request, f'Successfully assigned {available_staff.count()} staff members.')
     return redirect('manage_department_head_staff', department_head_id=department_head_id)
 
@@ -1722,32 +1724,6 @@ def unassign_all_staff(request, department_head_id):
     
     messages.success(request, f'Successfully unassigned {count} staff members.')
     return redirect('manage_department_head_staff', department_head_id=department_head_id)
-
-@login_required
-@user_passes_test(lambda u: can_perform_action(u, 'can_edit_department_head') or u.is_staff)
-def manage_department_head_staff(request, department_head_id):
-    current_head = get_object_or_404(DepartmentHead, id=department_head_id)
-    
-    # Get all department heads in the same department
-    department_heads = DepartmentHead.objects.filter(department=current_head.department)
-    
-    # Get available and assigned staff
-    available_staff = Staff.objects.filter(
-        department=current_head.department
-    ).exclude(
-        managed_by=current_head
-    )
-    
-    assigned_staff = Staff.objects.filter(managed_by=current_head)
-    
-    context = {
-        'current_head': current_head,
-        'department_heads': department_heads,
-        'available_staff': available_staff,
-        'assigned_staff': assigned_staff,
-    }
-    
-    return render(request, 'staff_monitor/manage_department_head_staff.html', context)
 
 @login_required
 @user_passes_test(lambda u: can_perform_action(u, 'can_edit_department_head') or u.is_staff)
@@ -1976,13 +1952,14 @@ def feedback_form(request, staff_id):
     if not request.user.is_staff:  # If not admin
         try:
             department_head = DepartmentHead.objects.get(user=request.user)
-            
             # HR heads can report incidents for any staff
             if department_head.is_hr_head or department_head.department.name.lower() == "hr" or (department_head.subdepartment and department_head.subdepartment.name.lower() == "hr"):
-                # Continue with reporting
+                pass
+            # Allow if staff is assigned to this department head
+            elif department_head in staff.managed_by.all():
                 pass
             # Regular department heads can only report incidents for staff in their department
-            elif staff.department != department_head.department:
+            else:
                 messages.error(request, 'You do not have permission to report incidents for staff from other departments.')
                 return redirect('dashboard')
         except DepartmentHead.DoesNotExist:
@@ -2019,7 +1996,7 @@ def feedback_form(request, staff_id):
                             'position': individual_positions[i] if i < len(individual_positions) else '',
                             'role': individual_roles[i] if i < len(individual_roles) else ''
                         })
-                
+            
                 # Create incident report from form data but don't save yet
                 incident_report = form.save(commit=False)
                 incident_report.staff = staff
@@ -2061,7 +2038,7 @@ def feedback_form(request, staff_id):
                     processed_photo = handle_incident_photo_upload(photo, incident_report.report_number)
                     if processed_photo:
                         incident_report.incident_photo = processed_photo
-                
+            
                 # Set status
                 incident_report.status = 'reported'
                 
@@ -2088,7 +2065,7 @@ def feedback_form(request, staff_id):
     else:
         # GET request, initialize empty form
         form = IncidentReportForm(initial={'user': request.user})
-
+    
     # Prepare context for template
     context = {
         'staff': staff,
@@ -2103,7 +2080,7 @@ def feedback_form(request, staff_id):
             context['department_head'] = department_head
         except DepartmentHead.DoesNotExist:
             pass
-
+    
     return render(request, 'staff_monitor/feedback_form.html', context)
 
 @login_required
@@ -2118,6 +2095,9 @@ def feedback_form_department_head(request, department_head_id):
             # HR heads can evaluate any department head
             if main_department_head.is_hr_head or main_department_head.department.name.lower() == "hr" or (main_department_head.subdepartment and main_department_head.subdepartment.name.lower() == "hr"):
                 # Continue with feedback
+                pass
+            # Allow if the department head is assigned to this department head (via managed_subdepartment_heads)
+            elif main_department_head in department_head.supervised_by.all():
                 pass
             # Regular department heads can only evaluate subdepartment heads in their department
             elif department_head.department != main_department_head.department or main_department_head.subdepartment is not None:
@@ -2157,7 +2137,7 @@ def feedback_form_department_head(request, department_head_id):
                             'position': individual_positions[i] if i < len(individual_positions) else '',
                             'role': individual_roles[i] if i < len(individual_roles) else ''
                         })
-                
+            
                 # Create incident report from form data but don't save yet
                 incident_report = form.save(commit=False)
                 incident_report.department_head = department_head
@@ -2205,7 +2185,7 @@ def feedback_form_department_head(request, department_head_id):
                 
                 # Save the report to get an ID
                 incident_report.save()
-                
+            
                 # Set JSON fields using helper methods
                 incident_report.set_incident_types(incident_types)
                 incident_report.set_related_parties(related_parties)
@@ -2213,7 +2193,7 @@ def feedback_form_department_head(request, department_head_id):
                 
                 # Save again with the JSON fields
                 incident_report.save()
-                
+            
                 messages.success(request, 'Incident report submitted successfully.')
                 return redirect('dashboard')
             except Exception as e:
@@ -2226,7 +2206,7 @@ def feedback_form_department_head(request, department_head_id):
     else:
         # GET request, initialize empty form
         form = IncidentReportForm(initial={'user': request.user})
-
+    
     # Prepare context for template
     context = {
         'department_head': department_head,
@@ -2242,7 +2222,7 @@ def feedback_form_department_head(request, department_head_id):
             context['main_department_head'] = main_department_head
         except DepartmentHead.DoesNotExist:
             pass
-
+    
     return render(request, 'staff_monitor/feedback_form.html', context)
 
 @login_required
@@ -2273,12 +2253,20 @@ def check_report_exists(request, staff_id, date):
 @login_required
 def view_report(request, report_id):
     report = get_object_or_404(PerformanceReport, id=report_id)
-    
     # Check if user has permission to view this report
     if not request.user.is_staff and not is_hr_head(request.user):
         try:
             department_head = DepartmentHead.objects.get(user=request.user)
-            if report.staff and report.staff.department != department_head.department:
+            # Allow if HR head
+            if department_head.is_hr_head or department_head.department.name.lower() == "hr":
+                pass
+            # Allow if staff is assigned to this department head
+            elif report.staff and department_head in report.staff.managed_by.all():
+                pass
+            # Regular department heads can only view staff in their department
+            elif report.staff and report.staff.department == department_head.department:
+                pass
+            else:
                 messages.error(request, "You don't have permission to view this report.")
                 return redirect('dashboard')
         except DepartmentHead.DoesNotExist:
@@ -2363,12 +2351,20 @@ def view_report(request, report_id):
 @login_required
 def print_report(request, report_id):
     report = get_object_or_404(PerformanceReport, id=report_id)
-    
     # Check if user has permission to view this report
     if not request.user.is_staff and not is_hr_head(request.user):
         try:
             department_head = DepartmentHead.objects.get(user=request.user)
-            if report.staff and report.staff.department != department_head.department:
+            # Allow if HR head
+            if department_head.is_hr_head or department_head.department.name.lower() == "hr":
+                pass
+            # Allow if staff is assigned to this department head
+            elif report.staff and department_head in report.staff.managed_by.all():
+                pass
+            # Regular department heads can only view staff in their department
+            elif report.staff and report.staff.department == department_head.department:
+                pass
+            else:
                 messages.error(request, "You don't have permission to view this report.")
                 return redirect('dashboard')
         except DepartmentHead.DoesNotExist:
@@ -2763,6 +2759,8 @@ def get_department_dashboard_reports(user):
             'total_incident_reports': 0,
         }
 
+    # Get all staff assigned to this department head
+    assigned_staff = Staff.objects.filter(managed_by=department_head)
     # Define the querysets for staff and department heads in the manager's scope
     if department_head.subdepartment:
         # Sub-department head: scope is their sub-department
@@ -2772,26 +2770,23 @@ def get_department_dashboard_reports(user):
         # Main department head: scope is their entire department
         staff_in_scope = Staff.objects.filter(department=department_head.department)
         heads_in_scope = DepartmentHead.objects.filter(department=department_head.department, subdepartment__isnull=False)
-
+    # Union with assigned staff
+    staff_in_scope = staff_in_scope | assigned_staff
     # Get recent performance reports within scope
     performance_reports = PerformanceReport.objects.filter(
         Q(staff__in=staff_in_scope) | Q(department_head__in=heads_in_scope)
     ).select_related('staff', 'department_head', 'staff__user', 'department_head__user').order_by('-date')[:10]
-    
     # Get recent incident reports within scope
     incident_reports = IncidentReport.objects.filter(
         Q(staff__in=staff_in_scope) | Q(department_head__in=heads_in_scope)
     ).select_related('staff', 'department_head', 'staff__user', 'department_head__user').order_by('-incident_date', '-incident_time')[:10]
-
     # Get total counts
     total_performance_reports = PerformanceReport.objects.filter(
         Q(staff__in=staff_in_scope) | Q(department_head__in=heads_in_scope)
     ).count()
-    
     total_incident_reports = IncidentReport.objects.filter(
         Q(staff__in=staff_in_scope) | Q(department_head__in=heads_in_scope)
     ).count()
-
     return {
         'performance_reports': performance_reports,
         'incident_reports': incident_reports,
@@ -2840,3 +2835,34 @@ def get_all_subdepartments(request):
         return response
     except Exception as e:
         return JsonResponse({'error': str(e)}, status=500)
+
+@login_required
+@user_passes_test(is_admin)
+def assign_subdepartment_heads(request, department_head_id):
+    department_head = get_object_or_404(DepartmentHead, id=department_head_id)
+    from staff_monitor.models import SubDepartment
+    # Get all subdepartments for the department(s) this head manages
+    managed_departments = list(department_head.managed_departments.all())
+    if department_head.department and department_head.department not in managed_departments:
+        managed_departments.append(department_head.department)
+    subdepartments = SubDepartment.objects.filter(department__in=managed_departments)
+    # Get all department heads who are subdepartment heads in these subdepartments
+    subdepartment_heads = DepartmentHead.objects.filter(subdepartment__in=subdepartments)
+    # Get currently assigned subdepartment heads
+    assigned_subdepartment_heads = department_head.managed_subdepartment_heads.all()
+    if request.method == 'POST':
+        selected_ids = request.POST.getlist('subdepartment_head_ids')
+        selected_heads = DepartmentHead.objects.filter(id__in=selected_ids)
+        # Clear all current assignments
+        department_head.managed_subdepartment_heads.clear()
+        # Assign selected subdepartment heads
+        department_head.managed_subdepartment_heads.add(*selected_heads)
+        messages.success(request, 'Subdepartment head assignments updated.')
+        return redirect('superintendent_list')
+    context = {
+        'department_head': department_head,
+        'subdepartments': subdepartments,
+        'subdepartment_heads': subdepartment_heads,
+        'assigned_subdepartment_heads': assigned_subdepartment_heads,
+    }
+    return render(request, 'staff_monitor/assign_subdepartment_heads.html', context)

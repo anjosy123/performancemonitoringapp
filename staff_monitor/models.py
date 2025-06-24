@@ -36,7 +36,7 @@ class DepartmentHead(models.Model):
     ]
     
     user = models.OneToOneField(User, on_delete=models.CASCADE)
-    department = models.ForeignKey(Department, on_delete=models.CASCADE)
+    department = models.ForeignKey(Department, on_delete=models.CASCADE, null=True, blank=True)
     subdepartment = models.ForeignKey(SubDepartment, on_delete=models.SET_NULL, null=True, blank=True)
     designation = models.CharField(max_length=100, default="Department Head")
     contact_number = models.CharField(max_length=15)
@@ -46,11 +46,17 @@ class DepartmentHead(models.Model):
     managed_staff = models.ManyToManyField('Staff', related_name='supervisors', blank=True)
     is_hr_head = models.BooleanField(default=False)
     managed_subdepartments = models.ManyToManyField(SubDepartment, related_name='department_heads', blank=True)
-    managed_departments = models.ManyToManyField(Department, related_name='managing_heads', blank=True, help_text="Additional departments this head manages.")
+    managed_departments = models.ManyToManyField(Department, related_name='managing_heads', blank=True, help_text="Departments this head manages.")
+    managed_subdepartment_heads = models.ManyToManyField(
+        'self', symmetrical=False, blank=True, related_name='supervised_by'
+    )
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='active')
 
     def __str__(self):
-        return f"{self.user.get_full_name()} - {self.department}"
+        if self.department:
+            return f"{self.user.get_full_name()} - {self.department}"
+        else:
+            return f"{self.user.get_full_name()} - Department Head"
 
 class HRPrivileges(models.Model):
     hr_head = models.OneToOneField(DepartmentHead, on_delete=models.CASCADE, related_name='privileges')

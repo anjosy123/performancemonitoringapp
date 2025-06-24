@@ -113,4 +113,5 @@ urlpatterns = [
     path('center-management/', views.center_management, name='center_management'),
     path('update-staff-status/<int:staff_id>/', views.update_staff_status, name='update_staff_status'),
     path('update-department-head-status/<int:head_id>/', views.update_department_head_status, name='update_department_head_status'),
+    path('department-heads/<int:department_head_id>/assign-subdepartment-heads/', views.assign_subdepartment_heads, name='assign_subdepartment_heads'),
 ]

@@ -85,38 +85,16 @@ class DepartmentHeadForm(forms.ModelForm):
             'placeholder': 'Enter last name'
         })
     )
-    department = forms.ModelChoiceField(
-        queryset=Department.objects.all(),
-        widget=forms.Select(attrs={
-            'class': 'form-control',
-            'id': 'department-select'
-        }),
-        label="Primary Department"
-    )
-    managed_departments = forms.ModelMultipleChoiceField(
-        queryset=Department.objects.all(),
+    # Remove primary department and subdepartment fields - use only managed fields
+    managed_departments = forms.CharField(
         required=False,
-        widget=forms.CheckboxSelectMultiple(attrs={
-            'class': 'form-check-input'
-        }),
-        label="Additional Departments"
+        widget=forms.HiddenInput(),
+        label="Managed Departments"
     )
-    subdepartment = forms.ModelChoiceField(
-        queryset=SubDepartment.objects.none(),
+    managed_subdepartments = forms.CharField(
         required=False,
-        widget=forms.Select(attrs={
-            'class': 'form-control',
-            'id': 'subdepartment-select'
-        }),
-        label="Primary Subdepartment"
-    )
-    managed_subdepartments = forms.ModelMultipleChoiceField(
-        queryset=SubDepartment.objects.all(),
-        required=False,
-        widget=forms.CheckboxSelectMultiple(attrs={
-            'class': 'form-check-input'
-        }),
-        label="Additional Subdepartments"
+        widget=forms.HiddenInput(),
+        label="Managed Subdepartments"
     )
     designation = forms.CharField(
         required=True,
@@ -157,7 +135,7 @@ class DepartmentHeadForm(forms.ModelForm):
     
     class Meta:
         model = DepartmentHead
-        fields = ['department', 'managed_departments', 'subdepartment', 'managed_subdepartments', 'designation', 'contact_number', 'qualification', 'joining_date', 'appointment_date']
+        fields = ['managed_departments', 'managed_subdepartments', 'designation', 'contact_number', 'qualification', 'joining_date', 'appointment_date']
 
     def __init__(self, *args, **kwargs):
         self.instance_user = None
@@ -166,23 +144,15 @@ class DepartmentHeadForm(forms.ModelForm):
             
         super().__init__(*args, **kwargs)
         
-        # If we have a department in the instance, filter subdepartments
-        if self.instance and hasattr(self.instance, 'department') and self.instance.department:
-            self.fields['subdepartment'].queryset = SubDepartment.objects.filter(department=self.instance.department)
-            self.fields['managed_subdepartments'].queryset = SubDepartment.objects.filter(department=self.instance.department)
-            # Set initial value for department to ensure it's available for subdepartment filtering
-            self.initial['department'] = self.instance.department.id
-        else:
-            self.fields['subdepartment'].queryset = SubDepartment.objects.none()
-        
-        # If we have form data and 'department' in it
-        if 'department' in self.data:
-            try:
-                department_id = int(self.data.get('department'))
-                self.fields['subdepartment'].queryset = SubDepartment.objects.filter(department_id=department_id)
-                self.fields['managed_subdepartments'].queryset = SubDepartment.objects.filter(department_id=department_id)
-            except (ValueError, TypeError):
-                pass
+        # Set initial values for managed departments and subdepartments
+        if self.instance and hasattr(self.instance, 'managed_departments'):
+            if self.instance.managed_departments.exists():
+                managed_dept_ids = [str(dept.id) for dept in self.instance.managed_departments.all()]
+                self.initial['managed_departments'] = ','.join(managed_dept_ids)
+            
+            if self.instance.managed_subdepartments.exists():
+                managed_subdept_ids = [str(subdept.id) for subdept in self.instance.managed_subdepartments.all()]
+                self.initial['managed_subdepartments'] = ','.join(managed_subdept_ids)
                 
         # If this is an edit form (instance_user exists), populate first_name, last_name, and email
         if self.instance_user:
@@ -196,16 +166,32 @@ class DepartmentHeadForm(forms.ModelForm):
 
     def clean(self):
         cleaned_data = super().clean()
-        department = cleaned_data.get('department')
-        subdepartment = cleaned_data.get('subdepartment')
         
-        # If subdepartment is selected, make sure it belongs to the selected department
-        if subdepartment and department and subdepartment.department != department:
-            # If there's a mismatch, raise validation error
-            self.add_error('subdepartment', 'The selected subdepartment does not belong to the selected department.')
-            
-            # Reset subdepartment queryset to show valid choices
-            self.fields['subdepartment'].queryset = SubDepartment.objects.filter(department=department)
+        # Handle managed_departments from hidden input (comma-separated values)
+        managed_departments_data = self.cleaned_data.get('managed_departments', '')
+        if managed_departments_data:
+            try:
+                # Parse comma-separated department IDs
+                dept_ids = [int(id.strip()) for id in managed_departments_data.split(',') if id.strip()]
+                managed_departments = Department.objects.filter(id__in=dept_ids)
+                cleaned_data['managed_departments_queryset'] = managed_departments
+            except (ValueError, TypeError):
+                cleaned_data['managed_departments_queryset'] = Department.objects.none()
+        else:
+            cleaned_data['managed_departments_queryset'] = Department.objects.none()
+        
+        # Handle managed_subdepartments from hidden input (comma-separated values)
+        managed_subdepartments_data = self.cleaned_data.get('managed_subdepartments', '')
+        if managed_subdepartments_data:
+            try:
+                # Parse comma-separated subdepartment IDs
+                subdept_ids = [int(id.strip()) for id in managed_subdepartments_data.split(',') if id.strip()]
+                managed_subdepartments = SubDepartment.objects.filter(id__in=subdept_ids)
+                cleaned_data['managed_subdepartments_queryset'] = managed_subdepartments
+            except (ValueError, TypeError):
+                cleaned_data['managed_subdepartments_queryset'] = SubDepartment.objects.none()
+        else:
+            cleaned_data['managed_subdepartments_queryset'] = SubDepartment.objects.none()
         
         return cleaned_data
 
@@ -242,25 +228,26 @@ class DepartmentHeadForm(forms.ModelForm):
             user = self.instance.user
             user.first_name = self.cleaned_data['first_name']
             user.last_name = self.cleaned_data['last_name']
-            
-            # Update email if changed (but it shouldn't change when editing)
             email = self.cleaned_data.get('email')
             if email and email != user.email:
                 user.email = email
-                user.username = email  # Update username to match email
-                
+                user.username = email
             user.save()
-            
-            # Update DepartmentHead instance
-            head = super().save(commit)
-            head.managed_departments.set(self.cleaned_data['managed_departments'])
-            head.managed_subdepartments.set(self.cleaned_data['managed_subdepartments'])
+            head = super().save(commit=False)
+            # Set department to first managed department (for legacy compatibility)
+            managed_departments = self.cleaned_data.get('managed_departments_queryset')
+            if managed_departments and managed_departments.exists():
+                head.department = managed_departments.first()
+            if commit:
+                head.save()
+                if managed_departments is not None:
+                    head.managed_departments.set(managed_departments)
+                managed_subdepartments = self.cleaned_data.get('managed_subdepartments_queryset')
+                if managed_subdepartments is not None:
+                    head.managed_subdepartments.set(managed_subdepartments)
             return head
         else:
-            # Create new user for a new department head
             password = ''.join(random.choices(string.ascii_letters + string.digits, k=8))
-            
-            # Create User instance
             user = User.objects.create_user(
                 username=self.cleaned_data['email'],
                 email=self.cleaned_data['email'],
@@ -269,73 +256,20 @@ class DepartmentHeadForm(forms.ModelForm):
                 last_name=self.cleaned_data['last_name'],
                 is_active=True
             )
-            
-            # Create DepartmentHead instance
             head = super().save(commit=False)
             head.user = user
-            
+            # Set department to first managed department (for legacy compatibility)
+            managed_departments = self.cleaned_data.get('managed_departments_queryset')
+            if managed_departments and managed_departments.exists():
+                head.department = managed_departments.first()
             if commit:
                 head.save()
-                self.save_m2m()
-                
-                # Store the generated password to inform the user
                 head.user_password = password
-                
-                # Handle additional subdepartments if any
-                managed_departments = self.cleaned_data.get('managed_departments')
-                if managed_departments:
+                if managed_departments is not None:
                     head.managed_departments.set(managed_departments)
-                
-                managed_subdepartments = self.cleaned_data.get('managed_subdepartments')
-                if managed_subdepartments:
+                managed_subdepartments = self.cleaned_data.get('managed_subdepartments_queryset')
+                if managed_subdepartments is not None:
                     head.managed_subdepartments.set(managed_subdepartments)
-                
-                # Try to send email with login credentials
-                try:
-                    from django.core.mail import send_mail
-                    from django.template.loader import render_to_string
-                    from django.utils.html import strip_tags
-                    from django.conf import settings
-                    
-                    # Determine the login URL based on environment
-                    from django.contrib.sites.shortcuts import get_current_site
-                    from django.urls import reverse
-                    
-                    # Get base URL - use RENDER_EXTERNAL_URL if on Render, otherwise use a default
-                    if 'RENDER' in os.environ and os.environ.get('RENDER_EXTERNAL_URL'):
-                        base_url = os.environ.get('RENDER_EXTERNAL_URL')
-                    else:
-                        base_url = "http://localhost:8000"
-                        
-                    login_url = f"{base_url}{reverse('login')}"
-                    
-                    context = {
-                        'first_name': user.first_name,
-                        'last_name': user.last_name,
-                        'email': user.email,
-                        'password': password,
-                        'login_url': login_url  # Use the dynamically determined URL
-                    }
-                    
-                    html_message = render_to_string('staff_monitor/email/welcome_department_head.html', context)
-                    plain_message = strip_tags(html_message)
-                    
-                    send_mail(
-                        'Welcome to Mariampur Hospital Performance Monitoring System',
-                        plain_message,
-                        None,  # Use DEFAULT_FROM_EMAIL from settings
-                        [user.email],
-                        html_message=html_message,
-                        fail_silently=False,
-                    )
-                    
-                    # Flag to indicate email was sent
-                    head.email_sent = True
-                except Exception as e:
-                    # Flag to indicate email failed
-                    head.email_sent = False
-                    print(f"Email sending failed: {str(e)}")
-                
             return head
 
 class StaffForm(forms.ModelForm):

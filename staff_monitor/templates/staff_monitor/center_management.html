@@ -190,7 +190,11 @@
                                             {% for head in department_heads %}
                                             <tr>
                                                 <td>{{ head.user.get_full_name }}</td>
-                                                <td>{{ head.department.name }}</td>
+                                                <td>
+                                                    {% for dept in head.managed_departments.all %}
+                                                        <span class="badge bg-success me-1">{{ dept.name }}</span>
+                                                    {% endfor %}
+                                                </td>
                                                 <td>
                                                     {% if head.subdepartment %}
                                                         {{ head.subdepartment.name }}

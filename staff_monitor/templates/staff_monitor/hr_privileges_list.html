@@ -61,10 +61,10 @@
                             {% for head in hr_heads %}
                             <tr class="hr-head-row">
                                 <td>{{ head.user.get_full_name }}</td>
-                                <td>{{ head.department.name }}
-                                    {% if head.department.name|lower == "hr" %}
-                                    <span class="badge bg-info ms-2">HR Department</span>
-                                    {% endif %}
+                                <td>
+                                    {% for dept in head.managed_departments.all %}
+                                        <span class="badge bg-success me-1">{{ dept.name }}</span>
+                                    {% endfor %}
                                 </td>
                                 <td>{{ head.contact_number }}</td>
                                 <td>
@@ -142,7 +142,11 @@
                                 {% for head in all_other_heads %}
                                 <tr>
                                     <td>{{ head.user.get_full_name }}</td>
-                                    <td>{{ head.department.name }}</td>
+                                    <td>
+                                        {% for dept in head.managed_departments.all %}
+                                            <span class="badge bg-success me-1">{{ dept.name }}</span>
+                                        {% endfor %}
+                                    </td>
                                     <td>{{ head.contact_number }}</td>
                                     <td>
                                         <form method="post" action="{% url 'toggle_hr_status' head.id %}" class="d-inline">

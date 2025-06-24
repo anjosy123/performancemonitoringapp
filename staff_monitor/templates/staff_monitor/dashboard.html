@@ -89,7 +89,11 @@
                                         data-contact="{{ head.contact_number }}"
                                         data-status="{{ head.status }}">
                                         <td data-label="Name">{{ head.user.get_full_name }}</td>
-                                        <td data-label="Department">{{ head.department.name }}</td>
+                                        <td data-label="Department">
+                                            {% for dept in head.managed_departments.all %}
+                                                <span class="badge bg-success me-1">{{ dept.name }}</span>
+                                            {% endfor %}
+                                        </td>
                                         <td data-label="Subdepartment">
                                             {% if head.subdepartment %}
                                             {{ head.subdepartment.name }}
@@ -356,6 +360,24 @@
                     {% endif %}
                 </div>
 
+                <!-- View Reports Links -->
+                <div class="card my-4">
+                    <div class="card-body text-center">
+                        <h5 class="card-title mb-3">
+                            <i class="fas fa-clipboard-list me-2"></i>View Department Reports
+                        </h5>
+                        <p class="text-muted">View all performance and incident reports for your department.</p>
+                        <div class="btn-group">
+                            <a href="{% url 'report_list' %}" class="btn btn-primary">
+                                <i class="fas fa-chart-line me-2"></i>Performance Reports
+                            </a>
+                            <a href="{% url 'incident_report_list' %}" class="btn btn-warning text-dark">
+                                <i class="fas fa-exclamation-triangle me-2"></i>Incident Reports
+                            </a>
+                        </div>
+                    </div>
+                </div>
+
                 {% if has_assigned_staff %}
                 <!-- Assigned Staff Section -->
                 <div class="card mb-4">
@@ -381,13 +403,13 @@
                                 <tbody>
                                     {% for staff in assigned_staff %}
                                     <tr class="staff-row" data-name="{{ staff.user.get_full_name }}" data-position="{{ staff.position }}" data-employee-id="{{ staff.employee_id }}" data-status="{{ staff.status }}">
-                                        <td>{{ staff.user.get_full_name }}</td>
-                                        <td>{{ staff.position }}</td>
-                                        <td>{{ staff.employee_id }}</td>
-                                        <td>{{ staff.department.name }}</td>
-                                        <td>{% if staff.subdepartment %}{{ staff.subdepartment.name }}{% else %}<span class="text-muted">None</span>{% endif %}</td>
-                                        <td><span class="badge {% if staff.status == 'active' %}bg-success{% elif staff.status == 'on_leave' %}bg-warning{% else %}bg-danger{% endif %}">{{ staff.get_status_display }}</span></td>
-                                        <td>
+                                        <td data-label="Name">{{ staff.user.get_full_name }}</td>
+                                        <td data-label="Position">{{ staff.position }}</td>
+                                        <td data-label="Employee ID">{{ staff.employee_id }}</td>
+                                        <td data-label="Department">{{ staff.department.name }}</td>
+                                        <td data-label="Subdepartment">{% if staff.subdepartment %}{{ staff.subdepartment.name }}{% else %}<span class="text-muted">None</span>{% endif %}</td>
+                                        <td data-label="Status"><span class="badge {% if staff.status == 'active' %}bg-success{% elif staff.status == 'on_leave' %}bg-warning{% else %}bg-danger{% endif %}">{{ staff.get_status_display }}</span></td>
+                                        <td data-label="Actions">
                                             <div class="btn-group">
                                                 <a href="{% url 'performance_form' staff.id %}" class="btn btn-primary btn-sm"><i class="fas fa-clipboard-check me-1"></i>Evaluate</a>
                                                 <a href="{% url 'feedback_form' staff.id %}" class="btn btn-success btn-sm"><i class="fas fa-comment-dots me-1"></i>Incident</a>
@@ -435,11 +457,11 @@
                                 <tbody>
                                     {% for staff in department_staff %}
                                     <tr class="staff-row" data-name="{{ staff.user.get_full_name }}" data-position="{{ staff.position }}" data-employee-id="{{ staff.employee_id }}" data-status="{{ staff.status }}">
-                                        <td>{{ staff.user.get_full_name }}</td>
-                                        <td>{{ staff.position }}</td>
-                                        <td>{{ staff.employee_id }}</td>
-                                        <td>{% if staff.subdepartment %}{{ staff.subdepartment.name }}{% else %}<span class="text-muted">None</span>{% endif %}</td>
-                                        <td><span class="badge {% if staff.status == 'active' %}bg-success{% elif staff.status == 'on_leave' %}bg-warning{% else %}bg-danger{% endif %}">{{ staff.get_status_display }}</span></td>
+                                        <td data-label="Name">{{ staff.user.get_full_name }}</td>
+                                        <td data-label="Position">{{ staff.position }}</td>
+                                        <td data-label="Employee ID">{{ staff.employee_id }}</td>
+                                        <td data-label="Subdepartment">{% if staff.subdepartment %}{{ staff.subdepartment.name }}{% else %}<span class="text-muted">None</span>{% endif %}</td>
+                                        <td data-label="Status"><span class="badge {% if staff.status == 'active' %}bg-success{% elif staff.status == 'on_leave' %}bg-warning{% else %}bg-danger{% endif %}">{{ staff.get_status_display }}</span></td>
                                     </tr>
                                     {% endfor %}
                                 </tbody>
@@ -479,16 +501,12 @@
                                     {% for staff in staff_list %}
                                     {% if staff.subdepartment %}
                                     <tr class="staff-row" data-type="subdept">
-                                        <td>{{ staff.user.get_full_name }}</td>
-                                        <td>{{ staff.position }}</td>
-                                        <td>{{ staff.employee_id }}</td>
-                                        <td>{{ staff.subdepartment.name }}</td>
-                                        <td>
-                                            <span class="badge {% if staff.status == 'active' %}bg-success{% elif staff.status == 'on_leave' %}bg-warning{% else %}bg-danger{% endif %}">
-                                                {{ staff.get_status_display }}
-                                            </span>
-                                        </td>
-                                        <td>
+                                        <td data-label="Name">{{ staff.user.get_full_name }}</td>
+                                        <td data-label="Position">{{ staff.position }}</td>
+                                        <td data-label="Employee ID">{{ staff.employee_id }}</td>
+                                        <td data-label="Subdepartment">{{ staff.subdepartment.name }}</td>
+                                        <td data-label="Status"><span class="badge {% if staff.status == 'active' %}bg-success{% elif staff.status == 'on_leave' %}bg-warning{% else %}bg-danger{% endif %}">{{ staff.get_status_display }}</span></td>
+                                        <td data-label="Actions">
                                             <div class="btn-group">
                                                 <a href="{% url 'performance_form' staff.id %}" class="btn btn-primary btn-sm">
                                                     <i class="fas fa-clipboard-check me-1"></i>Evaluate
@@ -538,23 +556,17 @@
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    {% for subdept_head in subdepartment_heads %}
+                                    {% for head in subdepartment_heads %}
                                     <tr class="staff-row" data-type="head">
-                                        <td>{{ subdept_head.user.get_full_name }}</td>
-                                        <td>
-                                            {% if subdept_head.subdepartment %}
-                                                {{ subdept_head.subdepartment.name }}
-                                            {% else %}
-                                                <span class="text-muted">None</span>
-                                            {% endif %}
-                                        </td>
-                                        <td>{{ subdept_head.contact_number }}</td>
-                                        <td>
+                                        <td data-label="Name">{{ head.user.get_full_name }}</td>
+                                        <td data-label="Subdepartment">{% if head.subdepartment %}{{ head.subdepartment.name }}{% else %}<span class="text-muted">None</span>{% endif %}</td>
+                                        <td data-label="Contact">{{ head.contact_number }}</td>
+                                        <td data-label="Actions">
                                             <div class="btn-group">
-                                                <a href="{% url 'performance_form_department_head' subdept_head.id %}" class="btn btn-primary btn-sm">
+                                                <a href="{% url 'performance_form_department_head' head.id %}" class="btn btn-primary btn-sm">
                                                     <i class="fas fa-clipboard-check me-1"></i>Evaluate
                                                 </a>
-                                                <a href="{% url 'feedback_form_department_head' subdept_head.id %}" class="btn btn-success btn-sm">
+                                                <a href="{% url 'feedback_form_department_head' head.id %}" class="btn btn-success btn-sm">
                                                     <i class="fas fa-comment-dots me-1"></i>Incident
                                                 </a>
                                             </div>
@@ -859,15 +871,11 @@
                                 <tbody>
                                     {% for staff in assigned_staff %}
                                     <tr class="staff-row" data-name="{{ staff.user.get_full_name }}" data-position="{{ staff.position }}" data-employee-id="{{ staff.employee_id }}" data-status="{{ staff.status }}">
-                                        <td>{{ staff.user.get_full_name }}</td>
-                                        <td>{{ staff.position }}</td>
-                                        <td>{{ staff.employee_id }}</td>
-                                        <td>
-                                            <span class="badge {% if staff.status == 'active' %}bg-success{% elif staff.status == 'on_leave' %}bg-warning{% else %}bg-danger{% endif %}">
-                                                {{ staff.get_status_display }}
-                                            </span>
-                                        </td>
-                                        <td>
+                                        <td data-label="Name">{{ staff.user.get_full_name }}</td>
+                                        <td data-label="Position">{{ staff.position }}</td>
+                                        <td data-label="Employee ID">{{ staff.employee_id }}</td>
+                                        <td data-label="Status"><span class="badge {% if staff.status == 'active' %}bg-success{% elif staff.status == 'on_leave' %}bg-warning{% else %}bg-danger{% endif %}">{{ staff.get_status_display }}</span></td>
+                                        <td data-label="Actions">
                                             <div class="btn-group">
                                                 <a href="{% url 'performance_form' staff.id %}" class="btn btn-primary btn-sm"><i class="fas fa-clipboard-check me-1"></i>Evaluate</a>
                                                 <a href="{% url 'feedback_form' staff.id %}" class="btn btn-success btn-sm"><i class="fas fa-comment-dots me-1"></i>Incident</a>
@@ -914,14 +922,10 @@
                                 <tbody>
                                     {% for staff in department_staff %}
                                     <tr class="staff-row" data-name="{{ staff.user.get_full_name }}" data-position="{{ staff.position }}" data-employee-id="{{ staff.employee_id }}" data-status="{{ staff.status }}">
-                                        <td>{{ staff.user.get_full_name }}</td>
-                                        <td>{{ staff.position }}</td>
-                                        <td>{{ staff.employee_id }}</td>
-                                        <td>
-                                            <span class="badge {% if staff.status == 'active' %}bg-success{% elif staff.status == 'on_leave' %}bg-warning{% else %}bg-danger{% endif %}">
-                                                {{ staff.get_status_display }}
-                                            </span>
-                                        </td>
+                                        <td data-label="Name">{{ staff.user.get_full_name }}</td>
+                                        <td data-label="Position">{{ staff.position }}</td>
+                                        <td data-label="Employee ID">{{ staff.employee_id }}</td>
+                                        <td data-label="Status"><span class="badge {% if staff.status == 'active' %}bg-success{% elif staff.status == 'on_leave' %}bg-warning{% else %}bg-danger{% endif %}">{{ staff.get_status_display }}</span></td>
                                     </tr>
                                     {% endfor %}
                                 </tbody>
@@ -930,6 +934,58 @@
                     </div>
                 </div>
                 {% endif %}
+
+                <!-- Subdepartment Head Dashboard -->
+                <div class="card mb-4">
+                    <div class="card-header bg-success text-white">
+                        <h5 class="mb-0">
+                            <i class="fas fa-user-friends me-2"></i>Assigned Subdepartment Heads
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        {% if managed_subdepartment_heads %}
+                        <div class="table-responsive">
+                            <table class="table table-hover">
+                                <thead>
+                                    <tr>
+                                        <th>Name</th>
+                                        <th>Subdepartment</th>
+                                        <th>Contact</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for head in managed_subdepartment_heads %}
+                                    <tr>
+                                        <td data-label="Name">{{ head.user.get_full_name }}</td>
+                                        <td data-label="Subdepartment">{% if head.subdepartment %}{{ head.subdepartment.name }}{% else %}<span class="text-muted">None</span>{% endif %}</td>
+                                        <td data-label="Contact">{{ head.contact_number }}</td>
+                                        <td data-label="Actions">
+                                            <div class="btn-group">
+                                                <a href="{% url 'performance_form_department_head' head.id %}" class="btn btn-primary btn-sm">
+                                                    <i class="fas fa-clipboard-check"></i> Evaluate
+                                                </a>
+                                                <a href="{% url 'feedback_form_department_head' head.id %}" class="btn btn-danger btn-sm">
+                                                    <i class="fas fa-exclamation-triangle"></i> Incident
+                                                </a>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                    {% empty %}
+                                    <tr>
+                                        <td colspan="4" class="text-center py-4">
+                                            <i class="fas fa-user-friends text-muted me-2"></i>No subdepartment heads found
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                        {% else %}
+                        <div class="text-muted text-center">No subdepartment heads assigned.</div>
+                        {% endif %}
+                    </div>
+                </div>
                 {% endif %}
 
                 <!-- Welcome Message -->
@@ -1259,6 +1315,38 @@ mark {
 
 .swal2-timer-progress-bar {
     background: #0d6efd !important;
+}
+
+@media (max-width: 767.98px) {
+  .table-responsive table thead {
+    display: none;
+  }
+  .table-responsive table tbody tr {
+    display: block;
+    margin-bottom: 1rem;
+    border: 1px solid #dee2e6;
+    border-radius: 0.5rem;
+    box-shadow: 0 1px 2px rgba(0,0,0,0.03);
+  }
+  .table-responsive table tbody td {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.75rem 1rem;
+    border: none;
+    border-bottom: 1px solid #f1f1f1;
+    position: relative;
+  }
+  .table-responsive table tbody td:before {
+    content: attr(data-label);
+    font-weight: 600;
+    color: #495057;
+    flex-basis: 50%;
+    text-align: left;
+  }
+  .table-responsive table tbody td:last-child {
+    border-bottom: none;
+  }
 }
 </style>
 
