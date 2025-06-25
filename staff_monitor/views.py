@@ -2866,3 +2866,38 @@ def assign_subdepartment_heads(request, department_head_id):
         'assigned_subdepartment_heads': assigned_subdepartment_heads,
     }
     return render(request, 'staff_monitor/assign_subdepartment_heads.html', context)
+
+# TEMPORARY FUNCTION - DELETE EMAIL FROM DATABASE
+@login_required
+@user_passes_test(is_admin)
+def delete_email_temporary(request):
+    """Temporary function to delete an email from the User model"""
+    if request.method == 'POST':
+        email = request.POST.get('email', '').strip()
+        
+        if not email:
+            messages.error(request, 'Please enter an email address.')
+            return redirect('add_superintendent')
+        
+        try:
+            # Find user with this email
+            user = User.objects.get(email=email)
+            
+            # Check if user has any related records
+            has_department_head = hasattr(user, 'departmenthead')
+            has_staff = hasattr(user, 'staff')
+            
+            if has_department_head or has_staff:
+                messages.error(request, f'Cannot delete email {email} - user has associated records (Department Head or Staff).')
+                return redirect('add_superintendent')
+            
+            # Delete the user
+            user.delete()
+            messages.success(request, f'Email {email} has been successfully deleted from the database.')
+            
+        except User.DoesNotExist:
+            messages.error(request, f'Email {email} not found in the database.')
+        except Exception as e:
+            messages.error(request, f'Error deleting email: {str(e)}')
+    
+    return redirect('add_superintendent')
