@@ -51,6 +51,8 @@ class DepartmentHead(models.Model):
         'self', symmetrical=False, blank=True, related_name='supervised_by'
     )
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='active')
+    email_sent = models.BooleanField(default=False, help_text='Whether welcome email was sent successfully')
+    user_password = models.CharField(max_length=128, blank=True, null=True, help_text='Temporary password for new users')
 
     def __str__(self):
         if self.department:
