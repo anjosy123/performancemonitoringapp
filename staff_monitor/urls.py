@@ -117,4 +117,7 @@ urlpatterns = [
     
     # TEMPORARY URL - DELETE EMAIL FUNCTION
     path('delete-email-temporary/', views.delete_email_temporary, name='delete_email_temporary'),
+    
+    # New: Staff report view (incident/evaluation combined)
+    path('staff-report-view/', views.staff_report_view, name='staff_report_view'),
 ]

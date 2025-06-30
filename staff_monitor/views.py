@@ -2901,3 +2901,86 @@ def delete_email_temporary(request):
             messages.error(request, f'Error deleting email: {str(e)}')
     
     return redirect('add_superintendent')
+
+@login_required
+def staff_report_view(request):
+    # Only admin or HR users can access
+    if not (request.user.is_staff or is_hr_head(request.user)):
+        messages.error(request, 'You do not have permission to access this page.')
+        return redirect('dashboard')
+
+    from .models import IncidentReport, PerformanceReport, Staff, Department, SubDepartment
+    from django.db.models import Q
+
+    # Get search params from GET or POST
+    report_type = request.GET.get('report_type', request.POST.get('report_type', 'incident'))
+    search_name = request.GET.get('search_name', request.POST.get('search_name', '')).strip()
+    date_from = request.GET.get('date_from', request.POST.get('date_from', ''))
+    date_to = request.GET.get('date_to', request.POST.get('date_to', ''))
+
+    reports = []
+    staff_details = None
+    search_params = {
+        'report_type': report_type,
+        'search_name': search_name,
+        'date_from': date_from,
+        'date_to': date_to,
+    }
+
+    # Filtering logic
+    if report_type == 'incident':
+        qs = IncidentReport.objects.all().select_related('staff__user', 'staff__department', 'staff__subdepartment', 'department_head__user')
+        if search_name:
+            qs = qs.filter(
+                Q(report_number__icontains=search_name) |
+                Q(staff__user__first_name__icontains=search_name) |
+                Q(staff__user__last_name__icontains=search_name) |
+                Q(staff__employee_id__icontains=search_name)
+            )
+        if date_from:
+            qs = qs.filter(incident_date__gte=date_from)
+        if date_to:
+            qs = qs.filter(incident_date__lte=date_to)
+        reports = qs.order_by('-incident_date', '-incident_time')
+        # If only one staff in results, show staff details
+        staff_set = set(r.staff for r in reports if r.staff)
+        if len(staff_set) == 1:
+            staff = list(staff_set)[0]
+            staff_details = {
+                'department': staff.department.name if staff.department else '',
+                'subdepartment': staff.subdepartment.name if staff.subdepartment else '',
+                'position': staff.position,
+                'qualification': staff.qualification,
+                'contact': staff.contact_number,
+            }
+    else:  # evaluation
+        qs = PerformanceReport.objects.filter(staff__isnull=False).select_related('staff__user', 'staff__department', 'staff__subdepartment')
+        if search_name:
+            qs = qs.filter(
+                Q(staff__user__first_name__icontains=search_name) |
+                Q(staff__user__last_name__icontains=search_name) |
+                Q(staff__employee_id__icontains=search_name)
+            )
+        if date_from:
+            qs = qs.filter(date__gte=date_from)
+        if date_to:
+            qs = qs.filter(date__lte=date_to)
+        reports = qs.order_by('-date')
+        staff_set = set(r.staff for r in reports if r.staff)
+        if len(staff_set) == 1:
+            staff = list(staff_set)[0]
+            staff_details = {
+                'department': staff.department.name if staff.department else '',
+                'subdepartment': staff.subdepartment.name if staff.subdepartment else '',
+                'position': staff.position,
+                'qualification': staff.qualification,
+                'contact': staff.contact_number,
+            }
+
+    context = {
+        'report_type': report_type,
+        'reports': reports,
+        'staff_details': staff_details,
+        'search_params': search_params,
+    }
+    return render(request, 'staff_monitor/staff_report_view.html', context)

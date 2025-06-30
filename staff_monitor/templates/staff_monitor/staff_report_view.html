@@ -1,0 +1,237 @@
+{% extends 'staff_monitor/base.html' %}
+{% load static %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0">
+                        <i class="fas fa-file-alt me-2"></i>Staff Incident & Evaluation Reports
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <!-- Report Type Selection -->
+                    <form id="reportTypeForm" class="mb-3" method="get">
+                        <div class="form-check form-check-inline">
+                            <input class="form-check-input" type="radio" name="report_type" id="incidentRadio" value="incident" {% if report_type == 'incident' %}checked{% endif %} onchange="this.form.submit()">
+                            <label class="form-check-label" for="incidentRadio">Incident Report</label>
+                        </div>
+                        <div class="form-check form-check-inline">
+                            <input class="form-check-input" type="radio" name="report_type" id="evaluationRadio" value="evaluation" {% if report_type == 'evaluation' %}checked{% endif %} onchange="this.form.submit()">
+                            <label class="form-check-label" for="evaluationRadio">Evaluation Report</label>
+                        </div>
+                    </form>
+
+                    <!-- Search Fields -->
+                    <form id="searchForm" class="row g-2 align-items-end mb-4" method="get">
+                        <input type="hidden" name="report_type" value="{{ report_type }}">
+                        <div class="col-md-3">
+                            <label for="search_name" class="form-label">Name / Report Number</label>
+                            <input type="text" class="form-control" id="search_name" name="search_name" placeholder="Enter name or report number" value="{{ search_params.search_name }}">
+                        </div>
+                        <div class="col-md-2">
+                            <label for="date_from" class="form-label">Date From</label>
+                            <input type="date" class="form-control" id="date_from" name="date_from" value="{{ search_params.date_from }}">
+                        </div>
+                        <div class="col-md-2">
+                            <label for="date_to" class="form-label">Date To</label>
+                            <input type="date" class="form-control" id="date_to" name="date_to" value="{{ search_params.date_to }}">
+                        </div>
+                        <div class="col-md-2">
+                            <button type="submit" class="btn btn-primary w-100">
+                                <i class="fas fa-search me-1"></i>Search
+                            </button>
+                        </div>
+                    </form>
+
+                    <!-- Staff Details (Text Fields) -->
+                    <div class="row mb-3">
+                        <div class="col-md-2">
+                            <label class="form-label">Department</label>
+                            <input type="text" class="form-control" value="{{ staff_details.department|default:'' }}" readonly>
+                        </div>
+                        <div class="col-md-2">
+                            <label class="form-label">Subdepartment</label>
+                            <input type="text" class="form-control" value="{{ staff_details.subdepartment|default:'' }}" readonly>
+                        </div>
+                        <div class="col-md-2">
+                            <label class="form-label">Position</label>
+                            <input type="text" class="form-control" value="{{ staff_details.position|default:'' }}" readonly>
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label">Qualification</label>
+                            <input type="text" class="form-control" value="{{ staff_details.qualification|default:'' }}" readonly>
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label">Contact Information</label>
+                            <input type="text" class="form-control" value="{{ staff_details.contact|default:'' }}" readonly>
+                        </div>
+                    </div>
+
+                    <!-- Reports Table -->
+                    <div class="table-responsive mb-4">
+                        <table class="table table-bordered table-hover table-mobile" id="reportTable">
+                            <thead class="table-light">
+                                <tr>
+                                    {% if report_type == 'incident' %}
+                                        <th>Report Number</th>
+                                        <th>Staff Name</th>
+                                        <th>Incident Date</th>
+                                        <th>Incident Time</th>
+                                        <th>Location</th>
+                                        <th>Status</th>
+                                        <th>Nature of Incident</th>
+                                        <th>Description</th>
+                                        <th>Related Parties</th>
+                                        <th>Individuals Involved</th>
+                                        <th>Photo</th>
+                                        <th>Action Taken</th>
+                                        <th>Prepared By</th>
+                                        <th>Position/Role</th>
+                                        <th>Reporter</th>
+                                        <th>Reported On</th>
+                                    {% else %}
+                                        <th>Report Date</th>
+                                        <th>Staff Name</th>
+                                        <th>Position</th>
+                                        <th>Department</th>
+                                        <th>Subdepartment</th>
+                                        <th>Evaluator</th>
+                                        <th>Total Score</th>
+                                        <th>Percentage</th>
+                                        <th>Remarks</th>
+                                    {% endif %}
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% if reports and reports|length > 0 %}
+                                    {% for report in reports %}
+                                        {% if report_type == 'incident' %}
+                                            <tr>
+                                                <td data-label="Report Number">{{ report.report_number }}</td>
+                                                <td data-label="Staff Name">{% if report.staff %}{{ report.staff.user.get_full_name }}{% else %}-{% endif %}</td>
+                                                <td data-label="Incident Date">{{ report.incident_date }}</td>
+                                                <td data-label="Incident Time">{{ report.incident_time|default_if_none:"" }}</td>
+                                                <td data-label="Location">{{ report.incident_location }}</td>
+                                                <td data-label="Status">{{ report.get_status_display }}</td>
+                                                <td data-label="Nature of Incident">{% for t in report.get_incident_types %}{{ t }}{% if not forloop.last %}, {% endif %}{% endfor %}</td>
+                                                <td data-label="Description">{{ report.incident_description }}</td>
+                                                <td data-label="Related Parties">{% for p in report.get_related_parties %}{{ p }}{% if not forloop.last %}, {% endif %}{% endfor %}</td>
+                                                <td data-label="Individuals Involved">{% for ind in report.get_individuals_involved %}{{ ind.name }} ({{ ind.role }}){% if not forloop.last %}, {% endif %}{% endfor %}</td>
+                                                <td data-label="Photo">
+                                                    <div class="incident-photo-cell" data-photo-url="{% if report.incident_photo %}{{ report.incident_photo.url }}{% endif %}"></div>
+                                                </td>
+                                                <td data-label="Action Taken">{{ report.immediate_action }} / {{ report.follow_up_actions }}</td>
+                                                <td data-label="Prepared By">{{ report.prepared_by }}</td>
+                                                <td data-label="Position/Role">{{ report.reporter_position }}</td>
+                                                <td data-label="Reporter">{{ report.reporter.get_full_name }}</td>
+                                                <td data-label="Reported On">{{ report.created_at|date:"Y-m-d H:i" }}</td>
+                                            </tr>
+                                        {% else %}
+                                            <tr>
+                                                <td data-label="Report Date">{{ report.date }}</td>
+                                                <td data-label="Staff Name">{{ report.staff.user.get_full_name }}</td>
+                                                <td data-label="Position">{{ report.staff.position }}</td>
+                                                <td data-label="Department">{{ report.staff.department.name }}</td>
+                                                <td data-label="Subdepartment">{{ report.staff.subdepartment.name|default:"" }}</td>
+                                                <td data-label="Evaluator">{{ report.evaluator.get_full_name }}</td>
+                                                <td data-label="Total Score">{{ report.total_score }}</td>
+                                                <td data-label="Percentage">{{ report.percentage|floatformat:2 }}%</td>
+                                                <td data-label="Remarks">{{ report.special_remarks }}</td>
+                                            </tr>
+                                        {% endif %}
+                                    {% endfor %}
+                                {% else %}
+                                    <tr>
+                                        <td colspan="14" class="text-center text-muted">No reports to display</td>
+                                    </tr>
+                                {% endif %}
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <!-- Signature Fields -->
+                    <div class="row mb-4">
+                        <div class="col-md-6 text-center">
+                            <div class="border-top pt-3" style="min-height: 60px;">
+                                Signature of Reporter
+                            </div>
+                        </div>
+                        <div class="col-md-6 text-center">
+                            <div class="border-top pt-3" style="min-height: 60px;">
+                                Signature of Staff
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Action Buttons -->
+                    <div class="row">
+                        <div class="col-md-12 text-end">
+                            <button class="btn btn-success me-2" id="exportExcelBtn"><i class="fas fa-file-excel me-1"></i>Export to Excel</button>
+                            <button class="btn btn-secondary me-2" id="printBtn"><i class="fas fa-print me-1"></i>Print</button>
+                            <button class="btn btn-warning me-2" id="resetBtn"><i class="fas fa-undo me-1"></i>Reset</button>
+                            <a href="{% url 'dashboard' %}" class="btn btn-danger"><i class="fas fa-times me-1"></i>Cancel</a>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// Export to Excel (simple table export)
+document.getElementById('exportExcelBtn').addEventListener('click', function() {
+    var table = document.getElementById('reportTable');
+    var html = table.outerHTML.replace(/ /g, '%20');
+    var filename = 'staff_reports.xls';
+    var a = document.createElement('a');
+    a.href = 'data:application/vnd.ms-excel,' + html;
+    a.download = filename;
+    a.click();
+});
+// Print
+
+document.getElementById('printBtn').addEventListener('click', function() {
+    window.print();
+});
+// Reset
+
+document.getElementById('resetBtn').addEventListener('click', function() {
+    window.location.href = window.location.pathname + '?report_type={{ report_type }}';
+});
+
+// Incident photo JS loader
+function loadIncidentPhotos() {
+    const placeholder = '{% static "images/image-not-found.png" %}';
+    document.querySelectorAll('.incident-photo-cell').forEach(function(cell) {
+        const url = cell.getAttribute('data-photo-url');
+        if (url) {
+            const a = document.createElement('a');
+            a.href = url;
+            a.target = '_blank';
+            const img = document.createElement('img');
+            img.src = url;
+            img.alt = 'Incident Photo';
+            img.style.maxWidth = '60px';
+            img.style.maxHeight = '60px';
+            img.style.borderRadius = '6px';
+            img.style.boxShadow = '0 2px 6px rgba(0,0,0,0.08)';
+            a.appendChild(img);
+            cell.appendChild(a);
+        } else {
+            const img = document.createElement('img');
+            img.src = placeholder;
+            img.alt = 'No Photo';
+            img.style.maxWidth = '40px';
+            img.style.opacity = '0.5';
+            cell.appendChild(img);
+        }
+    });
+}
+document.addEventListener('DOMContentLoaded', loadIncidentPhotos);
+</script>
+{% endblock %} 
