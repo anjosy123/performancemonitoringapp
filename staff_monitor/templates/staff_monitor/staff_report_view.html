@@ -12,8 +12,8 @@
                     </h5>
                 </div>
                 <div class="card-body">
-                    <!-- Report Type Selection -->
-                    <form id="reportTypeForm" class="mb-3" method="get">
+                    <!-- Report Type Selection (move back to top) -->
+                    <form id="reportTypeForm" class="mb-2" method="get">
                         <div class="form-check form-check-inline">
                             <input class="form-check-input" type="radio" name="report_type" id="incidentRadio" value="incident" {% if report_type == 'incident' %}checked{% endif %} onchange="this.form.submit()">
                             <label class="form-check-label" for="incidentRadio">Incident Report</label>
@@ -24,89 +24,89 @@
                         </div>
                     </form>
 
-                    <!-- Search Fields -->
-                    <form id="searchForm" class="row g-2 align-items-end mb-4" method="get">
+                    <!-- Search Fields (move above table) -->
+                    <form id="searchForm" class="row g-2 align-items-end mb-2" method="get">
                         <input type="hidden" name="report_type" value="{{ report_type }}">
-                        <div class="col-md-3">
+                        <div class="col-md-3 col-12">
                             <label for="search_name" class="form-label">Name / Employee ID / Report Number</label>
                             <input type="text" class="form-control" id="search_name" name="search_name" placeholder="Enter name, employee ID, or report number" value="{{ search_params.search_name }}">
                         </div>
-                        <div class="col-md-2">
+                        <div class="col-md-2 col-6">
                             <label for="date_from" class="form-label">Date From</label>
                             <input type="date" class="form-control" id="date_from" name="date_from" value="{{ search_params.date_from }}">
                         </div>
-                        <div class="col-md-2">
+                        <div class="col-md-2 col-6">
                             <label for="date_to" class="form-label">Date To</label>
                             <input type="date" class="form-control" id="date_to" name="date_to" value="{{ search_params.date_to }}">
                         </div>
-                        <div class="col-md-2">
+                        <div class="col-md-2 col-6">
                             <button type="submit" class="btn btn-primary w-100">
                                 <i class="fas fa-search me-1"></i>Search
                             </button>
                         </div>
-                        <div class="col-md-2">
+                        <div class="col-md-2 col-6">
                             <a href="{% url 'staff_list' %}" class="btn btn-info w-100" target="_blank">
                                 <i class="fas fa-users me-1"></i>View Staff List
                             </a>
                         </div>
                     </form>
 
-                    <!-- Staff Details (Text Fields) -->
-                    <div class="row mb-3">
-                        <div class="col-md-2">
+                    <!-- Staff Details (move here, compact, responsive) -->
+                    <div class="row mb-2">
+                        <div class="col-md-2 col-6">
                             <label class="form-label">Department</label>
                             <input type="text" class="form-control" value="{{ staff_details.department|default:'' }}" readonly>
                         </div>
-                        <div class="col-md-2">
+                        <div class="col-md-2 col-6">
                             <label class="form-label">Subdepartment</label>
                             <input type="text" class="form-control" value="{{ staff_details.subdepartment|default:'' }}" readonly>
                         </div>
-                        <div class="col-md-2">
+                        <div class="col-md-2 col-6">
                             <label class="form-label">Position</label>
                             <input type="text" class="form-control" value="{{ staff_details.position|default:'' }}" readonly>
                         </div>
-                        <div class="col-md-3">
+                        <div class="col-md-3 col-6">
                             <label class="form-label">Qualification</label>
                             <input type="text" class="form-control" value="{{ staff_details.qualification|default:'' }}" readonly>
                         </div>
-                        <div class="col-md-3">
+                        <div class="col-md-3 col-12">
                             <label class="form-label">Contact Information</label>
                             <input type="text" class="form-control" value="{{ staff_details.contact|default:'' }}" readonly>
                         </div>
                     </div>
 
-                    <!-- Reports Table -->
-                    <div class="table-responsive mb-4">
-                        <table class="table table-bordered table-hover table-mobile" id="reportTable">
+                    <!-- Reports Table (compact, small font, minimal padding) -->
+                    <div class="table-responsive mb-4" style="font-size:0.92rem;">
+                        <table class="table table-bordered table-hover table-mobile" id="reportTable" style="font-size:0.92rem;">
                             <thead class="table-light">
                                 <tr>
                                     {% if report_type == 'incident' %}
-                                        <th>Report Number</th>
-                                        <th>Staff Name</th>
-                                        <th>Incident Date</th>
-                                        <th>Incident Time</th>
-                                        <th>Location</th>
-                                        <th>Status</th>
-                                        <th>Nature of Incident</th>
-                                        <th>Description</th>
-                                        <th>Related Parties</th>
-                                        <th>Individuals Involved</th>
-                                        <th>Photo</th>
-                                        <th>Action Taken</th>
-                                        <th>Prepared By</th>
-                                        <th>Position/Role</th>
-                                        <th>Reporter</th>
-                                        <th>Reported On</th>
+                                        <th class="text-nowrap">Report Number</th>
+                                        <th class="text-nowrap">Staff Name</th>
+                                        <th class="text-nowrap">Incident Date</th>
+                                        <th class="text-nowrap">Incident Time</th>
+                                        <th class="text-nowrap">Location</th>
+                                        <th class="text-nowrap">Status</th>
+                                        <th class="text-nowrap">Nature of Incident</th>
+                                        <th class="text-nowrap">Description</th>
+                                        <th class="text-nowrap">Related Parties</th>
+                                        <th class="text-nowrap">Individuals Involved</th>
+                                        <th class="text-nowrap">Photo</th>
+                                        <th class="text-nowrap">Action Taken</th>
+                                        <th class="text-nowrap">Prepared By</th>
+                                        <th class="text-nowrap">Position/Role</th>
+                                        <th class="text-nowrap">Reporter</th>
+                                        <th class="text-nowrap">Reported On</th>
                                     {% else %}
-                                        <th>Report Date</th>
-                                        <th>Staff Name</th>
-                                        <th>Position</th>
-                                        <th>Department</th>
-                                        <th>Subdepartment</th>
-                                        <th>Evaluator</th>
-                                        <th>Total Score</th>
-                                        <th>Percentage</th>
-                                        <th>Remarks</th>
+                                        <th class="text-nowrap">Report Date</th>
+                                        <th class="text-nowrap">Staff Name</th>
+                                        <th class="text-nowrap">Position</th>
+                                        <th class="text-nowrap">Department</th>
+                                        <th class="text-nowrap">Subdepartment</th>
+                                        <th class="text-nowrap">Evaluator</th>
+                                        <th class="text-nowrap">Total Score</th>
+                                        <th class="text-nowrap">Percentage</th>
+                                        <th class="text-nowrap">Remarks</th>
                                     {% endif %}
                                 </tr>
                             </thead>
@@ -156,6 +156,31 @@
                             </tbody>
                         </table>
                     </div>
+                    <!-- Mobile responsive table: horizontal scroll and readable font -->
+                    <style>
+                        #reportTable {
+                            font-size: 0.92rem;
+                        }
+                        #reportTable th, #reportTable td {
+                            padding: 0.35rem 0.25rem;
+                            vertical-align: middle;
+                            word-break: break-word;
+                        }
+                        #reportTable th {
+                            white-space: nowrap;
+                            word-break: break-all;
+                        }
+                        @media (max-width: 767px) {
+                            .table-responsive {
+                                overflow-x: auto;
+                                -webkit-overflow-scrolling: touch;
+                            }
+                            #reportTable {
+                                min-width: 900px;
+                                font-size: 0.9rem;
+                            }
+                        }
+                    </style>
 
                     <!-- Signature Fields -->
                     <div class="row mb-4">
