@@ -668,29 +668,23 @@ def view_incident_report(request, report_id):
                 messages.error(request, 'You cannot view your own incident reports.')
                 return redirect('incident_report_list')
             
-            # Check if the report is within the department head's scope
-            report_department = None
-            if report.staff:
-                report_department = report.staff.department
-            elif report.department_head:
-                report_department = report.department_head.department
-
             is_privileged_hr = (department_head.is_hr_head and hasattr(department_head, 'privileges') and department_head.privileges.can_view_all_reports) or \
                                (department_head.department.name.lower() == "hr") or \
                                (department_head.subdepartment and department_head.subdepartment.name.lower() == "hr")
 
-            # Check if the report's subject (staff or head) is within the manager's department
-            report_subject_department = None
-            if report.staff:
-                report_subject_department = report.staff.department
-            elif report.department_head:
-                report_subject_department = report.department_head.department
+            if not is_privileged_hr:
+                # Check if the report is within the department head's scope
+                report_subject_department = None
+                if report.staff:
+                    report_subject_department = report.staff.department
+                elif report.department_head:
+                    report_subject_department = report.department_head.department
 
-            # A department head can view any report if it belongs to their own department.
-            # This covers main department heads viewing sub-department reports.
-            if report_subject_department != department_head.department:
-                messages.error(request, 'You do not have permission to view this report as it is outside your department.')
-                return redirect('incident_report_list')
+                # A department head can view any report if it belongs to their own department.
+                # This covers main department heads viewing sub-department reports.
+                if report_subject_department != department_head.department:
+                    messages.error(request, 'You do not have permission to view this report as it is outside your department.')
+                    return redirect('incident_report_list')
 
         except DepartmentHead.DoesNotExist:
             messages.error(request, 'You do not have permission to view reports.')
@@ -715,7 +709,6 @@ def print_incident_report(request, report_id):
                 messages.error(request, 'You cannot print your own incident reports.')
                 return redirect('incident_report_list')
             
-            # HR heads can view any report, so we check for that first
             is_privileged_hr = (department_head.is_hr_head and hasattr(department_head, 'privileges') and department_head.privileges.can_view_all_reports) or \
                                (department_head.department.name.lower() == "hr") or \
                                (department_head.subdepartment and department_head.subdepartment.name.lower() == "hr")
@@ -730,7 +723,7 @@ def print_incident_report(request, report_id):
 
                 if report_subject_department != department_head.department:
                     messages.error(request, 'You do not have permission to print this report as it is outside your department.')
-                return redirect('incident_report_list')
+                    return redirect('incident_report_list')
 
         except DepartmentHead.DoesNotExist:
             messages.error(request, 'You do not have permission to view reports.')

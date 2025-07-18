@@ -171,13 +171,72 @@
                             word-break: break-all;
                         }
                         @media (max-width: 767px) {
-                            .table-responsive {
-                                overflow-x: auto;
-                                -webkit-overflow-scrolling: touch;
+                            /* Responsive table as card list */
+                            #reportTable, #reportTable thead, #reportTable tbody, #reportTable th, #reportTable td, #reportTable tr {
+                                display: block;
+                                width: 100%;
                             }
-                            #reportTable {
-                                min-width: 900px;
-                                font-size: 0.9rem;
+                            #reportTable thead {
+                                display: none;
+                            }
+                            #reportTable tr {
+                                margin-bottom: 1.2rem;
+                                border: 1px solid #e0e0e0;
+                                border-radius: 8px;
+                                box-shadow: 0 2px 6px rgba(0,0,0,0.04);
+                                background: #fff;
+                                padding: 0.5rem 0.7rem;
+                            }
+                            #reportTable td {
+                                border: none;
+                                border-bottom: 1px solid #f0f0f0;
+                                position: relative;
+                                padding-left: 45%;
+                                min-height: 36px;
+                                font-size: 1rem;
+                                background: none;
+                            }
+                            #reportTable td:last-child {
+                                border-bottom: none;
+                            }
+                            #reportTable td:before {
+                                position: absolute;
+                                top: 0;
+                                left: 0.5rem;
+                                width: 44%;
+                                white-space: normal;
+                                font-weight: 600;
+                                color: #555;
+                                content: attr(data-label);
+                                font-size: 0.98em;
+                                line-height: 1.2;
+                            }
+                            .table-responsive {
+                                overflow-x: visible;
+                            }
+                            /* Forms and buttons stack vertically */
+                            #searchForm .col-md-2, #searchForm .col-md-3, #searchForm .col-12, #searchForm .col-6 {
+                                flex: 0 0 100%;
+                                max-width: 100%;
+                            }
+                            #searchForm .btn, #searchForm input, #searchForm label {
+                                width: 100%;
+                            }
+                            .row.mb-2 > div[class^="col-"], .row.mb-2 > div[class*=" col-"] {
+                                flex: 0 0 100%;
+                                max-width: 100%;
+                                margin-bottom: 0.5rem;
+                            }
+                            .row.mb-4 > .col-md-6, .row.mb-4 > .col-md-12 {
+                                flex: 0 0 100%;
+                                max-width: 100%;
+                                margin-bottom: 0.7rem;
+                            }
+                            .row .text-end, .row .text-center {
+                                text-align: left !important;
+                            }
+                            .btn {
+                                margin-bottom: 0.5rem;
                             }
                         }
                     </style>
