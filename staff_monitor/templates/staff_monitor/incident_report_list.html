@@ -19,98 +19,22 @@
 
     <!-- Enhanced Search and Filter Section -->
     <div class="card-body border-bottom">
-        <!-- Basic Search Row -->
-        <div class="row g-3 mb-3">
-            <div class="col-md-4">
-                <div class="input-group">
-                    <span class="input-group-text bg-light">
-                        <i class="fas fa-search"></i>
-                    </span>
-                    <input type="text" id="searchInput" class="form-control" placeholder="Search by name, ID, location, or incident type..." autocomplete="off">
-                    <button class="btn btn-outline-secondary" type="button" id="advancedSearchToggle">
-                        <i class="fas fa-filter"></i>
-                    </button>
-                </div>
-                <!-- Search Suggestions -->
-                <div id="searchSuggestions" class="position-absolute bg-white border rounded shadow-sm d-none" style="z-index: 1000; width: 100%; max-height: 200px; overflow-y: auto;">
-                </div>
+        <form class="row g-3 mb-3" method="get" id="incidentSearchForm">
+            <div class="col-md-6 col-12">
+                <label for="search_name" class="form-label">Name / Report Number</label>
+                <input type="text" class="form-control" id="search_name" name="search_name" placeholder="Search..." value="{{ filter_params.search_name }}">
             </div>
-            <div class="col-md-3">
-                <select id="departmentFilter" class="form-select">
-                    <option value="">All Departments</option>
-                    {% for dept in departments %}
-                        <option value="{{ dept.name }}">{{ dept.name }}</option>
-                    {% endfor %}
-                </select>
-            </div>
-            <div class="col-md-3">
-                <select id="statusFilter" class="form-select">
-                    <option value="">All Statuses</option>
-                    {% for value, label in status_choices %}
-                        <option value="{{ label }}">{{ label }}</option>
-                    {% endfor %}
-                </select>
-            </div>
-            <div class="col-md-2">
-                <button id="resetFilters" class="btn btn-secondary w-100">
-                    <i class="fas fa-undo me-1"></i>Reset
+            <div class="col-md-2 col-6 align-self-end">
+                <button type="submit" class="btn btn-primary w-100">
+                    <i class="fas fa-search me-1"></i>Search
                 </button>
             </div>
-        </div>
-
-        <!-- Advanced Search Section (Collapsible) -->
-        <div id="advancedSearchSection" class="d-none">
-            <div class="row g-3 mb-3">
-                <div class="col-md-3">
-                    <label class="form-label small fw-semibold">Date Range</label>
-                    <input type="date" id="dateFrom" class="form-control" placeholder="From Date">
-                </div>
-                <div class="col-md-3">
-                    <label class="form-label small fw-semibold">&nbsp;</label>
-                    <input type="date" id="dateTo" class="form-control" placeholder="To Date">
-                </div>
-                <div class="col-md-3">
-                    <label class="form-label small fw-semibold">Reporter</label>
-                    <select id="reporterFilter" class="form-select">
-                        <option value="">All Reporters</option>
-                        {% for report in reports %}
-                            <option value="{{ report.reporter.get_full_name }}">{{ report.reporter.get_full_name }}</option>
-                        {% endfor %}
-                    </select>
-                </div>
-                <div class="col-md-3">
-                    <label class="form-label small fw-semibold">Quick Filters</label>
-                    <select id="quickFilter" class="form-select">
-                        <option value="">All Reports</option>
-                        <option value="today">Today</option>
-                        <option value="week">This Week</option>
-                        <option value="month">This Month</option>
-                        <option value="recent">Last 7 Days</option>
-                        <option value="urgent">Under Investigation</option>
-                    </select>
-                </div>
+            <div class="col-md-2 col-6 align-self-end">
+                <a href="{% url 'incident_report_list' %}" class="btn btn-secondary w-100">
+                    <i class="fas fa-undo me-1"></i>Reset
+                </a>
             </div>
-        </div>
-
-        <!-- Quick Action Buttons -->
-        <div class="row g-2">
-            <div class="col-md-8">
-                <div class="btn-group btn-group-sm" role="group">
-                    <button type="button" class="btn btn-outline-primary" id="sortByDate">
-                        <i class="fas fa-calendar me-1"></i>Date
-                    </button>
-                    <button type="button" class="btn btn-outline-primary" id="sortByName">
-                        <i class="fas fa-user me-1"></i>Name
-                    </button>
-                    <button type="button" class="btn btn-outline-primary" id="sortByStatus">
-                        <i class="fas fa-flag me-1"></i>Status
-                    </button>
-                </div>
-            </div>
-            <div class="col-md-4 text-end">
-                <span class="badge bg-info" id="resultCount">0 reports found</span>
-            </div>
-        </div>
+        </form>
     </div>
 
     <div class="card-body">

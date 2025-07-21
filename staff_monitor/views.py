@@ -1467,12 +1467,24 @@ def incident_report_list(request):
         user = request.user
         reports = IncidentReport.objects.none()
         departments = Department.objects.none()
+        subdepartments = SubDepartment.objects.none()
         is_authorized = False
+
+        # Get filter params
+        search_name = request.GET.get('search_name', '').strip()
+        department_id = request.GET.get('department_id', '')
+        subdepartment_id = request.GET.get('subdepartment_id', '')
+        status = request.GET.get('status', '')
+        reporter_id = request.GET.get('reporter_id', '')
+        date_from = request.GET.get('date_from', '')
+        date_to = request.GET.get('date_to', '')
+        order_by = request.GET.get('order_by', '')
 
         if user.is_staff:
             is_authorized = True
-            reports = IncidentReport.objects.all()
+            qs = IncidentReport.objects.all().select_related('staff__user', 'staff__department', 'staff__subdepartment', 'department_head__user', 'department_head__department')
             departments = Department.objects.all()
+            subdepartments = SubDepartment.objects.all()
         else:
             try:
                 department_head = DepartmentHead.objects.get(user=user)
@@ -1483,46 +1495,91 @@ def incident_report_list(request):
                                    (department_head.subdepartment and department_head.subdepartment.name.lower() == "hr")
 
                 if is_privileged_hr:
-                    # Privileged HR heads can see all reports (except their own) and filter by any department
-                    reports = IncidentReport.objects.exclude(department_head=department_head)
+                    qs = IncidentReport.objects.exclude(department_head=department_head).select_related('staff__user', 'staff__department', 'staff__subdepartment', 'department_head__user', 'department_head__department')
                     departments = Department.objects.all()
+                    subdepartments = SubDepartment.objects.all()
                 else:
-                    # Regular department heads see reports only from their scope
                     if department_head.subdepartment:
-                        # Sub-department head's scope is their specific sub-department
-                        reports = IncidentReport.objects.filter(
+                        qs = IncidentReport.objects.filter(
                             Q(staff__subdepartment=department_head.subdepartment) |
                             Q(department_head__subdepartment=department_head.subdepartment)
-                        ).exclude(department_head=department_head)
+                        ).exclude(department_head=department_head).select_related('staff__user', 'staff__department', 'staff__subdepartment', 'department_head__user', 'department_head__department')
+                        departments = Department.objects.filter(id=department_head.department.id)
+                        subdepartments = SubDepartment.objects.filter(department=department_head.department)
                     else:
-                        # Main department head's scope is their entire department.
-                        # This includes staff directly in the department and all sub-departments.
                         department = department_head.department
                         subdepartments_in_dept = SubDepartment.objects.filter(department=department)
-                        
-                        reports = IncidentReport.objects.filter(
+                        qs = IncidentReport.objects.filter(
                             Q(staff__department=department) | 
                             Q(staff__subdepartment__in=subdepartments_in_dept) |
                             Q(department_head__department=department)
-                        ).distinct().exclude(department_head=department_head)
-                        
-                    # A regular head should only be able to filter by their own department
-                    departments = Department.objects.filter(id=department_head.department.id)
-
+                        ).distinct().exclude(department_head=department_head).select_related('staff__user', 'staff__department', 'staff__subdepartment', 'department_head__user', 'department_head__department')
+                        departments = Department.objects.filter(id=department.id)
+                        subdepartments = subdepartments_in_dept
             except DepartmentHead.DoesNotExist:
                 is_authorized = False  # Not a dept head, not authorized
-        
+                qs = IncidentReport.objects.none()
+
         if not is_authorized:
             messages.error(request, "You do not have permission to view incident reports.")
             return redirect('dashboard')
-            
-        # Pass the reports to the template
+
+        # Multi-keyword search
+        if search_name:
+            keywords = search_name.split()
+            for kw in keywords:
+                qs = qs.filter(
+                    Q(report_number__icontains=kw) |
+                    Q(staff__user__first_name__icontains=kw) |
+                    Q(staff__user__last_name__icontains=kw) |
+                    Q(staff__employee_id__icontains=kw) |
+                    Q(incident_location__icontains=kw) |
+                    Q(incident_types__icontains=kw)
+                )
+        if department_id:
+            qs = qs.filter(staff__department_id=department_id)
+        if subdepartment_id:
+            qs = qs.filter(staff__subdepartment_id=subdepartment_id)
+        if status:
+            qs = qs.filter(status=status)
+        if reporter_id:
+            qs = qs.filter(reporter_id=reporter_id)
+        if date_from:
+            qs = qs.filter(incident_date__gte=date_from)
+        if date_to:
+            qs = qs.filter(incident_date__lte=date_to)
+        if order_by:
+            if order_by in ['incident_date', '-incident_date', 'staff__user__first_name', '-staff__user__first_name', 'status', '-status']:
+                qs = qs.order_by(order_by)
+            else:
+                qs = qs.order_by('-incident_date', '-incident_time')
+        else:
+            qs = qs.order_by('-incident_date', '-incident_time')
+        reports = qs
+
+        # Prepare filter options
+        reporters = User.objects.filter(id__in=reports.values_list('reporter_id', flat=True).distinct()).order_by('first_name', 'last_name')
+        status_choices = IncidentReport.STATUS_CHOICES
+        filter_params = {
+            'search_name': search_name,
+            'department_id': department_id,
+            'subdepartment_id': subdepartment_id,
+            'status': status,
+            'reporter_id': reporter_id,
+            'date_from': date_from,
+            'date_to': date_to,
+            'order_by': order_by,
+        }
+
         return render(request, 'staff_monitor/incident_report_list.html', {
-            'reports': reports.order_by('-incident_date', '-incident_time'),
+            'reports': reports,
             'departments': departments.order_by('name'),
-            'status_choices': IncidentReport.STATUS_CHOICES
+            'subdepartments': subdepartments.order_by('name'),
+            'reporters': reporters,
+            'status_choices': status_choices,
+            'filter_params': filter_params,
+            'user': user,
         })
-        
     except Exception as e:
         messages.error(request, f"Error loading incident reports: {str(e)}")
         return redirect('dashboard')
@@ -2910,6 +2967,11 @@ def staff_report_view(request):
     search_name = request.GET.get('search_name', request.POST.get('search_name', '')).strip()
     date_from = request.GET.get('date_from', request.POST.get('date_from', ''))
     date_to = request.GET.get('date_to', request.POST.get('date_to', ''))
+    department_id = request.GET.get('department_id', request.POST.get('department_id', ''))
+    subdepartment_id = request.GET.get('subdepartment_id', request.POST.get('subdepartment_id', ''))
+    status = request.GET.get('status', request.POST.get('status', ''))
+    evaluator_id = request.GET.get('evaluator_id', request.POST.get('evaluator_id', ''))
+    order_by = request.GET.get('order_by', request.POST.get('order_by', ''))
 
     reports = []
     staff_details = None
@@ -2918,23 +2980,50 @@ def staff_report_view(request):
         'search_name': search_name,
         'date_from': date_from,
         'date_to': date_to,
+        'department_id': department_id,
+        'subdepartment_id': subdepartment_id,
+        'status': status,
+        'evaluator_id': evaluator_id,
+        'order_by': order_by,
     }
+
+    # Prepare filter options
+    departments = Department.objects.all().order_by('name')
+    subdepartments = SubDepartment.objects.all().order_by('name')
+    evaluators = Staff.objects.all().select_related('user').order_by('user__first_name', 'user__last_name')
+    status_choices = IncidentReport.STATUS_CHOICES
 
     # Filtering logic
     if report_type == 'incident':
         qs = IncidentReport.objects.all().select_related('staff__user', 'staff__department', 'staff__subdepartment', 'department_head__user')
+        # Multi-keyword search
         if search_name:
-            qs = qs.filter(
-                Q(report_number__icontains=search_name) |
-                Q(staff__user__first_name__icontains=search_name) |
-                Q(staff__user__last_name__icontains=search_name) |
-                Q(staff__employee_id__icontains=search_name)
-            )
+            keywords = search_name.split()
+            for kw in keywords:
+                qs = qs.filter(
+                    Q(report_number__icontains=kw) |
+                    Q(staff__user__first_name__icontains=kw) |
+                    Q(staff__user__last_name__icontains=kw) |
+                    Q(staff__employee_id__icontains=kw)
+                )
         if date_from:
             qs = qs.filter(incident_date__gte=date_from)
         if date_to:
             qs = qs.filter(incident_date__lte=date_to)
-        reports = qs.order_by('-incident_date', '-incident_time')
+        if department_id:
+            qs = qs.filter(staff__department_id=department_id)
+        if subdepartment_id:
+            qs = qs.filter(staff__subdepartment_id=subdepartment_id)
+        if status:
+            qs = qs.filter(status=status)
+        if order_by:
+            if order_by in ['incident_date', '-incident_date', 'staff__user__first_name', '-staff__user__first_name', 'status', '-status']:
+                qs = qs.order_by(order_by)
+            else:
+                qs = qs.order_by('-incident_date', '-incident_time')
+        else:
+            qs = qs.order_by('-incident_date', '-incident_time')
+        reports = qs
         # If only one staff in results, show staff details
         staff_set = set(r.staff for r in reports if r.staff)
         if len(staff_set) == 1:
@@ -2948,17 +3037,33 @@ def staff_report_view(request):
             }
     else:  # evaluation
         qs = PerformanceReport.objects.filter(staff__isnull=False).select_related('staff__user', 'staff__department', 'staff__subdepartment')
+        # Multi-keyword search
         if search_name:
-            qs = qs.filter(
-                Q(staff__user__first_name__icontains=search_name) |
-                Q(staff__user__last_name__icontains=search_name) |
-                Q(staff__employee_id__icontains=search_name)
-            )
+            keywords = search_name.split()
+            for kw in keywords:
+                qs = qs.filter(
+                    Q(staff__user__first_name__icontains=kw) |
+                    Q(staff__user__last_name__icontains=kw) |
+                    Q(staff__employee_id__icontains=kw)
+                )
         if date_from:
             qs = qs.filter(date__gte=date_from)
         if date_to:
             qs = qs.filter(date__lte=date_to)
-        reports = qs.order_by('-date')
+        if department_id:
+            qs = qs.filter(staff__department_id=department_id)
+        if subdepartment_id:
+            qs = qs.filter(staff__subdepartment_id=subdepartment_id)
+        if evaluator_id:
+            qs = qs.filter(evaluator_id=evaluator_id)
+        if order_by:
+            if order_by in ['date', '-date', 'staff__user__first_name', '-staff__user__first_name', 'percentage', '-percentage']:
+                qs = qs.order_by(order_by)
+            else:
+                qs = qs.order_by('-date')
+        else:
+            qs = qs.order_by('-date')
+        reports = qs
         staff_set = set(r.staff for r in reports if r.staff)
         if len(staff_set) == 1:
             staff = list(staff_set)[0]
@@ -2975,5 +3080,9 @@ def staff_report_view(request):
         'reports': reports,
         'staff_details': staff_details,
         'search_params': search_params,
+        'departments': departments,
+        'subdepartments': subdepartments,
+        'evaluators': evaluators,
+        'status_choices': status_choices,
     }
     return render(request, 'staff_monitor/staff_report_view.html', context)
